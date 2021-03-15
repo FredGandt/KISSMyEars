@@ -130,15 +130,14 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		clearPlayed: () => {
 			if ( played.length && confirm( "Clear the play history?" ) ) {
 				played = [];
-				playlist.querySelectorAll( "li.played" ).forEach( li => li.classList.remove( "played" ) );
-				updatePlayedLength();
+				updatePlayedness();
 			}
 		}
 	},
 
-	arrayFrom = lst => Array.from( lst ),
-
 	notPop = arr => arr.slice( -1 )[ 0 ],
+
+	arrayFrom = lst => Array.from( lst ),
 
 	stringifiedArray = a => JSON.stringify( a ),
 
@@ -146,7 +145,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	allButLast = arr => arrayFrom( arr ).slice( 0, -1 ),
 
-	multiTrack = n => `${n} TRACK${( n !== 1 ? "S" : "" )}`,
+	multiTrack = n => `${n} TRACK${n !== 1 ? "S" : ""}`,
 
 	allTracks = () => arrayFrom( playlist.querySelectorAll( "ol li" ) ),
 
@@ -160,11 +159,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	equalStringifiedArrays = ( a1, a2 ) => stringifiedArray( a1 ) === stringifiedArray( a2 ),
 
-	updatePlayedLength = () => controls.played_length.dataset.pl = multiTrack( played.length ),
-
 	queueMatch = dragee => queue.findIndex( li => li.dataset.abs_path === dragee.dataset.abs_path ),
 
 	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ),
+
+	pathsToTracks = paths => playlist.querySelectorAll( paths.map( p => `li[data-abs_path="${p}"]` ).join( "," ) ),
 
 	clearFilters = () => playlist.querySelectorAll( "li.filtered" ).forEach( l => l.classList.remove( "filtered" ) ),
 
@@ -200,7 +199,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		let btl = brokenTracks().length;
 		if ( btl ) {
 			controls.playlist_length.dataset.broken = ` + ${btl} BROKEN`;
-			controls.fix.classList.add( "show" );
+			controls.fix.classList.add( "show" ); // TODO fixBrakages
 		}
 		controls.playlist_length.dataset.good = multiTrack( goodTracks().length );
 	},
@@ -237,6 +236,15 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		} );
 	},
 
+	updatePlayedness = () => {
+		let pl = played.length;
+		playlist.querySelectorAll( "li.played" ).forEach( li => li.classList.remove( "played" ) );
+		if ( pl ) {
+			played.forEach( li => li.classList.add( "played" ) )
+		}
+		controls.played_length.dataset.pl = multiTrack( played.length );
+	},
+
 	updateQueuetness = () => {
 		let ql = queue.length;
 		playlist.querySelectorAll( 'span[data-queue]:not([data-queue=""])' ).forEach( xq => xq.dataset.queue = "" );
@@ -253,7 +261,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			minutes = m % 60,
 			hours = ( m - minutes ) / 60;
 		return [
-			hours ? `${hours}`.padStart( 2, "0" ) : "",
+			( hours ? `${hours}`.padStart( 2, "0" ) : "" ),
 			`${minutes}`.padStart( 2, "0" ),
 			`${Math.floor( seconds )}`.padStart( 2, "0" )
 		].filter( a => a ).join( ":" );
@@ -457,6 +465,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			TRANSPORT.next();
 
 			// TODO offer to remove or do it automatically and give notice?
+				// fixBrakages
 
 		}
 	},
@@ -501,25 +510,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	applyStoredArrays = store => {
-		return new Promise( resolve => {
-			if ( store ) {
-				let p = store.played,
-					q = store.queue;
-				if ( p && p.length ) {
-					played = played.concat( p );
-					playlist.querySelectorAll( p.map( p => `li[data-abs_path="${p}"]` ).join( "," ) ).forEach( li => li.classList.add( "played" ) );
-					updatePlayedLength();
-				}
-				if ( q && q.length ) {
-					queue = queue.concat( q );
-					updateQueuetness();
-				}
-			}
-			resolve( true );
-		} );
-	},
-
 	playlistFilter = () => {
 		if ( goodTracks().length ) {
 			if ( playlist_filter.classList.toggle( "show" ) ) {
@@ -542,6 +532,24 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 		queue_editor.classList.remove( "show" );
 		queue_editor_list.innerHTML = "";
+	},
+
+	applyStoredArrays = store => {
+		return new Promise( resolve => {
+			if ( store ) {
+				let p = store.played,
+					q = store.queue;
+				if ( p && p.length ) {
+					played = played.concat( pathsToTracks( p ) );
+					updatePlayedness();
+				}
+				if ( q && q.length ) {
+					queue = queue.concat( pathsToTracks( q ) );
+					updateQueuetness();
+				}
+			}
+			resolve( true );
+		} );
 	},
 
 	inputControls = evt => {
@@ -637,9 +645,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		let cont = true;
 		controls.times.dataset.dura = secondsToStr( 0 );
 		if ( currently_playing_track ) {
-			currently_playing_track.classList.add( "played" );
 			played.push( currently_playing_track );
-			updatePlayedLength();
+			updatePlayedness();
 		}
 		audio.removeAttribute( "src" );
 		if ( controls.continuation.value === "queue" && !queue.length && queuend ) { // TODO folder
@@ -695,7 +702,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					fltrd = fltrd.filter( f => !trackTitleDataset( f ).queue );
 				}
 				if ( fltrd.length > 1 && controls.shuffle.checked ) { // TODO skiplayed?
-					if ( confirm( "Shuffle tracks before adding to the queue?" ) ) {
+					if ( confirm( "Shuffle tracks before appending to the queue?" ) ) {
 						shuffleArray( fltrd );
 					} else {
 						shuffle = confirm( "Shuffle the entire resultant queue?" );
@@ -730,9 +737,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			}
 
 			// TODO eager play isn't
-
 			// TODO "along this path" should allow e.g. HDD + child/path
-
 			// TODO since removing files input, possibly simplify
 
 			sp = ( slv || sources.path.value ).replace( /^\[([a-z0-9 ]+)\]/gi, ( m, g1 ) => { ln = g1; return ""; } ).split( "/" ).filter( f => f );
@@ -748,7 +753,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					paths = await pathsToPlaylist( paths, store.paths );
 
 					// TODO offer to store even if all the paths were already included in playlist
-					// TODO provide some kind of  progress indicator
+					// TODO provide some kind of progress indicator
 
 					if ( paths.length && confirm( "Remember these files for automatic inclusion in future?" ) ) {
 						chrome.storage.local.getBytesInUse( bytes => {
@@ -806,7 +811,7 @@ Would you like to store the information as a file to be saved in your audio libr
 				}
 			}
 
-			// TODO if a queued track has been delisted, make sure the further options are clearly not required
+			// TODO if a queued track has been delisted, make sure the further options are clearly indicated as not required
 
 			if ( cv === "delist" ) {
 				if ( confirm( `Remove this ${tia ? "folder" : "track"} from the playlist?` ) ) {
@@ -832,7 +837,7 @@ Would you like to store the information as a file to be saved in your audio libr
 						trg.folder.remove();
 					}
 					updatePlaylistLength();
-					updatePlayedLength();
+					updatePlayedness();
 				}
 			} else if ( cv === "now" ) {
 				if ( !tia && trg === currently_playing_track ) {
