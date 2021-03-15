@@ -1,0 +1,416 @@
+
+
+#sources {
+	border-bottom: var( --dark-turq-border );
+}
+
+#controls {
+	border-top: var( --dark-turq-border );
+}
+
+#sources fieldset,
+#controls {
+	font-size: .8em;
+}
+
+fieldset {
+	display: inline-block;
+	padding: 0;
+	margin: 0;
+	border: 0;
+}
+
+fieldset.stack > * {
+	display: block;
+}
+
+fieldset.stack + fieldset.stack {
+	border-left: var( --dark-turq-border );
+	padding-left: .5em;
+	margin-left: .5em;
+}
+
+fieldset.stack output {
+	margin-bottom: .3em;
+}
+
+fieldset.right label {
+	margin-left: .5em;
+}
+
+fieldset.right fieldset {
+	border: var( --dark-turq-border );
+	vertical-align: text-top;
+	padding: 0 .2em .3em;
+	border-radius: .2em;
+	margin-left: .5em;
+}
+
+legend {
+	margin-bottom: .2em;
+	font-size: 80%;
+}
+
+.right {
+	float: right;
+}
+
+#playlist_length:after {
+	content: attr( data-pll ) "\0a0IN PLAYLIST";
+}
+
+#played_length:after {
+	content: attr( data-pl ) "\0a0PLAYED";
+}
+
+#queue_length:after {
+	content: attr( data-ql ) "\0a0QUEUED";
+}
+
+#track_times:before {
+	content: attr( data-dura ) "\0a0\02212\0a0" attr( data-curt ) "\0a0\0224A\0a0" attr( data-rema );
+}
+
+legend, label {
+	user-select: none;
+}
+
+label.vert {
+	margin-top: .8em;
+}
+
+select,
+input {
+	background-color: var( --darkest-grey );
+	font-family: monospace, monospace;
+	border-radius: .2em;
+	font-size: inherit;
+	color: inherit;
+	padding: 0;
+	border: 0;
+}
+
+select {
+	padding: .14em 0 .2em;
+	vertical-align: top;
+}
+
+input[type="file"] {
+	padding: .05em;
+}
+
+form.overlay input[type="text"],
+input[name="toqueue"],
+input[name="filter"],
+input[name="clear"],
+input[name="done"],
+input[name="path"] {
+	padding: .2em .5em .3em;
+	vertical-align: top;
+}
+
+form.overlay input[type="text"],
+input[type="file"],
+input[name="path"],
+#playlist_length,
+select {
+	margin: 0 .5em;
+}
+
+output {
+	color: var( --turq );
+}
+
+input[name="path"],
+#playlist_length {
+	margin-left: 0;
+}
+
+form.overlay label {
+	margin-right: 1em;
+}
+
+input[type="button"] {
+	margin-right: .5em;
+	cursor: pointer;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+	appearance: none;
+	margin: 0 .25em;
+	padding: .4em;
+}
+
+input[type="radio"] {
+	border-radius: .4em;
+}
+
+input:checked {
+	background-color: var( --turq );
+}
+
+fieldset[name="transport"] input {
+	background-color: transparent;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: contain;
+	height: 2.4em;
+	width: 2.4em;
+}
+
+fieldset[name="transport"] input:hover {
+	background-color: var( --dark-turq );
+}
+
+input[name="paws"] { background-image: url( "paws.png" ) }
+input[name="prev"] { background-image: url( "prev.png" ) }
+input[name="back"] { background-image: url( "back.png" ) }
+input[name="play"] { background-image: url( "play.png" ) }
+input[name="next"] { background-image: url( "next.png" ) }
+input[name="stop"] { background-image: url( "stop.png" ) }
+
+input[type="range"] {
+	background-color: var( --darkest-grey );
+	vertical-align: text-top;
+	border-radius: 1em;
+	position: relative;
+	cursor: ew-resize;
+	appearance: none;
+	overflow: hidden;
+	margin: 0;
+}
+
+input[name="seek"] {
+	margin-bottom: 1em;
+	width: 100%;
+}
+
+input[name="volume"] {
+	margin-left: .5em;
+}
+
+form.overlay,
+div {
+	background-color: var( --darker-grey );
+	height: calc( 100vh - 9.1em ); /* TODO there must be a better way to do this */
+	overflow: auto;
+}
+
+form.overlay {
+	margin-top: calc( 3.3em + 1px );
+	height: calc( 100vh - 9.9em );
+	overscroll-behavior: contain;
+	position: absolute;
+	z-index: -1;
+}
+
+#playlist_filter {
+	box-shadow: 0 0 2em 0 black;
+	max-height: 66vh;
+	height: unset;
+	width: unset;
+	opacity: .9;
+	right: 2em;
+	margin: 0;
+	top: 14vh;
+}
+
+#playlist_filter fieldset + fieldset {
+	white-space: nowrap;
+	margin-top: .5em;
+	display: block;
+}
+
+#playlist_filter input[type="text"] {
+	color: var( --turq );
+}
+
+#playlist_filter input[name="starts"] {
+	width: 11ch;
+}
+
+#playlist_filter input[name="ends"] {
+	width: 9ch;
+}
+
+#playlist.filtered li:not(.filtered) {
+	display: none;
+}
+
+#playlist.filtered li.filtered li {
+	display: list-item;
+}
+
+#playlist.filtered li.filtered li.filtered {
+	background-color: var( --darkest-turq );
+}
+
+form.overlay.show {
+	z-index: 1;
+}
+
+form.overlay input[type="button"] {
+	margin-bottom: 1em;
+}
+
+form.overlay input[type="button"].orange {
+	background-color: var( --orange );
+	color: var( --darkest-grey );
+}
+
+ul, ol {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+ol li {
+	color: var( --turq );
+	white-space: nowrap;
+	position: relative;
+	padding: .1em 1em;
+}
+
+#playlist > li {
+	border-top: var( --dark-turq-border );
+	margin: 0 0 0 1em;
+	padding-top: .5em;
+}
+
+#playlist ol {
+	margin-top: .5em;
+}
+
+#playlist:not(.filtered) ol li:nth-child( odd ) {
+	background-color: var( --darkerer-grey );
+	color: var( --slightly-lighter-turq );
+}
+
+li.played {
+	color: var( --dark-turq ) !important;
+}
+
+#playlist li.playing {
+	background-color: var( --dark-turq ) !important;
+	color: var( --darkest-grey ) !important;
+}
+
+#playlist span[data-queue]:not([data-queue=""]):before {
+	background-color: var( --orange );
+	color: var( --darkest-grey );
+	content: attr( data-queue );
+	border-radius: .2em;
+	margin-right: .5em;
+	padding: 0 .5em;
+}
+
+fieldset.orange output {
+	color: var( --orange );
+}
+
+fieldset.stack input[type="button"] {
+	background-color: var( --mid-turq );
+	color: var( --darkest-grey );
+	padding: 0 .2em;
+}
+
+fieldset.stack.orange input[type="button"] {
+	background-color: var( --orange );
+}
+
+input.orange:checked {
+	background-color: var( --orange );
+}
+
+input.orange.split:checked {
+	background-image: linear-gradient( to right, var( --turq ) 50%, var( --orange ) 50% );
+}
+
+span {
+	display: inline-block;
+}
+
+li span,
+li {
+	overflow: hidden;
+}
+
+li span {
+	text-overflow: ellipsis;
+}
+
+li span:after {
+	content: attr( data-display );
+}
+
+li span:nth-child(1) {
+	width: 5ch;
+}
+
+li span:nth-child(2) {
+	width: calc( 100vw - 3em - 10ch );
+}
+
+li span:nth-child(3) {
+	width: 4ch;
+}
+
+#queue_editor {
+	padding-top: 0;
+}
+
+#queue_editor fieldset {
+	border-bottom: var(--dark-turq-border);
+	width: calc( 100% - 2rem );
+	background-color: inherit;
+	padding-top: 1em;
+	position: fixed;
+	display: block;
+	z-index: 1;
+}
+
+#queue_editor div.dropzone {
+	border: var( --dark-turq-border );
+	display: inline-block;
+	color: var( --turq );
+	border-radius: .2em;
+	padding: .25em .5em;
+	height: unset;
+	width: unset;
+}
+
+#queue_editor ol {
+	height: calc( 100% - 3.2em );
+	margin-top: 4em;
+}
+
+#queue_editor li {
+	padding-right: 0;
+	padding-left: 0;
+}
+
+#queue_editor div.dropzone li {
+	display: none;
+}
+
+#queue_editor li.dragee {
+	opacity: .25;
+}
+
+h1 {
+	margin: 0 1rem;
+	float: right;
+}
+
+#playlist > li:before {
+	content: attr( data-path );
+	font-weight: bold;
+}
+
+
+
+
+
+
+

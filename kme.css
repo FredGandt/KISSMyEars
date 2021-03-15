@@ -1,0 +1,434 @@
+:root {
+	--darkest-grey: #2f2f2f;
+	--darkerer-grey: #383838;
+	--darker-grey: #404040;
+	--dark-grey: #4a4a4a;
+	--light-grey: #909090;
+
+	--dark-turq-border: 1px solid var( --dark-turq );
+
+	--slightly-lighter-turq: #349d9d; /* 1% lighter than --turq via HSL */
+	--darkest-turq: #0d3435;
+	--dark-turq: #246a6a;
+	--mid-turq: #2c7b7b;
+	--turq: #339999;
+
+	--orange: #a86d14;
+
+	--red: #c72d2d;
+}
+
+::-webkit-scrollbar {
+	height: .5rem;
+	width: .8rem;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-thumb {
+	background-color: var( --darkest-grey );
+}
+
+::-webkit-scrollbar-thumb {
+	box-shadow: 0 0 10rem 10rem var( --turq ) inset;
+	border-radius: 1rem;
+}
+
+::-webkit-slider-thumb {
+	box-shadow: -100vw 0 0 calc( 100vw - .5rem ) var( --dark-turq );
+	background-color: var( --turq );
+	border-radius: 50%;
+	cursor: ew-resize;
+	appearance: none;
+	display: block;
+	height: 1rem;
+	width: 1rem;
+}
+
+::-webkit-file-upload-button {
+	visibility: hidden;
+}
+
+*:not(input[type="text"]) {
+	user-select: none;
+}
+
+.flight {
+	float: right;
+}
+
+body, div, form {
+	background-color: var( --darker-grey );
+}
+
+body {
+	font-family: monospace, monospace;
+	color: var( --light-grey );
+	overflow: hidden;
+	font-size: 16px;
+	margin: 0;
+}
+
+div.section {
+	height: calc( 100vh - 5.3rem );
+	display: inline-block;
+	overflow: auto;
+	padding: 1rem;
+}
+
+div.secleft {
+	width: calc( 77vw - 2rem );
+}
+
+div.secright {
+	width: calc( 23vw - 2rem );
+}
+
+form.overlay {
+	position: absolute;
+	padding: 1rem;
+	z-index: -1;
+}
+
+form.overlay.show {
+	z-index: 1;
+}
+
+div.dropzone {
+	border: var( --dark-turq-border );
+	display: inline-block;
+	border-radius: .2rem;
+	margin-left: 1rem;
+	padding: .5rem;
+}
+
+ol.dropzone {
+	height: calc( 100vh - 9rem );
+	margin-top: 3.5rem;
+}
+
+h1 {
+	margin: 0;
+}
+
+#sources {
+	margin-bottom: 1rem;
+}
+
+#queue_editor {
+	height: calc( 100vh - 5.3rem );
+	width: calc( 77vw - 2rem );
+	overflow: auto;
+}
+
+#queue_editor > fieldset {
+	width: calc( 77vw - 3rem );
+	background-color: inherit;
+	position: fixed;
+	padding: 1rem;
+	left: 0;
+	top: 0;
+}
+
+#queue_editor ol li span:not(:nth-child(2)),
+#playlist.filtered li:not(.filtered),
+#queue_editor div.dropzone li {
+	display: none;
+}
+
+#queue_editor li.dragee {
+	opacity: .25;
+}
+
+#playlist_filter {
+	box-shadow: 0 0 2rem 0rem black;
+	right: 2rem;
+	top: 2rem;
+}
+
+#playlist_filter input[type="text"] {
+	color: var( --turq );
+}
+
+#playlist_filter input[name="starts"] {
+	width: 11ch;
+}
+
+#playlist_filter input[name="ends"] {
+	width: 9ch;
+}
+
+fieldset {
+	margin: 0;
+	border: 0;
+}
+
+fieldset.legend {
+	border: 1px solid var( --dark-turq );
+	border-radius: .2rem;
+}
+
+fieldset.legend label {
+	display: block;
+}
+
+fieldset:not(.legend) {
+	padding: 0;
+}
+
+fieldset:not(:first-child) {
+	margin-top: 1rem;
+}
+
+output[name="played_length"]:after {
+	content: attr( data-pl ) "\0000a0PLAYED";
+}
+
+output[name="queue_length"]:after {
+	content: attr( data-ql ) "\0000a0QUEUED";
+}
+
+output[name="times"]:before {
+	content: attr( data-dura ) "\0000a0\002212\0000a0" attr( data-curt ) "\0000a0\00224A\0000a0" attr( data-rema );
+}
+
+output[name="playlist_length"]:before {
+	content: attr( data-good ) "\0000a0IN\0000a0PLAYLIST";
+}
+
+output[name="playlist_length"]:after {
+	content: attr( data-broken );
+	color: var( --red );
+}
+
+output[name="playlist_length"] {
+	margin-bottom: .3rem;
+	display: block;
+}
+
+input[name="fix"] {
+	display: none;
+}
+
+input[name="fix"].show {
+	display: inline-block;
+}
+
+ol li span:after {
+	content: attr( data-display );
+}
+
+ol li {
+	color: var( --turq );
+	padding: .2rem 1rem 0;
+	white-space: nowrap;
+}
+
+li.played {
+	color: var( --dark-turq ) !important;
+}
+
+li.broken {
+	color: var( --red ) !important;
+}
+
+ol li span {
+	text-overflow: ellipsis;
+	display: inline-block;
+}
+
+ol li span,
+ol li {
+	overflow: hidden;
+}
+
+ol li span:nth-child(1) {
+	width: 5ch;
+}
+
+ol li span:nth-child(2) {
+	width: calc( 100% - 10ch );
+}
+
+ol li span:nth-child(3) {
+	width: 4ch;
+}
+
+ul, ol {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+select,
+input {
+	background-color: var( --darkest-grey );
+	font-family: monospace, monospace;
+	border-radius: .2rem;
+	font-size: inherit;
+	color: inherit;
+	padding: 0;
+	border: 0;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+	appearance: none;
+	margin: 0 .4rem;
+	padding: .4rem;
+}
+
+input[type="radio"] {
+	border-radius: 50%;
+}
+
+fieldset[name="seek_times"] {
+	width: calc( 100vw - 2rem );
+	position: absolute;
+	padding: 1rem;
+	margin: 0;
+	bottom: 0;
+	left: 0;
+}
+
+input[name="seek"] {
+	width: calc( 100% - 23ch );
+}
+
+input[type="file"] {
+	background-color: var( --darker-grey );
+	color: transparent;
+	margin-top: .5rem;
+	display: block;
+}
+
+input[type="file"]:before {
+	background-color: var( --darkest-grey );
+	content: "SELECT FOLDERS";
+	color: var( --light-grey );
+	padding: .2rem .4rem .1rem;
+	border-radius: .2rem;
+	cursor: pointer;
+}
+
+input[type="range"] {
+	background-color: var( --darkest-grey );
+	vertical-align: text-top;
+	border-radius: 1rem;
+	position: relative;
+	cursor: ew-resize;
+	appearance: none;
+	overflow: hidden;
+	margin: 0;
+}
+
+fieldset[name="transport"] {
+	text-align: center;
+	width: 100%;
+}
+
+fieldset[name="transport"] input {
+	background-color: transparent;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: contain;
+	border-radius: 0.5rem;
+	height: 3rem;
+	width: 3rem;
+}
+
+fieldset[name="transport"] input:hover {
+	background-color: var( --dark-turq );
+}
+
+input[name="paws"] { background-image: url( "paws.png" ) }
+input[name="prev"] { background-image: url( "prev.png" ) }
+input[name="back"] { background-image: url( "back.png" ) }
+input[name="play"] { background-image: url( "play.png" ) }
+input[name="next"] { background-image: url( "next.png" ) }
+input[name="stop"] { background-image: url( "stop.png" ) }
+
+input:checked {
+	background-color: var( --turq );
+}
+
+input.orange:checked {
+	background-color: var( --orange );
+}
+
+input.orange.split:checked {
+	background-image: linear-gradient( to right, var( --turq ) 50%, var( --orange ) 50% );
+}
+
+output:not([name="playlist_length"]) + input,
+input + input:not([type="file"]),
+input[name="volume"],
+select + input {
+	margin-left: .5rem;
+}
+
+input[type="button"],
+input[type="text"],
+select {
+	padding: .2rem .4rem .1rem;
+}
+
+input[type="text"] {
+	padding-bottom: .3rem;
+	vertical-align: top;
+}
+
+select {
+	padding-bottom: .2rem;
+}
+
+input[type="button"],
+select {
+	cursor: pointer;
+}
+
+#playlist > li:before {
+	content: attr( data-path );
+	font-weight: bold;
+}
+
+#playlist > li:not(:first-of-type) {
+	border-top: var( --dark-turq-border );
+	padding-top: .5rem;
+}
+
+#playlist ol {
+	margin-top: .5rem;
+}
+
+#playlist:not(.filtered) ol li:nth-child( odd ) {
+	background-color: var( --darkerer-grey );
+	color: var( --slightly-lighter-turq );
+}
+
+#playlist.filtered li.filtered li.filtered {
+	background-color: var( --darkest-turq );
+	color: var( --light-grey );
+}
+
+#playlist.filtered li.filtered li {
+	display: list-item;
+}
+
+#playlist li.playing:not(.broken) {
+	background-color: var( --dark-turq ) !important;
+	color: var( --darkest-grey ) !important;
+}
+
+#playlist ol li span[data-queue]:not([data-queue=""]):before {
+	content: attr( data-queue );
+	border-radius: .2rem;
+	margin-right: .5rem;
+	padding: 0 .5rem;
+}
+
+#playlist ol li span[data-queue]:not([data-queue=""]):before,
+fieldset.orange input[type="button"],
+input[type="button"].orange {
+	background-color: var( --orange );
+	color: var( --darkest-grey );
+}

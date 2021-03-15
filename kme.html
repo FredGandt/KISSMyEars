@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+	<head>
+		<title>KISS My Ears</title>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1">
+		<link rel="stylesheet" type="text/css" href="kme.css">
+	</head>
+	<body><!--
+
+		--><template><!--
+			--><fieldset><!--
+				--><legend></legend><!--
+				--><input name="starts" type="text" placeholder="starts with"><!--
+				--><input name="contains" type="text" placeholder="contains"><!--
+				--><input name="ends" type="text" placeholder="ends with"><!--
+			--></fieldset>
+		--></template><!--
+
+		--><audio></audio><!--
+
+		--><form class="overlay" id="queue_editor"><!--
+			--><fieldset><!--
+				--><input class="orange" name="done" type="button" value="DONE"><!--
+				--><input name="clear" type="button" value="CLEAR"><!--
+				--><h1 class="flight">DRAGON DROPPINGS</h1><!--
+				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
+			--></fieldset><!--
+			--><ol class="dropzone"></ol><!--
+		--></form><!--
+
+		--><form class="overlay" id="playlist_filter"><!--
+			--><input name="done" type="button" value="DONE"><!--
+			--><input name="toqueue" type="button" value="ADD TO QUEUE"><!--
+			--><fieldset><!--
+				--><label title="A matching track must match all filter values">COMBINE FILTERS<input name="combifilter" type="checkbox"></label><!--
+				--><label>EXCLUDE PLAYED<input name="onlyunplayed" type="checkbox"></label><!--
+				--><label>CASE SENSITIVE<input name="casensitive" type="checkbox"></label><!--
+			--></fieldset><!--
+		--></form><!--
+
+		--><div class="section secleft"><ul id="playlist"></ul></div><div class="section secright"><!--
+			--><form id="sources"><!--
+				--><select name="libraries"><option value="" selected>add new library</option></select><!--
+				--><input name="path" type="text" placeholder="along this path"><!--
+				--><input name="include" type="file" webkitdirectory><!--
+			--></form><!--
+			--><form id="controls"><!--
+				--><fieldset class="legend"><!--
+					--><legend>TURN OFF-AND-ON-ABLE</legend><!--
+					--><label>SHUFFLE<input name="shuffle" type="checkbox">EXCLUDE PLAYED<input name="skiplayed" type="checkbox"></label><!--
+					--><label title="Automatically scroll to show the currently playing track. Turn off and on again to jump">HIGHLIGHT PLAYING<input name="highlight" type="checkbox"></label><!--
+					--><label title="Start playing as soon as there are tracks listed to play">EAGER<input name="eager" type="checkbox"></label><!--
+				--></fieldset><!--
+				--><fieldset class="legend"><!--
+					--><legend>CLICK A TRACK TO</legend><!--
+					--><label title="+ ctrl">PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
+					--><label title="+ ctrl + alt">ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end"></label><!--
+					--><label title="+ ctrl + meta">ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
+					--><label title="+ meta + alt">DELIST IT<input class="orange split" name="clicky" type="radio" value="delist"></label><!--
+				--></fieldset><!--
+				--><fieldset class="legend"><!--
+					--><legend>PLAY UNTIL THE END OF THE</legend><!--
+					--><label>WORLD<input name="continuation" type="radio" value="world"></label><!--
+					--><label>QUEUE<input class="orange" name="continuation" type="radio" value="queue"></label><!-- TODO folder
+					--><label>TRACK<input name="continuation" type="radio" value="track"></label><!--
+					--><label>LIST<input name="continuation" type="radio" value="list"></label><!--
+				--></fieldset><!--
+				--><fieldset><!--
+					--><output name="playlist_length" data-good="0" data-broken=""></output><!--
+					--><input name="clear" type="button" value="CLEAR"><!--
+					--><input name="filter" type="button" value="FILTER"><!--
+					--><input name="fix" type="button" value="BRAKAGES"><!--
+				--></fieldset><!--
+				--><fieldset><!--
+					--><output name="played_length" data-pl="0 TRACKS"></output><!--
+					--><input name="clearPlayed" type="button" value="CLEAR"><!--
+				--></fieldset><!--
+				--><fieldset><!--
+					--><output name="queue_length" data-ql="0 TRACKS"></output><!--
+					--><input class="orange" title="ctrl + q" name="queueEditor" type="button" value="EDIT"><!--
+				--></fieldset><!--
+				--><fieldset><!--
+					--><label>VOLUME<input name="volume" type="range" min="0" step="0.01" max="1" value="0.5"></label><!--
+				--></fieldset><!--
+				--><fieldset name="transport"><!--
+					--><input name="prev" type="button"><!--
+					--><input name="back" type="button"><!--
+					--><input name="paws" type="button"><!--
+					--><input name="stop" type="button"><!--
+					--><input name="play" type="button"><!--
+					--><input name="next" type="button"><!--
+				--></fieldset><!--
+				--><fieldset name="seek_times"><!--
+					--><input name="seek" type="range" min="0" step="0.1" max="0" value="0"><!--
+					--><output class="flight" name="times" data-curt="0" data-dura="0" data-rema="0"></output><!--
+				--></fieldset><!--
+			--></form><!--
+		--></div><!--
+	--></body>
+	<script type="text/javascript" src="kme.js"></script>
+</html>
