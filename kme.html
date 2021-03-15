@@ -49,8 +49,12 @@
 				--><fieldset class="legend"><!--
 					--><legend>TURN OFF-AND-ON-ABLE</legend><!--
 					--><label>SHUFFLE<input name="shuffle" type="checkbox">EXCLUDE PLAYED<input name="skiplayed" type="checkbox"></label><!--
+					--><fieldset class="child legend"><!--
+					--><legend>SHUFFLE BY</legend><!--
+						--><label>TRACKS<input name="shuffle_by" type="radio" value="track"></label><!--
+						--><label>FOLDER<input name="shuffle_by" type="radio" value="folder"></label><!--
+					--></fieldset><!--
 					--><label title="Automatically scroll to show the currently playing track. Turn off and on again to jump">HIGHLIGHT PLAYING<input name="highlight" type="checkbox"></label><!--
-					--><label title="Start playing as soon as there are tracks listed to play">EAGER<input name="eager" type="checkbox"></label><!--
 				--></fieldset><!--
 				--><fieldset class="legend"><!--
 					--><legend>CLICK A TRACK TO</legend><!--
@@ -62,9 +66,10 @@
 				--><fieldset class="legend"><!--
 					--><legend>PLAY UNTIL THE END OF THE</legend><!--
 					--><label>WORLD<input name="continuation" type="radio" value="world"></label><!--
-					--><label>QUEUE<input class="orange" name="continuation" type="radio" value="queue"></label><!-- TODO folder
-					--><label>TRACK<input name="continuation" type="radio" value="track"></label><!--
 					--><label>LIST<input name="continuation" type="radio" value="list"></label><!--
+					--><label>QUEUE<input class="orange" name="continuation" type="radio" value="queue"></label><!--
+					--><label>FOLDER<input name="continuation" type="radio" value="folder"></label><!--
+					--><label>TRACK<input name="continuation" type="radio" value="track"></label><!--
 				--></fieldset><!--
 				--><fieldset><!--
 					--><output name="playlist_length" data-good="0" data-broken=""></output><!--

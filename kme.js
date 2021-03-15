@@ -9,6 +9,8 @@
 
 // TODO player controls popout?
 
+// TODO merge new imports into related folders
+
 // TODO Google Search track context menu option
 
 // TODO playlist_filter and queue_editor should not overlay together
@@ -27,7 +29,7 @@
 	// https://pypi.org/project/pytaglib/
 	// https://en.wikipedia.org/wiki/TagLib
 	// https://developer.mozilla.org/en-US/docs/WebAssembly
-		// shuffle by track or album
+		// shuffle by tag
 		// replaygain
 		// images :(
 
@@ -161,19 +163,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	queueMatch = dragee => queue.findIndex( li => li.dataset.abs_path === dragee.dataset.abs_path ),
 
-	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ),
+	pathsToTracks = paths => paths.map( p => playlist.querySelector( `li[data-abs_path="${p}"]` ) ),
 
-	pathsToTracks = paths => playlist.querySelectorAll( paths.map( p => `li[data-abs_path="${p}"]` ).join( "," ) ),
+	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ),
 
 	clearFilters = () => playlist.querySelectorAll( "li.filtered" ).forEach( l => l.classList.remove( "filtered" ) ),
 
 	decodePaths = lis => arrayFrom( lis ).map( li => li.dataset.abs_path.split( "/" ).filter( ( pp, i ) => i && pp ).map( pp => decodeURIComponent( pp ) ) ),
-
-	initiatePlay = () => {
-		if ( controls.eager.checked ) {
-			TRANSPORT.play();
-		}
-	},
 
 	setTrackSrc = listing => {
 		audio.src = listing.dataset.abs_path;
@@ -240,7 +236,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		let pl = played.length;
 		playlist.querySelectorAll( "li.played" ).forEach( li => li.classList.remove( "played" ) );
 		if ( pl ) {
-			played.forEach( li => li.classList.add( "played" ) )
+			played.forEach( li => li.classList.add( "played" ) );
 		}
 		controls.played_length.dataset.pl = multiTrack( played.length );
 	},
@@ -321,7 +317,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	selectNext = prev => {
-		return new Promise( resolve => { // TODO folder
+		return new Promise( resolve => {
 			if ( !audio.src ) {
 				let listing,
 					pl = played.length;
@@ -340,17 +336,26 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 							}
 						}
 						updateQueuetness();
-					} else {
+					} else if ( controls.continuation.value !== "folder" ) {
 						let list = goodTracks();
 						if ( list.length ) {
 							if ( controls.shuffle.checked ) {
 								if ( controls.skiplayed.checked ) {
-									list = list.filter( li => !li.classList.contains( "played" ) );
+									list = list.filter( li => !~played.indexOf( li ) );
 								}
 								listing = list[ randNum( list.length ) ];
 							} else {
 								let lstndx = list.indexOf( currently_playing_track || notPop( played ) );
 								listing = list[ ~lstndx ? lstndx + ( prev ? -1 : 1 ) : 0 ];
+							}
+						}
+					} else { // TODO continuation folder
+						let list = []; // goodFolders()
+						if ( list.length ) {
+							if ( controls.shuffle.checked ) {
+								
+							} else {
+
 							}
 						}
 					}
@@ -417,7 +422,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						} );
 					}
 					if ( stored ) {
-						initiatePlay();
+						TRANSPORT.play();
 					}
 				}
 				resolve( ( stored || [] ).concat( paths.filter( p => p ) ) );
@@ -649,7 +654,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			updatePlayedness();
 		}
 		audio.removeAttribute( "src" );
-		if ( controls.continuation.value === "queue" && !queue.length && queuend ) { // TODO folder
+		if ( controls.continuation.value === "queue" && !queue.length && queuend ) { // TODO continuation folder
 			cont = queuend = false;
 		} else if ( controls.continuation.value === "track" ) {
 			cont = false;
@@ -736,7 +741,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				slv = `[${sources.libraries.querySelectorAll( "option" )[ sources.libraries.selectedIndex ].textContent}]${slv}`;
 			}
 
-			// TODO eager play isn't
 			// TODO "along this path" should allow e.g. HDD + child/path
 			// TODO since removing files input, possibly simplify
 
@@ -880,9 +884,9 @@ Would you like to store the information as a file to be saved in your audio libr
 				highlight: controls.highlight.checked,
 				volume: controls.volume.valueAsNumber,
 				skiplayed: controls.skiplayed.checked,
+				shuffleby: controls.shuffle_by.value,
 				shuffle: controls.shuffle.checked,
-				clicky: controls.clicky.value,
-				eager: controls.eager.checked
+				clicky: controls.clicky.value
 			}
 		} );
 	},
@@ -893,12 +897,12 @@ Would you like to store the information as a file to be saved in your audio libr
 				continuation: "world",
 				combifilter: false,
 				casensitive: false,
+				shuffleby: "track",
 				highlight: true,
 				skiplayed: true,
 				shuffle: true,
 				clicky: "end",
-				volume: 0.5,
-				eager: true
+				volume: 0.5
 			}, settings || {} );
 			controls.dataset.continuation = controls.continuation.value = sttngs.continuation;
 			playlist_filter.combifilter.checked = sttngs.combifilter;
@@ -906,8 +910,8 @@ Would you like to store the information as a file to be saved in your audio libr
 			audio.volume = controls.volume.value = sttngs.volume;
 			controls.highlight.checked = sttngs.highlight;
 			controls.skiplayed.checked = sttngs.skiplayed;
+			controls.shuffle_by.value = sttngs.shuffleby;
 			controls.shuffle.checked = sttngs.shuffle;
-			controls.eager.checked = sttngs.eager;
 			controls.clicky.value = sttngs.clicky;
 			resolve( true );
 		} );
@@ -949,7 +953,7 @@ chrome.storage.local.get( store => {
 	applySettings( store.settings ).then( t => {
 		pathsToPlaylist( store.paths ).then( t => {
 			applyStoredArrays( store ).then( t => {
-				initiatePlay();
+				TRANSPORT.play();
 			} );
 		} );
 	} );

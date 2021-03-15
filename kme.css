@@ -179,6 +179,10 @@ fieldset:not(:first-child) {
 	margin-top: 1rem;
 }
 
+fieldset.child {
+	margin: .5rem 0 1rem 1rem;
+}
+
 output[name="played_length"]:after {
 	content: attr( data-pl ) "\0000a0PLAYED";
 }
