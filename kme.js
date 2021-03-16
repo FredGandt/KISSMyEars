@@ -39,6 +39,19 @@
 
 "use strict";
 
+function FromPlaylist() {
+	this.get = qs => arrayFrom( playlist.querySelectorAll( qs ) );
+	this.tracks = {
+		all: () => this.get( "ol li" ),
+		played: () => this.get( "ol li.played" ),
+		broken: () => this.get( "ol li.broken" ),
+		good: () => this.get( "ol li:not(.broken)" ),
+		filtered: () => this.get( "ol li.filtered" ),
+		queued: () => this.get( 'span[data-queue]:not([data-queue=""])' )
+	};
+	this.folder = () => this.get( "li[data-path]" );
+};
+
 let currently_playing_track,
 	played_index = 0,
 	queuend = false,
@@ -110,7 +123,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			} );
 		},
 
-		next: prev => {
+		next: prev => { // TODO maintain "[STOPPED]" prefix if nexting from stopped
 			let paused = audio.paused;
 			TRANSPORT.stop( true );
 			pausiblyPlay( paused, prev );
@@ -137,25 +150,21 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	fromPlaylist = new FromPlaylist(),
+
 	notPop = arr => arr.slice( -1 )[ 0 ],
 
 	arrayFrom = lst => Array.from( lst ),
 
 	stringifiedArray = a => JSON.stringify( a ),
 
-	randNum = n => Math.floor( n * Math.random() ),
-
 	allButLast = arr => arrayFrom( arr ).slice( 0, -1 ),
 
 	multiTrack = n => `${n} TRACK${n !== 1 ? "S" : ""}`,
 
-	allTracks = () => arrayFrom( playlist.querySelectorAll( "ol li" ) ),
-
-	brokenTracks = () => arrayFrom( playlist.querySelectorAll( "ol li.broken" ) ),
+	goodTracksLength = () => fromPlaylist.tracks.good().length,
 
 	cleanTitle = () => document.title.replace( /^(?:\[(?:PAUS|STOPP)ED\] )+/, "" ),
-
-	goodTracks = () => arrayFrom( playlist.querySelectorAll( "ol li:not(.broken)" ) ),
 
 	trackTitleDataset = listing => listing.querySelector( "span[data-title]" ).dataset,
 
@@ -165,9 +174,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	pathsToTracks = paths => paths.map( p => playlist.querySelector( `li[data-abs_path="${p}"]` ) ),
 
-	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ),
+	clearFilters = () => fromPlaylist.tracks.filtered().forEach( l => l.classList.remove( "filtered" ) ),
 
-	clearFilters = () => playlist.querySelectorAll( "li.filtered" ).forEach( l => l.classList.remove( "filtered" ) ),
+	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ),
 
 	decodePaths = lis => arrayFrom( lis ).map( li => li.dataset.abs_path.split( "/" ).filter( ( pp, i ) => i && pp ).map( pp => decodeURIComponent( pp ) ) ),
 
@@ -184,6 +193,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	randNum = n => {
+		let u32a = new Uint32Array( 1 );
+		crypto.getRandomValues( u32a );
+		return Math.floor( u32a / 65536 / 65536 * n );
+	},
+
 	shuffleArray = arr => {
 		arr.forEach( ( r, i ) => {
 			r = randNum( i + 1 );
@@ -192,12 +207,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	updatePlaylistLength = () => {
-		let btl = brokenTracks().length;
+		let btl = fromPlaylist.tracks.broken().length;
 		if ( btl ) {
 			controls.playlist_length.dataset.broken = ` + ${btl} BROKEN`;
 			controls.fix.classList.add( "show" ); // TODO fixBrakages
 		}
-		controls.playlist_length.dataset.good = multiTrack( goodTracks().length );
+		controls.playlist_length.dataset.good = multiTrack( goodTracksLength() );
 	},
 
 	setLibraries = libraries => {
@@ -234,7 +249,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	updatePlayedness = () => {
 		let pl = played.length;
-		playlist.querySelectorAll( "li.played" ).forEach( li => li.classList.remove( "played" ) );
+		fromPlaylist.tracks.played().forEach( li => li.classList.remove( "played" ) );
 		if ( pl ) {
 			played.forEach( li => li.classList.add( "played" ) );
 		}
@@ -243,7 +258,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	updateQueuetness = () => {
 		let ql = queue.length;
-		playlist.querySelectorAll( 'span[data-queue]:not([data-queue=""])' ).forEach( xq => xq.dataset.queue = "" );
+		fromPlaylist.tracks.queued().forEach( xq => xq.dataset.queue = "" );
 		if ( ql ) {
 			queue.forEach( ( q, i ) => trackTitleDataset( q ).queue = ( i + 1 === ql ? ( ql === 1 ? "ONLY" : "LAST" ) : ( !i ? "NEXT" : i + 1 ) ) );
 		}
@@ -337,7 +352,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						}
 						updateQueuetness();
 					} else if ( controls.continuation.value !== "folder" ) {
-						let list = goodTracks();
+						let list = fromPlaylist.tracks.good();
 						if ( list.length ) {
 							if ( controls.shuffle.checked ) {
 								if ( controls.skiplayed.checked ) {
@@ -350,10 +365,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 							}
 						}
 					} else { // TODO continuation folder
-						let list = []; // goodFolders()
+						let list = []; // fromPlaylist.folders()
 						if ( list.length ) {
 							if ( controls.shuffle.checked ) {
-								
+
 							} else {
 
 							}
@@ -362,7 +377,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				}
 				if ( listing ) {
 					setTrackSrc( listing );
-				} else if ( controls.continuation.value === "world" && goodTracks().length ) {
+				} else if ( controls.continuation.value === "world" && goodTracksLength() ) {
 					// TODO reset all the things
 					audio.removeAttribute( "src" );
 					displayTrackData();
@@ -386,7 +401,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				if ( paths.length ) {
 					let mtch, abspath, pastpath, prettypath,
 						folder = { "tracks": [], "path": "" },
-						alltrcks = allTracks();
+						alltrcks = fromPlaylist.tracks.all();
 					paths = paths.map( path => {
 						abspath = `file:///${path.path.map( pp => encodeURIComponent( pp ) ).join( "/" )}`;
 						if ( alltrcks.length && alltrcks.some( li => li.dataset.abs_path === abspath ) ) {
@@ -458,7 +473,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		return li;
 	},
 
-	fixBrakages = () => console.warn( "fixBrakages", brokenTracks() ),
+	fixBrakages = () => console.warn( "fixBrakages", fromPlaylist.tracks.broken() ),
 
 	trackError = evt => {
 		let cet = evt.timeStamp;
@@ -516,7 +531,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	playlistFilter = () => {
-		if ( goodTracks().length ) {
+		if ( goodTracksLength() ) {
 			if ( playlist_filter.classList.toggle( "show" ) ) {
 				playlist_filter.querySelector( 'input[name="contains"]' ).focus();
 				playlist.classList.add( "filtered" );
@@ -604,7 +619,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	clearPlaylist = () => {
-		if ( allTracks().length && confirm( "Clear the playlist?" ) ) {
+		if ( fromPlaylist.tracks.all().length && confirm( "Clear the playlist?" ) ) {
 			TRANSPORT.stop( true );
 			playlist.innerHTML = "";
 			setTitle( "KISS My Ears" );
@@ -701,7 +716,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			if ( nme === "done" ) {
 				closePlaylistFilter();
 			} else if ( nme === "toqueue" ) {
-				let fltrd = arrayFrom( playlist.querySelectorAll( "ol li.filtered" ) ),
+				let fltrd = fromPlaylist.tracks.filtered(),
 					shuffle = false;
 				if ( fltrd.length && fltrd.filter( f => trackTitleDataset( f ).queue ).length && confirm( "Exclude tracks already in the queue?" ) ) {
 					fltrd = fltrd.filter( f => !trackTitleDataset( f ).queue );
@@ -710,7 +725,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					if ( confirm( "Shuffle tracks before appending to the queue?" ) ) {
 						shuffleArray( fltrd );
 					} else {
-						shuffle = confirm( "Shuffle the entire resultant queue?" );
+						shuffle = confirm( "Shuffle the entire resultant queue?" ); // TODO if appending to an already populated queue, offer this first
 					}
 				}
 				if ( !fltrd.length ) return;
