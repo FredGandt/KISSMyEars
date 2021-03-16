@@ -1,3 +1,3 @@
 # KISSMyEars
 
-Chrome Extension local audio file player.
+"Keep It Stupid Simple" local audio file player Chrome Extension
