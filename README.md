@@ -1,6 +1,6 @@
 # KISSMyEars
 
-"[Keep It Stupid Simple](https://en.wikipedia.org/wiki/KISS_principle)" local audio file player Chrome extension, **CURRENTLY IN ALPHA DEVELOPMENT** and likely to contain much incomplete code and functionality.
+"[Keep It Stupid Simple](https://en.wikipedia.org/wiki/KISS_principle)" local audio file player Chrome extension, **CURRENTLY IN ALPHA DEVELOPMENT** and likely to contain much incomplete or flat out broken code and functionality.
 
 ## Why?
 Having tried many local music players, I have frequently been confused, frustrated and disappointed. Entire forums have been dedicated to assisting users of these players in operating them. I just want to play my music archive in *all the most reasonably expected ways*; press "go" and music happens :)
