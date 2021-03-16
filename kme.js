@@ -33,7 +33,7 @@
 		// replaygain
 		// images :(
 
-// TODO skip silent sections in tracks i.e. leading to hidden tracks.
+// TODO skip silent sections in tracks e.g. leading to hidden tracks.
 // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
 // https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode
 
@@ -49,7 +49,7 @@ function FromPlaylist() {
 		filtered: () => this.get( "ol li.filtered" ),
 		queued: () => this.get( 'span[data-queue]:not([data-queue=""])' )
 	};
-	this.folder = () => this.get( "li[data-path]" );
+	this.folders = () => this.get( "li[data-path]" );
 };
 
 let currently_playing_track,
@@ -204,6 +204,14 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			r = randNum( i + 1 );
 			[ arr[ i ], arr[ r ] ] = [ arr[ r ], arr[ i ] ];
 		} );
+	},
+
+	sortPlaylist = () => {
+		fromPlaylist.folders().sort( ( a, b ) => {
+    	let ap = a.dataset.path,
+      	bp = b.dataset.path;
+    	return ( ap > bp ? 1 : ( ap < bp ? -1 : 0 ) );
+		} ).forEach( li => playlist.append( li ) );
 	},
 
 	updatePlaylistLength = () => {
@@ -427,6 +435,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						return path;
 					} );
 					collectionToHTML( folder );
+					sortPlaylist();
 					requestAnimationFrame( updatePlaylistLength );
 					if ( !playlist_filter.querySelector( 'input[type="text"]' ) ) { // TODO derive from tags
 						let tmplt = document.querySelector( "template" ), guts;
