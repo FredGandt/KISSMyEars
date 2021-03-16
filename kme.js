@@ -394,7 +394,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						let list = fromPlaylist.folders();
 						if ( list.length ) {
 							if ( controls.shuffle.checked ) {
-
+								
 							} else {
 
 							}

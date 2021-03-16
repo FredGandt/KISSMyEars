@@ -326,8 +326,10 @@ input[type="range"] {
 }
 
 fieldset[name="transport"] {
+	width: calc( 23vw - 2rem );
 	text-align: center;
-	width: 100%;
+	position: fixed;
+	bottom: 3.2rem;
 }
 
 fieldset[name="transport"] input {

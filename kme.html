@@ -42,7 +42,7 @@
 		--><div class="section secleft"><ul id="playlist"></ul></div><div class="section secright"><!--
 			--><form id="sources"><!--
 				--><select name="libraries"><option value="" selected>add new library</option></select><!--
-				--><input name="path" type="text" placeholder="along this path"><!--
+				--><input name="path" type="text" placeholder="[name]/along/this/path"><!--
 				--><input name="include" type="file" webkitdirectory><!--
 			--></form><!--
 			--><form id="controls"><!--
@@ -51,13 +51,13 @@
 					--><label>SHUFFLE<input name="shuffle" type="checkbox">EXCLUDE PLAYED<input name="skiplayed" type="checkbox"></label><!--
 					--><fieldset class="child legend"><!--
 					--><legend>SHUFFLE BY</legend><!--
-						--><label>TRACKS<input name="shuffle_by" type="radio" value="track"></label><!--
+						--><label>TRACK<input name="shuffle_by" type="radio" value="track"></label><!--
 						--><label>FOLDER<input name="shuffle_by" type="radio" value="folder"></label><!--
 					--></fieldset><!--
 					--><label title="Automatically scroll to show the currently playing track. Turn off and on again to jump">HIGHLIGHT PLAYING<input name="highlight" type="checkbox"></label><!--
 				--></fieldset><!--
 				--><fieldset class="legend"><!--
-					--><legend>CLICK A TRACK TO</legend><!--
+				--><legend>CLICK A TRACK OR FOLDER TO</legend><!--
 					--><label title="+ ctrl">PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
 					--><label title="+ ctrl + alt">ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end"></label><!--
 					--><label title="+ ctrl + meta">ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
