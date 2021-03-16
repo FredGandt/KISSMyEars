@@ -10,8 +10,8 @@ Having tried many local music players, I have frequently been confused, frustrat
  * I have my music archive ripped and stored on my PC in directories
  * I would like to play those files in specific or shuffled orders
  * I don't want my music player to search the internet for related information, alter my files or perform any *clever* action on my behalf
- * I don't need my music player to utilise deep learning AI to examine my mood and make selections it deems suitable
  * I don't want my music player to have so many optional extra features that it requires an online wiki or forum to comprehend
+ * I don't need my music player to utilise deep learning AI to examine my mood and make selections it deems suitable
 
 With this premise in mind, I am working to build a Chrome web browser extension that provides **only** the features I **need** and presents them in a one stop control panel.
 
