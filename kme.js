@@ -46,9 +46,9 @@ function FromPlaylist() {
 		played: () => this.get( "ol li.played" ),
 		broken: () => this.get( "ol li.broken" ),
 		good: () => this.get( "ol li:not(.broken)" ),
-		filtered: () => this.get( "ol li.filtered" ),
 		queued: () => this.get( 'span[data-queue]:not([data-queue=""])' )
 	};
+	this.filtered = () => this.get( "li.filtered" );
 	this.folders = () => this.get( "li[data-path]" );
 };
 
@@ -170,11 +170,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	equalStringifiedArrays = ( a1, a2 ) => stringifiedArray( a1 ) === stringifiedArray( a2 ),
 
+	clearFilters = () => fromPlaylist.filtered().forEach( l => l.classList.remove( "filtered" ) ),
+
 	queueMatch = dragee => queue.findIndex( li => li.dataset.abs_path === dragee.dataset.abs_path ),
 
 	pathsToTracks = paths => paths.map( p => playlist.querySelector( `li[data-abs_path="${p}"]` ) ),
-
-	clearFilters = () => fromPlaylist.tracks.filtered().forEach( l => l.classList.remove( "filtered" ) ),
 
 	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ),
 
@@ -298,6 +298,24 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		URL.revokeObjectURL( ourl );
 	},
 
+	applyStoredArrays = store => {
+		return new Promise( resolve => {
+			if ( store ) {
+				let p = store.played,
+					q = store.queue;
+				if ( p && p.length ) {
+					played = played.concat( pathsToTracks( p ) );
+					updatePlayedness();
+				}
+				if ( q && q.length ) {
+					queue = queue.concat( pathsToTracks( q ) );
+					updateQueuetness();
+				}
+			}
+			resolve( true );
+		} );
+	},
+
 	displayTrackData = listing => {
 		if ( currently_playing_track ) {
 			currently_playing_track.classList.remove( "playing" );
@@ -373,7 +391,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 							}
 						}
 					} else { // TODO continuation folder
-						let list = []; // fromPlaylist.folders()
+						let list = fromPlaylist.folders();
 						if ( list.length ) {
 							if ( controls.shuffle.checked ) {
 
@@ -563,24 +581,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		queue_editor_list.innerHTML = "";
 	},
 
-	applyStoredArrays = store => {
-		return new Promise( resolve => {
-			if ( store ) {
-				let p = store.played,
-					q = store.queue;
-				if ( p && p.length ) {
-					played = played.concat( pathsToTracks( p ) );
-					updatePlayedness();
-				}
-				if ( q && q.length ) {
-					queue = queue.concat( pathsToTracks( q ) );
-					updateQueuetness();
-				}
-			}
-			resolve( true );
-		} );
-	},
-
 	inputControls = evt => {
 		// console.log( "inputControls", evt );
 		let trg = evt.target,
@@ -714,6 +714,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					li.querySelectorAll( `li${fresh}` ).forEach( li => li.classList.add( "filtered" ) );
 				}
 			} );
+		} else {
+			clearFilters();
 		}
 	},
 
@@ -725,7 +727,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			if ( nme === "done" ) {
 				closePlaylistFilter();
 			} else if ( nme === "toqueue" ) {
-				let fltrd = fromPlaylist.tracks.filtered(),
+				let fltrd = fromPlaylist.filtered(),
 					shuffle = false;
 				if ( fltrd.length && fltrd.filter( f => trackTitleDataset( f ).queue ).length && confirm( "Exclude tracks already in the queue?" ) ) {
 					fltrd = fltrd.filter( f => !trackTitleDataset( f ).queue );
@@ -966,7 +968,6 @@ playlist_filter.addEventListener( "click", clickPlaylistFilter, { passive: true 
 queue_editor.addEventListener( "click", clickQueueEditor, { passive: true } );
 queue_editor.addEventListener( "dragstart", dragStart, { passive: true } );
 queue_editor.addEventListener( "dragend", dragEnd, { passive: true } );
-
 queue_editor.querySelectorAll( ".dropzone" ).forEach( dz => {
 	dz.addEventListener( "dragover", dragOver );
 	dz.addEventListener( "drop", drop );
