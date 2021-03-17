@@ -196,7 +196,7 @@ output[name="times"]:before {
 }
 
 output[name="playlist_length"]:before {
-	content: attr( data-good ) "\0000a0IN\0000a0PLAYLIST";
+	content: attr( data-notbroken ) "\0000a0IN\0000a0PLAYLIST";
 }
 
 output[name="playlist_length"]:after {
@@ -437,4 +437,9 @@ fieldset.orange input[type="button"],
 input[type="button"].orange {
 	background-color: var( --orange );
 	color: var( --darkest-grey );
+}
+
+#controls.hide_shuffle_by fieldset.shuffle_by,
+#controls.hide_cont_folder label.cont_folder {
+	display: none;
 }

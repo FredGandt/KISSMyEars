@@ -46,14 +46,15 @@
 				--><input name="include" type="file" webkitdirectory><!--
 			--></form><!--
 			--><form id="controls"><!--
-				--><fieldset class="legend"><!--
+			--><fieldset class="legend"><!--
 					--><legend>TURN OFF-AND-ON-ABLE</legend><!--
-					--><label>SHUFFLE<input name="shuffle" type="checkbox">EXCLUDE PLAYED<input name="skiplayed" type="checkbox"></label><!--
-					--><fieldset class="child legend"><!--
+					--><label>SHUFFLE<input name="shuffle" type="checkbox"></label><!--
+					--><fieldset class="child legend shuffle_by"><!--
 					--><legend>SHUFFLE BY</legend><!--
 						--><label>TRACK<input name="shuffle_by" type="radio" value="track"></label><!--
 						--><label>FOLDER<input name="shuffle_by" type="radio" value="folder"></label><!--
 					--></fieldset><!--
+					--><label>EXCLUDE PLAYED<input name="skiplayed" type="checkbox"></label><!--
 					--><label title="Automatically scroll to show the currently playing track. Turn off and on again to jump">HIGHLIGHT PLAYING<input name="highlight" type="checkbox"></label><!--
 				--></fieldset><!--
 				--><fieldset class="legend"><!--
@@ -68,11 +69,11 @@
 					--><label>WORLD<input name="continuation" type="radio" value="world"></label><!--
 					--><label>LIST<input name="continuation" type="radio" value="list"></label><!--
 					--><label>QUEUE<input class="orange" name="continuation" type="radio" value="queue"></label><!--
-					--><label>FOLDER<input name="continuation" type="radio" value="folder"></label><!--
+					--><label class="cont_folder">FOLDER<input name="continuation" type="radio" value="folder"></label><!--
 					--><label>TRACK<input name="continuation" type="radio" value="track"></label><!--
 				--></fieldset><!--
 				--><fieldset><!--
-					--><output name="playlist_length" data-good="0" data-broken=""></output><!--
+				--><output name="playlist_length" data-notbroken="0" data-broken=""></output><!--
 					--><input name="clear" type="button" value="CLEAR"><!--
 					--><input name="filter" type="button" value="FILTER"><!--
 					--><input name="fix" type="button" value="BRAKAGES"><!--

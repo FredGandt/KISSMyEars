@@ -45,7 +45,8 @@ function FromPlaylist() {
 		all: () => this.get( "ol li" ),
 		played: () => this.get( "ol li.played" ),
 		broken: () => this.get( "ol li.broken" ),
-		good: () => this.get( "ol li:not(.broken)" ),
+		notPlayed: () => this.get( "ol li:not(.played)" ),
+		notBroken: () => this.get( "ol li:not(.broken)" ),
 		queued: () => this.get( 'span[data-queue]:not([data-queue=""])' )
 	};
 	this.filtered = () => this.get( "li.filtered" );
@@ -162,7 +163,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	multiTrack = n => `${n} TRACK${n !== 1 ? "S" : ""}`,
 
-	goodTracksLength = () => fromPlaylist.tracks.good().length,
+	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
 
 	cleanTitle = () => document.title.replace( /^(?:\[(?:PAUS|STOPP)ED\] )+/, "" ),
 
@@ -220,7 +221,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			controls.playlist_length.dataset.broken = ` + ${btl} BROKEN`;
 			controls.fix.classList.add( "show" ); // TODO fixBrakages
 		}
-		controls.playlist_length.dataset.good = multiTrack( goodTracksLength() );
+		controls.playlist_length.dataset.notbroken = multiTrack( numberOfNotBrokenTracks() );
 	},
 
 	setLibraries = libraries => {
@@ -261,7 +262,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		if ( pl ) {
 			played.forEach( li => li.classList.add( "played" ) );
 		}
-		controls.played_length.dataset.pl = multiTrack( played.length );
+		controls.played_length.dataset.pl = multiTrack( pl );
 	},
 
 	updateQueuetness = () => {
@@ -332,6 +333,23 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	toggleOptionVisibility = () => {
+		if ( controls.shuffle.checked ) {
+			controls.classList.remove( "hide_shuffle_by" );
+			if ( controls.shuffle_by.value === "folder" ) {
+				controls.classList.remove( "hide_cont_folder" );
+			} else {
+				controls.classList.add( "hide_cont_folder" );
+				if ( controls.continuation.value === "folder" ) {
+					controls.continuation.value = controls.dataset.continuation;
+				}
+			}
+		} else {
+			controls.classList.add( "hide_shuffle_by" );
+			controls.classList.remove( "hide_cont_folder" );
+		}
+	},
+
 	collectionToHTML = folder => { // TODO use tags to determine fields to create
 		if ( folder && folder.tracks && folder.tracks.length ) {
 			let ol = document.createElement( "ol" ),
@@ -368,6 +386,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					played_index = 0;
 					if ( queue.length ) {
 						listing = queue.shift();
+
+						// TODO if stop at the end of track lands here and the player is refreshed, the queue starts agin at its next entry
+							// was_queued = listing? to be cleared only when the track is ended or skipped
+							// a kind of honorary queue track
+
 						queuend = !queue.length;
 						if ( queue_editor.classList.contains( "show" ) ) {
 							if ( queuend ) {
@@ -378,11 +401,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						}
 						updateQueuetness();
 					} else if ( controls.continuation.value !== "folder" ) {
-						let list = fromPlaylist.tracks.good();
+						let list = fromPlaylist.tracks.notBroken();
 						if ( list.length ) {
 							if ( controls.shuffle.checked ) {
 								if ( controls.skiplayed.checked ) {
-									list = list.filter( li => !~played.indexOf( li ) );
+									// list = list.filter( li => !~played.indexOf( li ) );
+									list = fromPlaylist.tracks.notPlayed();
 								}
 								listing = list[ randNum( list.length ) ];
 							} else {
@@ -390,11 +414,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 								listing = list[ ~lstndx ? lstndx + ( prev ? -1 : 1 ) : 0 ];
 							}
 						}
-					} else { // TODO continuation folder
+					} else {
 						let list = fromPlaylist.folders();
 						if ( list.length ) {
-							if ( controls.shuffle.checked ) {
-								
+							if ( controls.shuffle.checked ) { // TODO controls.skiplayed ?
+
 							} else {
 
 							}
@@ -403,7 +427,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				}
 				if ( listing ) {
 					setTrackSrc( listing );
-				} else if ( controls.continuation.value === "world" && goodTracksLength() ) {
+				} else if ( controls.continuation.value === "world" && numberOfNotBrokenTracks() ) {
 					// TODO reset all the things
 					audio.removeAttribute( "src" );
 					displayTrackData();
@@ -558,7 +582,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	playlistFilter = () => {
-		if ( goodTracksLength() ) {
+		if ( numberOfNotBrokenTracks() ) {
 			if ( playlist_filter.classList.toggle( "show" ) ) {
 				playlist_filter.querySelector( 'input[name="contains"]' ).focus();
 				playlist.classList.add( "filtered" );
@@ -593,14 +617,17 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			} else {
 				audio.currentTime = vlu;
 			}
-		} else if ( typ === "checkbox" ) {
-			if ( nme === "highlight" ) {
-				showPlaying();
+		} else {
+			if ( typ === "checkbox" ) {
+				if ( nme === "highlight" ) {
+					showPlaying();
+				}
+			} else if ( typ === "radio" ) {
+				if ( nme === "continuation" && ( vlu === "world" || vlu === "list" ) ) {
+					controls.dataset.continuation = vlu;
+				}
 			}
-		} else if ( typ === "radio" ) {
-			if ( nme === "continuation" && ( vlu === "world" || vlu === "list" ) ) {
-				controls.dataset.continuation = vlu;
-			}
+			toggleOptionVisibility();
 		}
 	},
 
@@ -728,9 +755,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				closePlaylistFilter();
 			} else if ( nme === "toqueue" ) {
 				let fltrd = fromPlaylist.filtered(),
+					lessqueued = fltrd.filter( f => !trackTitleDataset( f ).queue ),
 					shuffle = false;
-				if ( fltrd.length && fltrd.filter( f => trackTitleDataset( f ).queue ).length && confirm( "Exclude tracks already in the queue?" ) ) {
-					fltrd = fltrd.filter( f => !trackTitleDataset( f ).queue );
+				if ( fltrd.length > lessqueued.length && confirm( "Exclude tracks already in the queue?" ) ) {
+					fltrd = lessqueued;
 				}
 				if ( fltrd.length > 1 && controls.shuffle.checked ) { // TODO skiplayed?
 					if ( confirm( "Shuffle tracks before appending to the queue?" ) ) {
@@ -939,6 +967,7 @@ Would you like to store the information as a file to be saved in your audio libr
 			controls.shuffle_by.value = sttngs.shuffleby;
 			controls.shuffle.checked = sttngs.shuffle;
 			controls.clicky.value = sttngs.clicky;
+			toggleOptionVisibility();
 			resolve( true );
 		} );
 	};
