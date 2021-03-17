@@ -674,18 +674,19 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	keyDown = evt => {
 		// console.log( "keyDown", evt );
-		if ( evt.target === document.body ) {
-			let k = evt.key;
-			if ( evt.ctrlKey ) {
-				if ( k === "f" ) {
-					evt.preventDefault();
-					playlistFilter();
-				} else if ( k === "q" ) {
-					CONTROLS.queueEditor();
-				}
-			} else if ( k === " " ) {
-				TRANSPORT.paws();
-			} else if ( k === "PageUp" ) {
+		let trg = evt.target,
+			k = evt.key;
+		if ( evt.ctrlKey ) {
+			if ( k === "f" ) {
+				evt.preventDefault();
+				playlistFilter();
+			} else if ( k === "q" ) {
+				CONTROLS.queueEditor();
+			}
+		} else if ( k === " " ) {
+			TRANSPORT.paws();
+		} else if ( trg === document.body ) {
+			if ( k === "PageUp" ) {
 				playpen.scrollBy( 0, -playpen.offsetHeight );
 			} else if ( k === "ArrowUp" ) {
 				playpen.scrollBy( 0, -20 );
