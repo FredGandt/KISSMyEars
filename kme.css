@@ -76,11 +76,11 @@ div.section {
 }
 
 div.secleft {
-	width: calc( 77vw - 2rem );
+	width: calc( 80vw - 2rem );
 }
 
 div.secright {
-	width: calc( 23vw - 2rem );
+	width: calc( 20vw - 2rem );
 }
 
 form.overlay {
@@ -116,12 +116,12 @@ h1 {
 
 #queue_editor {
 	height: calc( 100vh - 5.3rem );
-	width: calc( 77vw - 2rem );
+	width: calc( 80vw - 2rem );
 	overflow: auto;
 }
 
 #queue_editor > fieldset {
-	width: calc( 77vw - 3rem );
+	width: calc( 80vw - 3rem );
 	background-color: inherit;
 	position: fixed;
 	padding: 1rem;
@@ -162,6 +162,10 @@ fieldset {
 	border: 0;
 }
 
+legend {
+	color: var( --turq );
+}
+
 fieldset.legend {
 	border: 1px solid var( --dark-turq );
 	border-radius: .2rem;
@@ -180,7 +184,9 @@ fieldset:not(:first-child) {
 }
 
 fieldset.child {
-	margin: .5rem 0 1rem 1rem;
+	border-radius: 0 0 .2rem .2rem;
+  margin: .25rem 0 .5rem 0;
+  border-top: 0;
 }
 
 output[name="played_length"]:after {
@@ -294,6 +300,11 @@ fieldset[name="seek_times"] {
 	left: 0;
 }
 
+input[name="path"],
+select {
+	width: -webkit-fill-available;
+}
+
 input[name="seek"] {
 	width: calc( 100% - 23ch );
 }
@@ -326,8 +337,6 @@ input[type="range"] {
 }
 
 fieldset[name="transport"] {
-	width: calc( 23vw - 2rem );
-	text-align: center;
 	position: fixed;
 	bottom: 3.2rem;
 }
@@ -367,8 +376,7 @@ input.orange.split:checked {
 
 output:not([name="playlist_length"]) + input,
 input + input:not([type="file"]),
-input[name="volume"],
-select + input {
+input[name="volume"] {
 	margin-left: .5rem;
 }
 
@@ -385,6 +393,7 @@ input[type="text"] {
 
 select {
 	padding-bottom: .2rem;
+	margin-bottom: .5rem;
 }
 
 input[type="button"],
