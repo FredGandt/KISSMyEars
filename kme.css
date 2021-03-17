@@ -93,6 +93,11 @@ form.overlay.show {
 	z-index: 1;
 }
 
+form.overlay.drop {
+	box-shadow: 0 0 2rem 0rem black;
+	border-radius: .5rem;
+}
+
 div.dropzone {
 	border: var( --dark-turq-border );
 	display: inline-block;
@@ -140,7 +145,6 @@ h1 {
 }
 
 #playlist_filter {
-	box-shadow: 0 0 2rem 0rem black;
 	right: 2rem;
 	top: 2rem;
 }

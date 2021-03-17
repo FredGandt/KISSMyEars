@@ -64,6 +64,7 @@ let currently_playing_track,
 
 const playlist_filter = document.getElementById( "playlist_filter" ),
 	queue_editor = document.getElementById( "queue_editor" ),
+	web_search = document.getElementById( "web_search" ),
 	playlist = document.getElementById( "playlist" ),
 	controls = document.getElementById( "controls" ),
 	sources = document.getElementById( "sources" ),
@@ -163,6 +164,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	multiTrack = n => `${n} TRACK${n !== 1 ? "S" : ""}`,
 
+	folderOfTrack = li => li.parentElement.parentElement,
+
+	isBtn = trg => trg && trg.type && trg.type === "button",
+
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
 
 	cleanTitle = () => document.title.replace( /^(?:\[(?:PAUS|STOPP)ED\] )+/, "" ),
@@ -213,6 +218,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
       	bp = b.dataset.path;
     	return ( ap > bp ? 1 : ( ap < bp ? -1 : 0 ) );
 		} ).forEach( li => playlist.append( li ) );
+		showPlaying();
 	},
 
 	updatePlaylistLength = () => {
@@ -224,7 +230,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		controls.playlist_length.dataset.notbroken = multiTrack( numberOfNotBrokenTracks() );
 	},
 
-	setLibraries = libraries => {
+	setLibraries = libraries => { // TODO edit libraries
 		if ( libraries ) {
 			sources.libraries.innerHTML = `<option value="" selected>add new library</option>` +
 				libraries.map( ( l, i ) => `<option value="${l.path}" title="${l.path}">${l.name ? l.name : "Library " + (i + 1)}</option>` ).join( "" );
@@ -500,7 +506,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	dragEnd = () => dragee.classList.remove( "dragee" ),
 
+	fixBrakages = () => console.warn( "fixBrakages", fromPlaylist.tracks.broken() ),
+
 	dragStart = evt => {
+		// console.log( "dragStart", evt );
 		evt.dataTransfer.effectAllowed = "move";
 		dragee = evt.target;
 	},
@@ -523,8 +532,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 		return li;
 	},
-
-	fixBrakages = () => console.warn( "fixBrakages", fromPlaylist.tracks.broken() ),
 
 	trackError = evt => {
 		let cet = evt.timeStamp;
@@ -561,7 +568,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	clickControls = evt => {
 		// console.log( "clickControls", evt );
 		let trg = evt.target;
-		if ( trg.type === "button" ) {
+		if ( isBtn( trg ) ) {
 			let fnc = trg.name;
 			if ( CONTROLS.hasOwnProperty( fnc ) ) {
 				CONTROLS[ fnc ]();
@@ -572,10 +579,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	clickTransport = evt => {
 		// console.log( "clickTransport", evt );
 		let trg = evt.target;
-		evt.stopPropagation();
-		if ( trg.type === "button" ) {
+		if ( isBtn( trg ) ) {
 			let fnc = trg.name;
 			if ( TRANSPORT.hasOwnProperty( fnc ) ) {
+				evt.stopPropagation();
 				TRANSPORT[ fnc ]();
 			}
 		}
@@ -605,29 +612,44 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		queue_editor_list.innerHTML = "";
 	},
 
+	contextMenu = evt => { // TODO tie to keyDown PageUp/PageDown/ArrowUp/ArrowDown navigation
+		// console.log( "contextMenu", evt );
+		let trg = liFromEvtPath( evt );
+		if ( trg ) {
+			evt.preventDefault();
+			let query = ( trg.folder ? trg.folder.dataset.path : `${folderOfTrack(trg).dataset.path} | ${trg.dataset.title}` );
+			if ( query && confirm( `Google Web Search:
+"${query}"` ) ) {
+				chrome.tabs.create( { "url": `https://www.google.com/search?q=${query}`, "active": true } );
+			}
+		}
+	},
+
 	inputControls = evt => {
 		// console.log( "inputControls", evt );
 		let trg = evt.target,
 			vlu = trg.value,
 			typ = trg.type,
 			nme = trg.name;
-		if ( typ === "range" ) {
-			if ( nme === "volume" ) {
-				audio.volume = trg.valueAsNumber;
+		if ( typ ) {
+			if ( typ === "range" ) {
+				if ( nme === "volume" ) {
+					audio.volume = trg.valueAsNumber;
+				} else {
+					audio.currentTime = vlu;
+				}
 			} else {
-				audio.currentTime = vlu;
-			}
-		} else {
-			if ( typ === "checkbox" ) {
-				if ( nme === "highlight" ) {
-					showPlaying();
+				if ( typ === "checkbox" ) {
+					if ( nme === "highlight" ) {
+						showPlaying();
+					}
+				} else if ( typ === "radio" ) {
+					if ( nme === "continuation" && ( vlu === "world" || vlu === "list" ) ) {
+						controls.dataset.continuation = vlu;
+					}
 				}
-			} else if ( typ === "radio" ) {
-				if ( nme === "continuation" && ( vlu === "world" || vlu === "list" ) ) {
-					controls.dataset.continuation = vlu;
-				}
+				toggleOptionVisibility();
 			}
-			toggleOptionVisibility();
 		}
 	},
 
@@ -737,7 +759,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			playlist.querySelectorAll( fltr ).forEach( li => {
 				li.classList.add( "filtered" );
 				if ( li.dataset.title ) {
-					li.parentElement.parentElement.classList.add( "filtered" );
+					folderOfTrack(li).parentElement.parentElement.classList.add( "filtered" );
 				} else {
 					li.querySelectorAll( `li${fresh}` ).forEach( li => li.classList.add( "filtered" ) );
 				}
@@ -750,7 +772,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	clickPlaylistFilter = evt => {
 		// console.log( "clickPlaylistFilter", evt );
 		let trg = evt.target;
-		if ( trg.type === "button" ) {
+		if ( isBtn( trg ) ) {
 			let nme = trg.name;
 			if ( nme === "done" ) {
 				closePlaylistFilter();
@@ -990,6 +1012,7 @@ controls.addEventListener( "click", clickControls, { passive: true } );
 controls.clear.addEventListener( "click", clearPlaylist, { passive: true } );
 controls.transport.addEventListener( "click", clickTransport, { passive: true } );
 
+playlist.addEventListener( "contextmenu", contextMenu );
 playlist.addEventListener( "click", clickPlaylist, { passive: true } );
 
 playlist_filter.addEventListener( "input", applyPlaylistFilter, { passive: true } );
