@@ -727,9 +727,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			} else if ( k === "q" ) {
 				CONTROLS.queueEditor();
 			}
-		} else if ( k === " " ) {
-			TRANSPORT.paws();
-		} else if ( trg === document.body ) {
+		} else if ( trg === document.body ) { // TODO this is bad
 			if ( k === "PageUp" ) {
 				playpen.scrollBy( 0, -playpen.offsetHeight );
 			} else if ( k === "ArrowUp" ) {
@@ -738,6 +736,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				playpen.scrollBy( 0, playpen.offsetHeight );
 			} else if ( k === "ArrowDown" ) {
 				playpen.scrollBy( 0, 20 );
+			} else if ( k === " " ) {
+				TRANSPORT.paws();
 			}
 		}
 	},
