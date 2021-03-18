@@ -68,6 +68,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	playlist = document.getElementById( "playlist" ),
 	controls = document.getElementById( "controls" ),
 	sources = document.getElementById( "sources" ),
+	seek = document.getElementById( "seek" ),
 
 	queue_editor_trash = queue_editor.querySelector( "div" ),
 	queue_editor_list = queue_editor.querySelector( "ol" ),
@@ -160,13 +161,19 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	stringifiedArray = a => JSON.stringify( a ),
 
+	untilEndOf = cont => controls.endof.value === cont,
+
 	allButLast = arr => arrayFrom( arr ).slice( 0, -1 ),
 
 	multiTrack = n => `${n} TRACK${n !== 1 ? "S" : ""}`,
 
 	folderOfTrack = li => li.parentElement.parentElement,
 
+	isShuffleBy = sb => controls.shuffle_by.value === sb,
+
 	isBtn = trg => trg && trg.type && trg.type === "button",
+
+	defaultEndOf = () => controls.endof.value = controls.dataset.endof,
 
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
 
@@ -342,12 +349,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	toggleOptionVisibility = () => {
 		if ( controls.shuffle.checked ) {
 			controls.classList.remove( "hide_shuffle_by" );
-			if ( controls.shuffle_by.value === "folder" ) {
+			if ( isShuffleBy( "folder" ) ) {
 				controls.classList.remove( "hide_cont_folder" );
 			} else {
 				controls.classList.add( "hide_cont_folder" );
-				if ( controls.continuation.value === "folder" ) {
-					controls.continuation.value = controls.dataset.continuation;
+				if ( untilEndOf( "folder" ) ) {
+					defaultEndOf();
 				}
 			}
 		} else {
@@ -393,9 +400,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					if ( queue.length ) {
 						listing = queue.shift();
 
-						// TODO if stop at the end of track lands here and the player is refreshed, the queue starts agin at its next entry
-							// was_queued = listing? to be cleared only when the track is ended or skipped
-							// a kind of honorary queue track
+						// TODO if stop at the end of track lands here and the player is refreshed, the queue starts again at its next entry
+							// a) was_queued = listing? a kind of honorary queue track to be cleared only when the track is ended or skipped
+							// b) don't shift the queue here, but do it at track end? sounds complicated
 
 						queuend = !queue.length;
 						if ( queue_editor.classList.contains( "show" ) ) {
@@ -406,12 +413,33 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 							}
 						}
 						updateQueuetness();
-					} else if ( controls.continuation.value !== "folder" ) {
+					}
+
+					// shuffle by track
+						// skipping played tracks
+						// or
+						// replaying played tracks
+					// or
+					// shuffle by folder
+						// skipping played folders
+						// or
+						// replaying played folders
+					// or
+					// not shuffle
+
+					// shuffle by folder equates to not shuffling between track 0 and -1 of a folder
+
+					// what is an unplayed folder?
+						// a folder that hasn't been played?
+							// requires memory; set class?
+						// a folder with all unplayed tracks?
+						// a folder with some unplayed tracks?
+
+					else {
 						let list = fromPlaylist.tracks.notBroken();
 						if ( list.length ) {
 							if ( controls.shuffle.checked ) {
 								if ( controls.skiplayed.checked ) {
-									// list = list.filter( li => !~played.indexOf( li ) );
 									list = fromPlaylist.tracks.notPlayed();
 								}
 								listing = list[ randNum( list.length ) ];
@@ -420,20 +448,16 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 								listing = list[ ~lstndx ? lstndx + ( prev ? -1 : 1 ) : 0 ];
 							}
 						}
-					} else {
-						let list = fromPlaylist.folders();
-						if ( list.length ) {
-							if ( controls.shuffle.checked ) { // TODO controls.skiplayed ?
-
-							} else {
-
-							}
-						}
 					}
+
+					// list = fromPlaylist.folders();
+					// if ( untilEndOf( "folder" ) )
+					// if ( isShuffleBy( "folder" ) )
+
 				}
 				if ( listing ) {
 					setTrackSrc( listing );
-				} else if ( controls.continuation.value === "world" && numberOfNotBrokenTracks() ) {
+				} else if ( untilEndOf( "world" ) && numberOfNotBrokenTracks() ) {
 					// TODO reset all the things
 					audio.removeAttribute( "src" );
 					displayTrackData();
@@ -506,6 +530,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	dragEnd = () => dragee.classList.remove( "dragee" ),
 
+	seekTrack = evt => audio.currentTime = evt.target.value,
+
 	fixBrakages = () => console.warn( "fixBrakages", fromPlaylist.tracks.broken() ),
 
 	dragStart = evt => {
@@ -516,12 +542,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	setTrackDuration = () => {
 		let dura = audio.duration;
-		controls.times.dataset.dura = secondsToStr( controls.seek.max = Math.ceil( dura ) );
+		controls.times.dataset.dura = secondsToStr( seek.control.max = Math.ceil( dura ) );
 	},
 
 	trackTimeUpdate = () => {
 		let curt = audio.currentTime;
-		controls.times.dataset.curt = secondsToStr( controls.seek.value = curt );
+		controls.times.dataset.curt = secondsToStr( seek.control.value = curt );
 		controls.times.dataset.rema = secondsToStr( ( audio.duration - curt ) || 0 );
 	},
 
@@ -633,19 +659,15 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			nme = trg.name;
 		if ( typ ) {
 			if ( typ === "range" ) {
-				if ( nme === "volume" ) {
-					audio.volume = trg.valueAsNumber;
-				} else {
-					audio.currentTime = vlu;
-				}
+				audio.volume = trg.valueAsNumber;
 			} else {
 				if ( typ === "checkbox" ) {
 					if ( nme === "highlight" ) {
 						showPlaying();
 					}
 				} else if ( typ === "radio" ) {
-					if ( nme === "continuation" && ( vlu === "world" || vlu === "list" ) ) {
-						controls.dataset.continuation = vlu;
+					if ( nme === "endof" && ( vlu === "world" || vlu === "list" ) ) {
+						controls.dataset.endof = vlu;
 					}
 				}
 				toggleOptionVisibility();
@@ -728,9 +750,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			updatePlayedness();
 		}
 		audio.removeAttribute( "src" );
-		if ( controls.continuation.value === "queue" && !queue.length && queuend ) { // TODO continuation folder
+		if ( untilEndOf( "queue" ) && !queue.length && queuend ) { // TODO endof folder
 			cont = queuend = false;
-		} else if ( controls.continuation.value === "track" ) {
+		} else if ( untilEndOf( "track" ) ) {
 			cont = false;
 		}
 		if ( cont ) {
@@ -738,7 +760,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		} else {
 			selectNext().then( t => {
 				setTitle( "[STOPPED]", true );
-				controls.continuation.value = controls.dataset.continuation;
+				defaultEndOf();
 			} );
 		}
 	},
@@ -957,12 +979,12 @@ Would you like to store the information as a file to be saved in your audio libr
 			"settings": {
 				combifilter: playlist_filter.combifilter.checked,
 				casensitive: playlist_filter.casensitive.checked,
-				continuation: controls.dataset.continuation,
 				highlight: controls.highlight.checked,
 				volume: controls.volume.valueAsNumber,
 				skiplayed: controls.skiplayed.checked,
 				shuffleby: controls.shuffle_by.value,
 				shuffle: controls.shuffle.checked,
+				endof: controls.dataset.endof,
 				clicky: controls.clicky.value
 			}
 		} );
@@ -971,17 +993,17 @@ Would you like to store the information as a file to be saved in your audio libr
 	applySettings = settings => {
 		return new Promise( resolve => {
 			let sttngs = Object.assign( {
-				continuation: "world",
 				combifilter: false,
 				casensitive: false,
 				shuffleby: "track",
 				highlight: true,
 				skiplayed: true,
+				endof: "world",
 				shuffle: true,
 				clicky: "end",
 				volume: 0.5
 			}, settings || {} );
-			controls.dataset.continuation = controls.continuation.value = sttngs.continuation;
+			controls.dataset.endof = controls.endof.value = sttngs.endof;
 			playlist_filter.combifilter.checked = sttngs.combifilter;
 			playlist_filter.casensitive.checked = sttngs.casensitive;
 			audio.volume = controls.volume.value = sttngs.volume;
@@ -1011,6 +1033,8 @@ controls.addEventListener( "input", inputControls, { passive: true } );
 controls.addEventListener( "click", clickControls, { passive: true } );
 controls.clear.addEventListener( "click", clearPlaylist, { passive: true } );
 controls.transport.addEventListener( "click", clickTransport, { passive: true } );
+
+seek.addEventListener( "input", seekTrack, { passive: true } );
 
 playlist.addEventListener( "contextmenu", contextMenu );
 playlist.addEventListener( "click", clickPlaylist, { passive: true } );

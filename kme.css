@@ -69,18 +69,39 @@ body {
 }
 
 div.section {
-	height: calc( 100vh - 5.3rem );
 	display: inline-block;
+	vertical-align: top;
 	overflow: auto;
 	padding: 1rem;
 }
 
 div.secleft {
+	height: calc( 100vh - 5.3rem );
 	width: calc( 80vw - 2rem );
 }
 
 div.secright {
 	width: calc( 20vw - 2rem );
+	height: 100vh;
+}
+
+#seek {
+	width: calc( 80vw - 2rem );
+	position: absolute;
+	padding: 1rem;
+	margin: 0;
+	bottom: 0;
+	left: 0;
+}
+
+#seek input {
+	width: 100%;
+}
+
+fieldset[name="transport"],
+output[name="times"] {
+    width: calc( 20vw - 2rem );
+    text-align: center;
 }
 
 form.overlay {
@@ -295,22 +316,9 @@ input[type="radio"] {
 	border-radius: 50%;
 }
 
-fieldset[name="seek_times"] {
-	width: calc( 100vw - 2rem );
-	position: absolute;
-	padding: 1rem;
-	margin: 0;
-	bottom: 0;
-	left: 0;
-}
-
 input[name="path"],
 select {
 	width: -webkit-fill-available;
-}
-
-input[name="seek"] {
-	width: calc( 100% - 23ch );
 }
 
 input[type="file"] {
@@ -341,8 +349,8 @@ input[type="range"] {
 }
 
 fieldset[name="transport"] {
-	position: fixed;
-	bottom: 3.2rem;
+	position: absolute;
+	bottom: 1rem;
 }
 
 fieldset[name="transport"] input {
@@ -453,6 +461,14 @@ input[type="button"].orange {
 }
 
 #controls.hide_shuffle_by fieldset.shuffle_by,
-#controls.hide_cont_folder label.cont_folder {
+#controls.hide_cont_folder span.skip_folders,
+#controls.hide_cont_folder label.cont_folder,
+#controls.hide_shuffle_by span.skip_folders,
+#controls span.skip_tracks {
 	display: none;
+}
+
+#controls.hide_cont_folder span.skip_tracks,
+#controls.hide_shuffle_by span.skip_tracks {
+	display: inline;
 }
