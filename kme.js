@@ -45,6 +45,7 @@ function FromPlaylist() {
 		all: () => this.get( "ol li" ),
 		played: () => this.get( "ol li.played" ),
 		broken: () => this.get( "ol li.broken" ),
+		filtered: () => this.get( "ol li.filtered" ),
 		notPlayed: () => this.get( "ol li:not(.played)" ),
 		notBroken: () => this.get( "ol li:not(.broken)" ),
 		queued: () => this.get( 'span[data-queue]:not([data-queue=""])' )
@@ -137,7 +138,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		queueEditor: () => {
 			if ( !queue_editor.classList.contains( "show" ) ) {
 				if ( queue.length ) {
-					cloneNodeArrayTo( queue, queue_editor_list, true );
+					let clone;
+					queue.forEach( q => {
+						clone = q.cloneNode( true );
+						clone.draggable = true;
+						queue_editor_list.append( clone );
+					} );
 					queue_editor.classList.add( "show" );
 				}
 			} else {
@@ -256,17 +262,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		playlist_filter.reset();
 		clearFilters();
 		showPlaying();
-	},
-
-	cloneNodeArrayTo = ( arr, to, md ) => {
-		let clone;
-		arr.forEach( n => {
-			clone = n.cloneNode( true );
-			if ( md ) {
-				clone.draggable = true;
-			}
-			to.append( clone );
-		} );
 	},
 
 	updatePlayedness = () => {
@@ -781,7 +776,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			playlist.querySelectorAll( fltr ).forEach( li => {
 				li.classList.add( "filtered" );
 				if ( li.dataset.title ) {
-					folderOfTrack(li).parentElement.parentElement.classList.add( "filtered" );
+					folderOfTrack( li ).parentElement.parentElement.classList.add( "filtered" );
 				} else {
 					li.querySelectorAll( `li${fresh}` ).forEach( li => li.classList.add( "filtered" ) );
 				}
@@ -799,13 +794,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			if ( nme === "done" ) {
 				closePlaylistFilter();
 			} else if ( nme === "toqueue" ) {
-				let fltrd = fromPlaylist.filtered(),
+				let fltrd = fromPlaylist.tracks.filtered(),
 					lessqueued = fltrd.filter( f => !trackTitleDataset( f ).queue ),
 					shuffle = false;
 				if ( fltrd.length > lessqueued.length && confirm( "Exclude tracks already in the queue?" ) ) {
 					fltrd = lessqueued;
 				}
-				if ( fltrd.length > 1 && controls.shuffle.checked ) { // TODO skiplayed?
+				if ( fltrd.length > 1 /* && controls.shuffle.checked */ ) { // TODO skiplayed?
 					if ( confirm( "Shuffle tracks before appending to the queue?" ) ) {
 						shuffleArray( fltrd );
 					} else {
