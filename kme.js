@@ -422,13 +422,15 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 										let tof = tracksOfFolder( currently_playing_folder ),
 											lstndx = tof.indexOf( currently_playing_track || notPop( played ) );
 										if ( ~lstndx ) {
-											listing = tof[ lstndx + 1 ]; // TODO prev handling // TODO also previous/next folder
+											listing = tof[ lstndx + 1 ];
+											// TODO prev handling
+											// TODO also previous/next folder
 											if ( lstndx === tof.length - 2 ) {
 												currently_playing_folder.classList.add( "played" );
 												currently_playing_folder = null;
 											}
 										}
-									} else {
+									} else { // TODO if engaging shuffle by folder while half way through a folder, dont't jump out of it
 										if ( controls.skiplayed.checked ) {
 											list = fromPlaylist.folders.notPlayed();
 										} else {
@@ -772,7 +774,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			playlist.querySelectorAll( fltr ).forEach( li => {
 				li.classList.add( "filtered" );
 				if ( li.dataset.title ) {
-					folderOfTrack( li ).parentElement.parentElement.classList.add( "filtered" );
+					folderOfTrack( li ).classList.add( "filtered" );
 				} else {
 					li.querySelectorAll( `li${fresh}` ).forEach( li => li.classList.add( "filtered" ) );
 				}
