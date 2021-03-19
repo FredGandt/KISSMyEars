@@ -227,7 +227,7 @@ output[name="times"]:before {
 }
 
 output[name="playlist_length"]:before {
-	content: attr( data-notbroken ) "\0000a0IN\0000a0PLAYLIST";
+	content: attr( data-tracks ) "\0000a0IN\0000a0" attr( data-folders );
 }
 
 output[name="playlist_length"]:after {
@@ -395,7 +395,7 @@ input[name="volume"] {
 input[type="button"],
 input[type="text"],
 select {
-	padding: .2rem .4rem .1rem;
+	padding: .2rem .4rem .2rem;
 }
 
 input[type="text"] {
@@ -444,13 +444,8 @@ select {
 #playlist li.playing:not(.broken) {
 	background-color: var( --dark-turq ) !important;
 	color: var( --darkest-grey ) !important;
-}
-
-#playlist ol li span[data-queue]:not([data-queue=""]):before {
-	content: attr( data-queue );
-	border-radius: .2rem;
-	margin-right: .5rem;
-	padding: 0 .5rem;
+	padding-top: 0.4rem;
+	font-size: 150%;
 }
 
 #playlist ol li span[data-queue]:not([data-queue=""]):before,
@@ -458,6 +453,14 @@ fieldset.orange input[type="button"],
 input[type="button"].orange {
 	background-color: var( --orange );
 	color: var( --darkest-grey );
+	padding-bottom: .1rem;
+}
+
+#playlist ol li span[data-queue]:not([data-queue=""]):before {
+	content: attr( data-queue );
+	border-radius: .2rem;
+	margin-right: .5rem;
+	padding: 0 .5rem;
 }
 
 #controls.hide_shuffle_by fieldset.shuffle_by,

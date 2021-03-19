@@ -50,16 +50,19 @@ function FromPlaylist() {
 		notBroken: () => this.get( "ol li:not(.broken)" ),
 		queued: () => this.get( 'span[data-queue]:not([data-queue=""])' )
 	};
+	this.folders = {
+		all: () => this.get( "li[data-path]" ),
+		notPlayed: () => this.get( "li[data-path]:not(.played)" )
+	};
 	this.filtered = () => this.get( "li.filtered" );
-	this.folders = () => this.get( "li[data-path]" );
 };
 
-let currently_playing_track,
+let currently_playing_folder,
+	currently_playing_track,
 	played_index = 0,
 	queuend = false,
 	played = [],
 	queue = [],
-	error_time,
 	dragee,
 	dropee;
 
@@ -151,7 +154,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			}
 		},
 
-		clearPlayed: () => {
+		clearPlayedTracks: () => {
 			if ( played.length && confirm( "Clear the play history?" ) ) {
 				played = [];
 				updatePlayedness();
@@ -171,17 +174,19 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	allButLast = arr => arrayFrom( arr ).slice( 0, -1 ),
 
-	multiTrack = n => `${n} TRACK${n !== 1 ? "S" : ""}`,
+	isShuffleBy = sb => controls.shuffle_by.value === sb,
 
 	folderOfTrack = li => li.parentElement.parentElement,
-
-	isShuffleBy = sb => controls.shuffle_by.value === sb,
 
 	isBtn = trg => trg && trg.type && trg.type === "button",
 
 	defaultEndOf = () => controls.endof.value = controls.dataset.endof,
 
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
+
+	tracksOfFolder = folder => arrayFrom( folder.querySelectorAll( "li" ) ),
+
+	multiTrack = ( n, tof ) => `${n} ${tof ? tof : "TRACK"}${n !== 1 ? "S" : ""}`,
 
 	cleanTitle = () => document.title.replace( /^(?:\[(?:PAUS|STOPP)ED\] )+/, "" ),
 
@@ -226,39 +231,39 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	sortPlaylist = () => {
-		fromPlaylist.folders().sort( ( a, b ) => {
-    	let ap = a.dataset.path,
-      	bp = b.dataset.path;
-    	return ( ap > bp ? 1 : ( ap < bp ? -1 : 0 ) );
+		fromPlaylist.folders.all().sort( ( a, b ) => {
+			let ap = a.dataset.path,
+				bp = b.dataset.path;
+			return ( ap > bp ? 1 : ( ap < bp ? -1 : 0 ) );
 		} ).forEach( li => playlist.append( li ) );
 		showPlaying();
 	},
 
 	updatePlaylistLength = () => {
 		let btl = fromPlaylist.tracks.broken().length;
-		if ( btl ) {
-			controls.playlist_length.dataset.broken = ` + ${btl} BROKEN`;
-			controls.fix.classList.add( "show" ); // TODO fixBrakages
-		}
-		controls.playlist_length.dataset.notbroken = multiTrack( numberOfNotBrokenTracks() );
+		controls.playlist_length.dataset.folders = multiTrack( fromPlaylist.folders.all().length, "FOLDER" );
+		controls.playlist_length.dataset.tracks = multiTrack( numberOfNotBrokenTracks() );
+		controls.playlist_length.dataset.broken = ( btl ? ` + ${btl} BROKEN` : "" );
+		controls.fix.classList.toggle( "show", btl ); // TODO fixBreakages
 	},
 
 	setLibraries = libraries => { // TODO edit libraries
 		if ( libraries ) {
 			sources.libraries.innerHTML = `<option value="" selected>add new library</option>` +
-				libraries.map( ( l, i ) => `<option value="${l.path}" title="${l.path}">${l.name ? l.name : "Library " + (i + 1)}</option>` ).join( "" );
+				libraries.map( ( l, i ) => `<option value="${l.path}" title="${l.path}">${l.name ? l.name : "Library " + ( i + 1 )}</option>` ).join( "" );
 		}
 	},
 
 	showPlaying = () => {
 		if ( currently_playing_track && controls.highlight.checked ) {
-			playpen.scrollTo( 0, ( currently_playing_track.offsetTop - ( playpen.offsetHeight / 2 ) ) - playpen.offsetTop );
+			playpen.scrollTo( 0, ( currently_playing_track.offsetTop - ( playpen.offsetHeight * 0.5 ) ) - playpen.offsetTop );
 		}
 	},
 
 	closePlaylistFilter = () => {
 		playlist_filter.classList.remove( "show" );
 		playlist.classList.remove( "filtered" );
+		document.activeElement.blur();
 		playlist_filter.reset();
 		clearFilters();
 		showPlaying();
@@ -328,16 +333,16 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	displayTrackData = listing => {
 		if ( currently_playing_track ) {
 			currently_playing_track.classList.remove( "playing" );
-			currently_playing_track = null;
 		}
 		if ( listing ) {
-			setTitle( listing.dataset.title );
 			listing.classList.add( "playing" );
+			setTitle( listing.dataset.title );
 			currently_playing_track = listing;
 			showPlaying();
 		} else {
+			currently_playing_track = null;
 			setTitle( "KISS My Ears" );
-			CONTROLS.clearPlayed();
+			CONTROLS.clearPlayedTracks();
 		}
 	},
 
@@ -408,47 +413,41 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 							}
 						}
 						updateQueuetness();
-					}
-
-					// shuffle by track
-						// skipping played tracks
-						// or
-						// replaying played tracks
-					// or
-					// shuffle by folder
-						// skipping played folders
-						// or
-						// replaying played folders
-					// or
-					// not shuffle
-
-					// shuffle by folder equates to not shuffling between track 0 and -1 of a folder
-
-					// what is an unplayed folder?
-						// a folder that hasn't been played?
-							// requires memory; set class?
-						// a folder with all unplayed tracks?
-						// a folder with some unplayed tracks?
-
-					else {
+					} else {
 						let list = fromPlaylist.tracks.notBroken();
 						if ( list.length ) {
 							if ( controls.shuffle.checked ) {
-								if ( controls.skiplayed.checked ) {
-									list = fromPlaylist.tracks.notPlayed();
+								if ( isShuffleBy( "folder" ) ) {
+									if ( currently_playing_folder ) {
+										let tof = tracksOfFolder( currently_playing_folder ),
+											lstndx = tof.indexOf( currently_playing_track || notPop( played ) );
+										if ( ~lstndx ) {
+											listing = tof[ lstndx + 1 ]; // TODO prev handling // TODO also previous/next folder
+											if ( lstndx === tof.length - 2 ) {
+												currently_playing_folder.classList.add( "played" );
+												currently_playing_folder = null;
+											}
+										}
+									} else {
+										if ( controls.skiplayed.checked ) {
+											list = fromPlaylist.folders.notPlayed();
+										} else {
+											list = fromPlaylist.folders.all();
+										}
+										listing = tracksOfFolder( currently_playing_folder = list[ randNum( list.length ) ] )[ 0 ];
+									}
+								} else {
+									if ( controls.skiplayed.checked ) {
+										list = fromPlaylist.tracks.notPlayed();
+									}
+									listing = list[ randNum( list.length ) ];
 								}
-								listing = list[ randNum( list.length ) ];
 							} else {
 								let lstndx = list.indexOf( currently_playing_track || notPop( played ) );
 								listing = list[ ~lstndx ? lstndx + ( prev ? -1 : 1 ) : 0 ];
 							}
 						}
 					}
-
-					// list = fromPlaylist.folders();
-					// if ( untilEndOf( "folder" ) )
-					// if ( isShuffleBy( "folder" ) )
-
 				}
 				if ( listing ) {
 					setTrackSrc( listing );
@@ -527,7 +526,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	seekTrack = evt => audio.currentTime = evt.target.value,
 
-	fixBrakages = () => console.warn( "fixBrakages", fromPlaylist.tracks.broken() ),
+	fixBreakages = () => console.warn( "fixBreakages", fromPlaylist.tracks.broken() ),
 
 	dragStart = evt => {
 		// console.log( "dragStart", evt );
@@ -535,38 +534,17 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		dragee = evt.target;
 	},
 
-	setTrackDuration = () => {
-		let dura = audio.duration;
-		controls.times.dataset.dura = secondsToStr( seek.control.max = Math.ceil( dura ) );
-	},
-
-	trackTimeUpdate = () => {
-		let curt = audio.currentTime;
-		controls.times.dataset.curt = secondsToStr( seek.control.value = curt );
-		controls.times.dataset.rema = secondsToStr( ( audio.duration - curt ) || 0 );
-	},
-
-	liFromEvtPath = evt => {
-		let li = evt.composedPath().find( e => e.tagName && e.tagName.toLowerCase() === "li" );
-		if ( li.dataset.path ) {
-			return { "folder": li, "tracks": arrayFrom( li.querySelectorAll( "li" ) ) };
-		}
-		return li;
-	},
-
 	trackError = evt => {
-		let cet = evt.timeStamp;
-		if ( !error_time || ( cet - error_time ) > 1000 ) {
-			console.error( "trackError", currently_playing_track, evt );
+		// console.error( "trackError", evt, currently_playing_track );
+		currently_playing_track.classList.add( "broken" );
+		updatePlaylistLength();
+		TRANSPORT.next();
 
-			currently_playing_track.classList.add( "broken" );
-			updatePlaylistLength();
-			TRANSPORT.next();
-
-			// TODO offer to remove or do it automatically and give notice?
-				// fixBrakages
-
-		}
+		// TODO mark folders as broken if all their tracks are?
+		// TODO offer to remove or do it automatically and give notice?
+			// fixBreakages
+		// TODO clean up GUI "breakages" button and counter after broken tracks are removed
+			// updatePlaylistLength
 	},
 
 	dragOver = evt => {
@@ -584,6 +562,25 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		dropee = liFromEvtPath( evt );
 		dragee.classList.add( "dragee" );
 		evt.dataTransfer.dropEffect = "move";
+	},
+
+	setTrackDuration = () => {
+		let dura = audio.duration;
+		controls.times.dataset.dura = secondsToStr( seek.control.max = Math.ceil( dura ) );
+	},
+
+	trackTimeUpdate = () => {
+		let curt = audio.currentTime;
+		controls.times.dataset.curt = secondsToStr( seek.control.value = curt );
+		controls.times.dataset.rema = secondsToStr( ( audio.duration - curt ) || 0 );
+	},
+
+	liFromEvtPath = evt => {
+		let li = evt.composedPath().find( e => e.tagName && e.tagName.toLowerCase() === "li" );
+		if ( li.dataset.path ) {
+			return { "folder": li, "tracks": tracksOfFolder( li ) };
+		}
+		return li;
 	},
 
 	clickControls = evt => {
@@ -638,7 +635,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		let trg = liFromEvtPath( evt );
 		if ( trg ) {
 			evt.preventDefault();
-			let query = ( trg.folder ? trg.folder.dataset.path : `${folderOfTrack(trg).dataset.path} | ${trg.dataset.title}` );
+			let query = ( trg.folder ? trg.folder.dataset.path : `${folderOfTrack( trg ).dataset.path} | ${trg.dataset.title}` );
 			if ( query && confirm( `Google Web Search:
 "${query}"` ) ) {
 				chrome.tabs.create( { "url": `https://www.google.com/search?q=${query}`, "active": true } );
@@ -713,8 +710,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	keyDown = evt => {
 		// console.log( "keyDown", evt );
-		let trg = evt.target,
-			k = evt.key;
+		let k = evt.key;
 		if ( evt.ctrlKey ) {
 			if ( k === "f" ) {
 				evt.preventDefault();
@@ -722,7 +718,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			} else if ( k === "q" ) {
 				CONTROLS.queueEditor();
 			}
-		} else if ( trg === document.body ) { // TODO this is bad
+		} else if ( document.activeElement === document.body ) { // TODO
 			if ( k === "PageUp" ) {
 				playpen.scrollBy( 0, -playpen.offsetHeight );
 			} else if ( k === "ArrowUp" ) {
@@ -745,9 +741,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			updatePlayedness();
 		}
 		audio.removeAttribute( "src" );
-		if ( untilEndOf( "queue" ) && !queue.length && queuend ) { // TODO endof folder
+		if ( untilEndOf( "queue" ) && !queue.length && queuend ) {
 			cont = queuend = false;
-		} else if ( untilEndOf( "track" ) ) {
+		} else if ( untilEndOf( "track" ) || ( untilEndOf( "folder" ) && ( !controls.shuffle.checked || !currently_playing_folder ) ) ) {
 			cont = false;
 		}
 		if ( cont ) {
@@ -908,8 +904,8 @@ Would you like to store the information as a file to be saved in your audio libr
 					queue.splice( qp, 1 );
 				}
 			}
-
-			// TODO if a queued track has been delisted, make sure the further options are clearly indicated as not required
+			// TODO if ( controls.shuffle etc ) offer to shuffle before adding folders to the queue?
+			// TODO if ( a queued track has been delisted ) make sure the further options are clearly indicated as not required
 
 			if ( cv === "delist" ) {
 				if ( confirm( `Remove this ${tia ? "folder" : "track"} from the playlist?` ) ) {
@@ -969,6 +965,7 @@ Would you like to store the information as a file to be saved in your audio libr
 
 	storeSettings = evt => {
 		chrome.storage.local.set( {
+			// TODO played folders
 			"played": played.map( li => li.dataset.abs_path ), // TODO check if there's enough space; if not?
 			"queue": queue.map( li => li.dataset.abs_path ),
 			"settings": {
@@ -1022,7 +1019,7 @@ audio.addEventListener( "loadedmetadata", setTrackDuration, { passive: true } );
 
 sources.addEventListener( "change", importFiles, { passive: true } );
 
-controls.fix.addEventListener( "click", fixBrakages );
+controls.fix.addEventListener( "click", fixBreakages );
 controls.filter.addEventListener( "click", playlistFilter );
 controls.addEventListener( "input", inputControls, { passive: true } );
 controls.addEventListener( "click", clickControls, { passive: true } );
