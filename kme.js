@@ -10,8 +10,7 @@
 // TODO player controls popout?
 
 // TODO merge new imports into related folders
-
-// TODO Google Search track context menu option
+	// fixBreakages()
 
 // TODO playlist_filter and queue_editor should not overlay together
 
@@ -59,6 +58,7 @@ function FromPlaylist() {
 
 let currently_playing_folder,
 	currently_playing_track,
+	playlist_fragment,
 	played_index = 0,
 	queuend = false,
 	played = [],
@@ -68,7 +68,6 @@ let currently_playing_folder,
 
 const playlist_filter = document.getElementById( "playlist_filter" ),
 	queue_editor = document.getElementById( "queue_editor" ),
-	web_search = document.getElementById( "web_search" ),
 	playlist = document.getElementById( "playlist" ),
 	controls = document.getElementById( "controls" ),
 	sources = document.getElementById( "sources" ),
@@ -130,7 +129,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			} );
 		},
 
-		next: prev => { // TODO maintain "[STOPPED]" prefix if nexting from stopped
+		next: prev => { // TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
 			let paused = audio.paused;
 			TRANSPORT.stop( true );
 			pausiblyPlay( paused, prev );
@@ -168,11 +167,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	arrayFrom = lst => Array.from( lst ),
 
-	stringifiedArray = a => JSON.stringify( a ),
-
 	untilEndOf = cont => controls.endof.value === cont,
-
-	allButLast = arr => arrayFrom( arr ).slice( 0, -1 ),
 
 	isShuffleBy = sb => controls.shuffle_by.value === sb,
 
@@ -181,6 +176,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	isBtn = trg => trg && trg.type && trg.type === "button",
 
 	defaultEndOf = () => controls.endof.value = controls.dataset.endof,
+
+	identicalPathArrays = ( a1, a2 ) => a1.join( "" ) === a2.join( "" ),
 
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
 
@@ -191,8 +188,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	cleanTitle = () => document.title.replace( /^(?:\[(?:PAUS|STOPP)ED\] )+/, "" ),
 
 	trackTitleDataset = listing => listing.querySelector( "span[data-title]" ).dataset,
-
-	equalStringifiedArrays = ( a1, a2 ) => stringifiedArray( a1 ) === stringifiedArray( a2 ),
 
 	clearFilters = () => fromPlaylist.filtered().forEach( l => l.classList.remove( "filtered" ) ),
 
@@ -207,6 +202,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	setTrackSrc = listing => {
 		audio.src = listing.dataset.abs_path;
 		displayTrackData( listing );
+	},
+
+	toggleLibraryVisibility = tog => {
+		sources.new_lib.classList.toggle( "hide", tog );
+		sources.name.value = sources.path.value = "";
 	},
 
 	pausiblyPlay = ( paused, prev ) => {
@@ -230,15 +230,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		} );
 	},
 
-	sortPlaylist = () => {
-		fromPlaylist.folders.all().sort( ( a, b ) => {
-			let ap = a.dataset.path,
-				bp = b.dataset.path;
-			return ( ap > bp ? 1 : ( ap < bp ? -1 : 0 ) );
-		} ).forEach( li => playlist.append( li ) );
-		showPlaying();
-	},
-
 	updatePlaylistLength = () => {
 		let btl = fromPlaylist.tracks.broken().length;
 		controls.playlist_length.dataset.folders = multiTrack( fromPlaylist.folders.all().length, "FOLDER" );
@@ -247,10 +238,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		controls.fix.classList.toggle( "show", btl ); // TODO fixBreakages
 	},
 
-	setLibraries = libraries => { // TODO edit libraries
-		if ( libraries ) {
+	setLibraries = libs => { // TODO edit libraries
+		if ( libs ) {
 			sources.libraries.innerHTML = `<option value="" selected>add new library</option>` +
-				libraries.map( ( l, i ) => `<option value="${l.path}" title="${l.path}">${l.name ? l.name : "Library " + ( i + 1 )}</option>` ).join( "" );
+				libs.map( ( l, i ) => `<option value="${l.path}" title="${l.path}">${l.name}</option>` ).join( "" );
 		}
 	},
 
@@ -300,8 +291,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		].filter( a => a ).join( ":" );
 	},
 
-	giveFile = ( name, text ) => {
-		const blob = new Blob( [ text ], { type: "text/plain" } ),
+	giveFile = ( name, cntnt ) => {
+		const blob = new Blob( [ cntnt ], { type: "text/plain" } ),
 			ourl = URL.createObjectURL( blob ),
 			a = document.createElement( "a" );
 		a.href = ourl;
@@ -363,12 +354,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	collectionToHTML = folder => { // TODO use tags to determine fields to create
+	collectionToHTML = ( folder, end ) => { // TODO use tags to determine fields to create
 		if ( folder && folder.tracks && folder.tracks.length ) {
 			let ol = document.createElement( "ol" ),
 				oli = document.createElement( "li" ),
 				li, spn;
-			oli.dataset.path = folder.path; // for applyPlaylistFilter
+			oli.dataset.path = folder.path;
+			// TODO filter out duplicates (side effect of allowing the loading of unstored tracks)
 			folder.tracks.sort( ( a, b ) => a.num - b.num ).forEach( track => {
 				li = document.createElement( "li" );
 				li.dataset.abs_path = track.abspath;
@@ -384,8 +376,58 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				ol.append( li );
 			} );
 			oli.append( ol );
-			playlist.append( oli );
+			playlist_fragment.append( oli );
+			if ( end ) {
+				playlist.append( playlist_fragment );
+				updatePlaylistLength();
+				fromPlaylist.folders.all().sort( ( a, b ) => {
+					let ap = a.dataset.path,
+						bp = b.dataset.path;
+					return ( ap > bp ? 1 : ( ap < bp ? -1 : 0 ) );
+				} ).forEach( li => playlist.append( li ) );
+				showPlaying();
+			}
 		}
+	},
+
+	pathsToPlaylist = ( paths, stored ) => {
+		stored = stored || [];
+		return new Promise( resolve => {
+			if ( paths && paths.length ) {
+				let folder = { "tracks": [], "path": "" },
+					mtch, pastpath;
+				playlist_fragment = document.createDocumentFragment();
+				resolve( stored.concat( paths.filter( path => {
+					if ( stored.some( sp => sp.a === path.a ) ) return false;
+					if ( pastpath !== path.d ) {
+						pastpath = path.d;
+						collectionToHTML( folder );
+						folder = { "tracks": [], "path": "" };
+					}
+					folder.path = path.d;
+					if ( mtch = path.f.match( /^([0-9]+)?[ \-]*(.+)\.([a-z0-9]+)$/ ) ) {
+						folder.tracks.push( {
+							"abspath": `file:///${path.a}`,
+							"title": mtch[ 2 ],
+							"type": mtch[ 3 ],
+							"num": mtch[ 1 ]
+						} );
+						return true;
+					}
+					console.warn( "Unprocessable file name format: ", path );
+					return false;
+				} ) ) );
+				collectionToHTML( folder, true );
+				if ( !playlist_filter.querySelector( 'input[type="text"]' ) ) { // TODO derive from tags
+					let tmplt = document.querySelector( "template" ), guts;
+					[ "path", "title" ].forEach( col => {
+						guts = tmplt.content.firstElementChild.cloneNode( true );
+						guts.firstElementChild.textContent = col.toUpperCase();
+						playlist_filter.append( guts );
+					} );
+				}
+			}
+		} );
 	},
 
 	selectNext = prev => {
@@ -464,64 +506,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		} );
 	},
 
-	pathsToPlaylist = ( paths, stored ) => {
-		return new Promise( resolve => {
-			if ( paths ) {
-				if ( stored && stored.length ) {
-					let spp, ppp;
-					paths = paths.filter( pp => {
-						ppp = pp.path;
-						return !stored.some( sp => notPop( ppp ) === notPop( spp = sp.path ) && equalStringifiedArrays( spp, ppp ) );
-					} );
-				}
-				if ( paths.length ) {
-					let mtch, abspath, pastpath, prettypath,
-						folder = { "tracks": [], "path": "" },
-						alltrcks = fromPlaylist.tracks.all();
-					paths = paths.map( path => {
-						abspath = `file:///${path.path.map( pp => encodeURIComponent( pp ) ).join( "/" )}`;
-						if ( alltrcks.length && alltrcks.some( li => li.dataset.abs_path === abspath ) ) {
-							return null;
-						}
-						prettypath = allButLast( path.path ).slice( path.sp ).join( " | " );
-						if ( pastpath !== prettypath ) {
-							pastpath = prettypath;
-							collectionToHTML( folder );
-							folder = { "tracks": [], "path": "" };
-						}
-						folder.path = prettypath;
-						if ( mtch = notPop( path.path ).match( /^([0-9]+)?[ \-]*(.+)\.([a-z0-9]+)$/ ) ) {
-							folder.tracks.push( {
-								"abspath": abspath,
-								"title": mtch[ 2 ],
-								"type": mtch[ 3 ],
-								"num": mtch[ 1 ]
-							} );
-						} else {
-							console.warn( "Unprocessable file name format: ", path );
-						}
-						return path;
-					} );
-					collectionToHTML( folder );
-					sortPlaylist();
-					requestAnimationFrame( updatePlaylistLength );
-					if ( !playlist_filter.querySelector( 'input[type="text"]' ) ) { // TODO derive from tags
-						let tmplt = document.querySelector( "template" ), guts;
-						[ "path", "title" ].forEach( col => {
-							guts = tmplt.content.firstElementChild.cloneNode( true );
-							guts.firstElementChild.textContent = col.toUpperCase();
-							playlist_filter.append( guts );
-						} );
-					}
-					if ( stored ) {
-						TRANSPORT.play();
-					}
-				}
-				resolve( ( stored || [] ).concat( paths.filter( p => p ) ) );
-			}
-		} );
-	},
-
 	/* event functions */
 
 	dragEnd = () => dragee.classList.remove( "dragee" ),
@@ -529,6 +513,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	seekTrack = evt => audio.currentTime = evt.target.value,
 
 	fixBreakages = () => console.warn( "fixBreakages", fromPlaylist.tracks.broken() ),
+
+	setTrackDuration = () => controls.times.dataset.dura = secondsToStr( seek.control.max = Math.ceil( audio.duration ) ),
 
 	dragStart = evt => {
 		// console.log( "dragStart", evt );
@@ -564,11 +550,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		dropee = liFromEvtPath( evt );
 		dragee.classList.add( "dragee" );
 		evt.dataTransfer.dropEffect = "move";
-	},
-
-	setTrackDuration = () => {
-		let dura = audio.duration;
-		controls.times.dataset.dura = secondsToStr( seek.control.max = Math.ceil( dura ) );
 	},
 
 	trackTimeUpdate = () => {
@@ -648,13 +629,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	inputControls = evt => {
 		// console.log( "inputControls", evt );
 		let trg = evt.target,
-			vlu = trg.value,
-			typ = trg.type,
-			nme = trg.name;
+			typ = trg.type;
 		if ( typ ) {
+			let vlu = trg.value;
 			if ( typ === "range" ) {
 				audio.volume = trg.valueAsNumber;
 			} else {
+				let nme = trg.name;
 				if ( typ === "checkbox" ) {
 					if ( nme === "highlight" ) {
 						showPlaying();
@@ -679,13 +660,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				queue.splice( queueMatch( dragee ), 1 );
 				dragee.remove();
 			} else {
-				let movie = queue.splice( queueMatch( dragee ), 1 )[ 0 ];
+				let movee = queue.splice( queueMatch( dragee ), 1 )[ 0 ];
 				if ( trg === queue_editor_list ) {
 					queue_editor_list.append( dragee );
-					queue.push( movie );
+					queue.push( movee );
 				} else {
 					queue_editor_list.insertBefore( dragee, dropee );
-					queue.splice( queueMatch( dropee ), 0, movie );
+					queue.splice( queueMatch( dropee ), 0, movee );
 				}
 			}
 			updateQueuetness();
@@ -825,55 +806,65 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	importFiles = evt => {
 		// console.log( "importFiles", evt );
-		let trg = evt.target;
-		if ( trg.name === "include" ) {
-			let ln, sp, wrp, paths,
-				slv = sources.libraries.value;
+		let trg = evt.target,
+			slv = sources.libraries.value;
+		if ( trg === sources.libraries ) {
+			toggleLibraryVisibility( slv );
+		} else if ( trg === sources.include ) {
+			let libnme, paths, sp, cp;
 			if ( slv ) {
-				slv = `[${sources.libraries.querySelectorAll( "option" )[ sources.libraries.selectedIndex ].textContent}]${slv}`;
+				libnme = sources.libraries.querySelectorAll( "option" )[ sources.libraries.selectedIndex ].textContent;
+			} else {
+				libnme = sources.name.value;
+				slv = sources.path.value;
 			}
-
-			// TODO "along this path" should allow e.g. HDD + child/path
-			// TODO since removing files input, possibly simplify
-
-			sp = ( slv || sources.path.value ).replace( /^\[([a-z0-9 ]+)\]/gi, ( m, g1 ) => { ln = g1; return ""; } ).split( "/" ).filter( f => f );
-			paths = arrayFrom( trg.files ).filter( file => /^audio\//.test( file.type ) ).map( file => {
-				wrp = file.webkitRelativePath;
-				return {
-					"path": sp.concat( wrp ? allButLast( wrp.split( "/" ) ) : [] ).concat( [ file.name ] ),
-					"sp": sp.length
-				};
-			} );
-			if ( paths.length ) {
-				chrome.storage.local.get( async store => {
-					paths = await pathsToPlaylist( paths, store.paths );
-
-					// TODO offer to store even if all the paths were already included in playlist
-					// TODO provide some kind of progress indicator
-
-					if ( paths.length && confirm( "Remember these files for automatic inclusion in future?" ) ) {
-						chrome.storage.local.getBytesInUse( bytes => {
-							let nl = { "path": sp.join( "/" ), "name": ln },
-								libraries = ( store.libraries || [] ).filter( l => l.path !== nl.path ).concat( [ nl ] ),
-								json = JSON.stringify( paths );
-							setLibraries( libraries );
-							if ( json.length <= ( chrome.storage.local.QUOTA_BYTES - JSON.stringify( Object.assign( {}, {
-									"settings": store.settings,
-									"libraries": libraries,
-									"played": store.played,
-									"queue": store.queue
-								} ) ).length
-							) ) {
-								chrome.storage.local.set( { "libraries": libraries, "paths": paths } );
-							} else if ( confirm( `There are too many files to remember. An alternative method exists.
-Would you like to store the information as a file to be saved in your audio library?` ) ) {
-								giveFile( "store", json ); // TODO and then what?
-							}
-						} );
-					}
+			if ( !( slv && libnme ) ) {
+				alert( "You must provide the path to the library from which you intend to select folders, and a name for it." );
+			} else {
+				sp = slv.split( "/" ).filter( f => f );
+				paths = arrayFrom( trg.files ).filter( file => /^audio\//.test( file.type ) ).map( file => {
+					cp = sp.concat( file.webkitRelativePath.split( "/" ).filter( f => f ) );
+					return {
+						"a": cp.map( pp => encodeURIComponent( pp ) ).join( "/" ),
+						"f": cp.pop(),
+						"d": cp.slice( sp.length ).join( " | " )
+					};
 				} );
+				if ( paths.length ) {
+					chrome.storage.local.get( async store => {
+						paths = await pathsToPlaylist( paths, store.paths );
+
+						// TODO offer to store even if all the paths were already included in playlist
+						// TODO provide some kind of progress indicator
+
+						if ( paths.length ) {
+							TRANSPORT.play();
+							if ( confirm( "Remember these files for automatic inclusion in future?" ) ) {
+								chrome.storage.local.getBytesInUse( bytes => {
+									let nl = { "path": slv, "name": libnme },
+										libraries = ( store.libraries || [] ).filter( l => l.path !== nl.path ).concat( [ nl ] ),
+										json = JSON.stringify( paths );
+										setLibraries( libraries );
+										if ( json.length <= ( chrome.storage.local.QUOTA_BYTES - JSON.stringify( Object.assign( {}, {
+											"settings": store.settings,
+											"libraries": libraries,
+											"played": store.played,
+											"queue": store.queue
+										} ) ).length
+									) ) {
+										chrome.storage.local.set( { "libraries": libraries, "paths": paths } );
+									} else if ( confirm( `There are too many files to remember. An alternative method exists.
+Would you like to store the information as a file to be saved in your audio library?` ) ) {
+										giveFile( "store", json ); // TODO and then what?
+									}
+								} );
+							}
+						}
+					} );
+				}
+				sources.reset();
+				toggleLibraryVisibility();
 			}
-			sources.reset();
 		}
 	},
 
@@ -916,21 +907,21 @@ Would you like to store the information as a file to be saved in your audio libr
 							let dcdtrg = decodePaths( tia ? trg.tracks : [ trg ] );
 							chrome.storage.local.set( { "paths": store.paths.filter( sp => {
 								if ( tia ) {
-									return !dcdtrg.some( p => equalStringifiedArrays( sp.path, p ) );
+									return !dcdtrg.some( p => identicalPathArrays( sp.path, p ) );
 								}
-								return !equalStringifiedArrays( sp.path, dcdtrg[ 0 ] );
+								return !identicalPathArrays( sp.path, dcdtrg[ 0 ] );
 							} ) } );
 						} );
 					}
 					if ( ( tia && ~trg.tracks.indexOf( currently_playing_track ) ) || trg === currently_playing_track ) {
 						TRANSPORT.next();
 					}
-					if ( !tia ) {
-						played = played.filter( li => li !== trg );
-						trg.remove();
-					} else {
+					if ( tia ) {
 						played = played.filter( li => !~trg.tracks.indexOf( li ) );
 						trg.folder.remove();
+					} else {
+						played = played.filter( li => li !== trg );
+						trg.remove();
 					}
 					updatePlaylistLength();
 					updatePlayedness();
@@ -1021,10 +1012,10 @@ audio.addEventListener( "loadedmetadata", setTrackDuration, { passive: true } );
 
 sources.addEventListener( "change", importFiles, { passive: true } );
 
+controls.addEventListener( "input", inputControls, { passive: true } );
+controls.addEventListener( "click", clickControls, { passive: true } ); // TODO one click handler for controls
 controls.fix.addEventListener( "click", fixBreakages );
 controls.filter.addEventListener( "click", playlistFilter );
-controls.addEventListener( "input", inputControls, { passive: true } );
-controls.addEventListener( "click", clickControls, { passive: true } );
 controls.clear.addEventListener( "click", clearPlaylist, { passive: true } );
 controls.transport.addEventListener( "click", clickTransport, { passive: true } );
 

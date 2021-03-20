@@ -140,6 +140,21 @@ h1 {
 	margin-bottom: 1rem;
 }
 
+#sources fieldset[name="new_lib"].hide {
+	display: none;
+}
+
+#sources select,
+#sources input {
+	width: -webkit-fill-available;
+	margin: .5rem 0;
+	display: block;
+}
+
+#sources fieldset {
+	margin-top: 0;
+}
+
 #queue_editor {
 	height: calc( 100vh - 5.3rem );
 	width: calc( 80vw - 2rem );
@@ -316,11 +331,6 @@ input[type="radio"] {
 	border-radius: 50%;
 }
 
-input[name="path"],
-select {
-	width: -webkit-fill-available;
-}
-
 input[type="file"] {
 	background-color: var( --darker-grey );
 	color: transparent;
@@ -330,9 +340,9 @@ input[type="file"] {
 
 input[type="file"]:before {
 	background-color: var( --darkest-grey );
-	content: "SELECT FOLDERS";
-	color: var( --light-grey );
 	padding: .2rem .4rem .1rem;
+	color: var( --light-grey );
+	content: "SELECT FOLDERS";
 	border-radius: .2rem;
 	cursor: pointer;
 }

@@ -47,8 +47,11 @@
 		--></div><!--
 		--><div class="section secright"><!--
 			--><form id="sources"><!--
-				--><select name="libraries"><option value="" selected>add new library</option></select><!--
-				--><input name="path" type="text" placeholder="[name]/along/this/path"><!--
+				--><select name="libraries"><option value="" selected>ADD NEW LIBRARY</option></select><!--
+				--><fieldset name="new_lib"><!--
+					--><input name="name" type="text" placeholder="NAME"><!--
+					--><input name="path" type="text" placeholder="along/this/path"><!--
+				--></fieldset><!--
 				--><input name="include" type="file" webkitdirectory><!--
 			--></form><!--
 			--><form id="controls"><!--
@@ -79,7 +82,7 @@
 					--><label>TRACK<input name="endof" type="radio" value="track"></label><!--
 				--></fieldset><!--
 				--><fieldset><!--
-				--><output name="playlist_length" data-tacks="0 TRACKS" data-folders="0 FOLDERS" data-broken=""></output><!--
+				--><output name="playlist_length" data-tracks="0 TRACKS" data-folders="0 FOLDERS" data-broken=""></output><!--
 					--><input name="clear" type="button" value="CLEAR"><!--
 					--><input name="filter" type="button" value="FILTER"><!--
 					--><input name="fix" type="button" value="BREAKAGES"><!--
