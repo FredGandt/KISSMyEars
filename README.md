@@ -3,15 +3,16 @@
 "[Keep It Stupid Simple](https://en.wikipedia.org/wiki/KISS_principle)" local audio file player Chrome extension, **CURRENTLY IN ALPHA DEVELOPMENT** and likely to contain much incomplete or flat out broken code and functionality.
 
 ## Why?
-Having tried many local music players, I have frequently been confused, frustrated and disappointed. Entire forums have been dedicated to assisting users of these players in operating them. I just want to play my music archive in *all the most reasonably expected ways*; press "go" and music happens :)
+Having tried many local music players, on Windoze and Linux, I have frequently been confused, frustrated and disappointed. Entire forums have been dedicated to assisting users of these players in operating them. I just want to play my music archive in *all the most reasonably expected ways*; press "go" and music happens :)
 
 ## Premise
- * I am using a PC and unsurprisingly already have a web browser installed
+ * I am using a PC, unsurprisingly already have a web browser installed and it's open practically all the time
  * I have my music archive ripped and stored on my PC in directories
- * I would like to play those files in specific or shuffled orders
- * I don't want my music player to search the internet for related information, alter my files or perform any *clever* action on my behalf
- * I don't want my music player to have so many optional extra features that it requires an online wiki or forum to comprehend
- * I don't need my music player to utilise deep learning AI to examine my mood and make selections it deems suitable
+ * I want to play those files in specific or shuffled orders
+ * I don't want my music player to:
+   * require the internet or alter my files at all
+   * have so many optional extra features that it requires an online wiki or forum to comprehend
+   * utilise deep learning AI, and via a wet wired BCI, examine my mood and make selections it deems suitable
 
 With this premise in mind, I am working to build a Chrome web browser extension that provides **only** the features I **need** and presents them in a one stop control panel.
 
