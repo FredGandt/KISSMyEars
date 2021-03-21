@@ -21,10 +21,10 @@
 
 		--><form class="overlay" id="queue_editor"><!--
 			--><fieldset><!--
-				--><input class="orange" name="done" type="button" value="DONE"><!--
-				--><input name="clear" type="button" value="CLEAR"><!--
-				--><h1 class="flight">DRAGON DROPPINGS</h1><!--
+			--><h1 class="fleft">DRAGON DROPPINGS</h1><!--
 				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
+				--><input name="clear" type="button" value="CLEAR"><!--
+				--><input class="orange" name="done" type="button" value="DONE"><!--
 			--></fieldset><!--
 			--><ol class="dropzone"></ol><!--
 		--></form><!--
@@ -58,7 +58,7 @@
 			--><fieldset class="legend"><!--
 					--><legend>TURN OFF-AND-ON-ABLE</legend><!--
 					--><label>SHUFFLE<input name="shuffle" type="checkbox"></label><!--
-					--><fieldset class="child legend shuffle_by"><!--
+					--><fieldset class="child legend wrap shuffle_by"><!--
 					--><legend>SHUFFLE BY</legend><!--
 						--><label>TRACK<input name="shuffle_by" type="radio" value="track"></label><!--
 						--><label>FOLDER<input name="shuffle_by" type="radio" value="folder"></label><!--
@@ -73,7 +73,7 @@
 					--><label title="+ ctrl + meta">ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
 					--><label title="+ meta + alt">DELIST IT<input class="orange split" name="clicky" type="radio" value="delist"></label><!--
 				--></fieldset><!--
-				--><fieldset class="legend"><!--
+				--><fieldset class="legend wrap"><!--
 					--><legend>PLAY UNTIL THE END OF THE</legend><!--
 					--><label>WORLD<input name="endof" type="radio" value="world"></label><!--
 					--><label>LIST<input name="endof" type="radio" value="list"></label><!--
@@ -83,9 +83,9 @@
 				--></fieldset><!--
 				--><fieldset><!--
 				--><output name="playlist_length" data-tracks="0 TRACKS" data-folders="0 FOLDERS" data-broken=""></output><!--
-					--><input name="clear" type="button" value="CLEAR"><!--
-					--><input name="filter" type="button" value="FILTER"><!--
-					--><input name="fix" type="button" value="BREAKAGES"><!--
+					--><input name="clearPlaylist" type="button" value="CLEAR"><!--
+					--><input name="playlistFilter" type="button" value="FILTER"><!--
+					--><input name="fixBreakages" type="button" value="BREAKAGES"><!--
 				--></fieldset><!--
 				--><fieldset><!--
 					--><output name="played_length" data-pl="0 TRACKS"></output><!--
@@ -99,12 +99,18 @@
 					--><label>VOLUME<input name="volume" type="range" min="0" step="0.01" max="1" value="0.5"></label><!--
 				--></fieldset><!--
 				--><fieldset name="transport"><!--
-					--><input name="prev" type="button"><!--
-					--><input name="back" type="button"><!--
-					--><input name="paws" type="button"><!--
-					--><input name="stop" type="button"><!--
-					--><input name="play" type="button"><!--
-					--><input name="next" type="button"><!--
+					--><fieldset name="folder"><!--
+						--><input class="fleft" name="prevFolder" type="button"><!--
+						--><input class="fleft" name="backFolder" type="button"><!--
+						--><span>FOLDERS</span><!--
+						--><input class="flight" name="nextFolder" type="button"><!--
+					--></fieldset><!--
+					--><input name="prevTrack" type="button"><!--
+					--><input name="backTrack" type="button"><!--
+					--><input name="pawsTrack" type="button"><!--
+					--><input name="stopTrack" type="button"><!--
+					--><input name="playTrack" type="button"><!--
+					--><input name="nextTrack" type="button"><!--
 					--><output name="times" data-curt="00:00" data-dura="00:00" data-rema="00:00"></output><!--
 				--></fieldset><!--
 			--></form><!--

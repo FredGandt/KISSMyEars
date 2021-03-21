@@ -1,7 +1,7 @@
 
 // https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
 
-// TODO gapless playback
+// TODO gapless playback (surprisingly shitty)
 
 // TODO desktop notifications?
 
@@ -10,12 +10,9 @@
 // TODO player controls popout?
 
 // TODO merge new imports into related folders
-	// fixBreakages()
+	// CONTROLS.fixBreakages()
 
-// TODO playlist_filter and queue_editor should not overlay together
-
-// TODO convert queue to playlist
-	// save playlists
+// TODO save queue as playlist
 		// giveFile()
 
 // TODO mark tracks to be played together in groups in specific orders e.g. Hendrix, Bowie etc.
@@ -78,89 +75,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	audio = document.querySelector( "audio" ),
 	playpen = playlist.parentElement,
 
-	TRANSPORT = {
-		prev: () => {
-			let pl = played.length;
-			if ( pl ) {
-				if ( Math.abs( played_index ) < pl ) {
-					let paused = audio.paused,
-						listing = played[ pl + --played_index ];
-					TRANSPORT.stop( true );
-					setTrackSrc( listing );
-					pausiblyPlay( paused );
-				}
-			} else {
-				TRANSPORT.next( true );
-			}
-		},
-
-		back: () => audio.currentTime = 0,
-
-		paws: () => {
-			if ( audio.src ) {
-				if ( audio.paused ) {
-					audio.play();
-					setTitle();
-				} else {
-					audio.pause();
-					setTitle( "[PAUSED]", true );
-				}
-			}
-		},
-
-		stop: rs => {
-			if ( audio.src ) {
-				audio.pause();
-				TRANSPORT.back();
-				if ( rs ) {
-					audio.removeAttribute( "src" );
-				} else {
-					setTitle( "[STOPPED]", true );
-				}
-			}
-		},
-
-		play: prev => {
-			selectNext( prev ).then( t => {
-				if ( audio.src && audio.paused ) {
-					audio.play();
-					setTitle();
-				}
-			} );
-		},
-
-		next: prev => { // TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
-			let paused = audio.paused;
-			TRANSPORT.stop( true );
-			pausiblyPlay( paused, prev );
-		}
-	},
-
-	CONTROLS = {
-		queueEditor: () => {
-			if ( !queue_editor.classList.contains( "show" ) ) {
-				if ( queue.length ) {
-					let clone;
-					queue.forEach( q => {
-						clone = q.cloneNode( true );
-						clone.draggable = true;
-						queue_editor_list.append( clone );
-					} );
-					queue_editor.classList.add( "show" );
-				}
-			} else {
-				clickQueueEditor();
-			}
-		},
-
-		clearPlayedTracks: () => {
-			if ( played.length && confirm( "Clear the play history?" ) ) {
-				played = [];
-				updatePlayedness();
-			}
-		}
-	},
-
 	fromPlaylist = new FromPlaylist(),
 
 	notPop = arr => arr.slice( -1 )[ 0 ],
@@ -179,6 +93,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	identicalPathArrays = ( a1, a2 ) => a1.join( "" ) === a2.join( "" ),
 
+	queueEditorShowing = () => queue_editor.classList.contains( "show" ),
+
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
 
 	tracksOfFolder = folder => arrayFrom( folder.querySelectorAll( "li" ) ),
@@ -195,9 +111,136 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	pathsToTracks = paths => paths.map( p => playlist.querySelector( `li[data-abs_path="${p}"]` ) ),
 
+	// TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
 	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ),
 
-	decodePaths = lis => arrayFrom( lis ).map( li => li.dataset.abs_path.split( "/" ).filter( ( pp, i ) => i && pp ).map( pp => decodeURIComponent( pp ) ) ),
+	decodePaths = lis => lis.map( li => li.dataset.abs_path.split( "/" ).filter( ( pp, i ) => i && pp ).map( pp => decodeURIComponent( pp ) ) ),
+
+	TRANSPORT = {
+		backTrack: () => audio.currentTime = 0,
+
+		nextTrack: prev => {
+			let paused = audio.paused;
+			TRANSPORT.stopTrack( true );
+			pausiblyPlay( paused, prev );
+		},
+
+		playTrack: prev => {
+			selectNext( prev ).then( t => {
+				if ( audio.src && audio.paused ) {
+					audio.play();
+					setTitle();
+				}
+			} );
+		},
+
+		pawsTrack: () => {
+			if ( audio.src ) {
+				if ( audio.paused ) {
+					audio.play();
+					setTitle();
+				} else {
+					audio.pause();
+					setTitle( "[PAUSED]", true );
+				}
+			}
+		},
+
+		stopTrack: rs => {
+			if ( audio.src ) {
+				audio.pause();
+				TRANSPORT.backTrack();
+				if ( rs ) {
+					audio.removeAttribute( "src" );
+				} else {
+					setTitle( "[STOPPED]", true );
+				}
+			}
+		},
+
+		prevTrack: () => {
+			let pl = played.length;
+			if ( pl ) {
+				if ( Math.abs( played_index ) < pl ) {
+					let paused = audio.paused,
+						listing = played[ pl + --played_index ];
+					TRANSPORT.stopTrack( true );
+					setTrackSrc( listing );
+					pausiblyPlay( paused );
+				}
+			} else {
+				TRANSPORT.nextTrack( true );
+			}
+		},
+
+		prevFolder: () => console.log( "prevFolder" ), // TODO
+
+		backFolder: () => console.log( "backFolder" ), // TODO
+
+		nextFolder: () => console.log( "nextFolder" ) // TODO
+	},
+
+	CONTROLS = {
+		fixBreakages: () => console.warn( "fixBreakages", fromPlaylist.tracks.broken() ),
+
+		clearPlayedTracks: () => {
+			if ( played.length && confirm( "Clear the play history?" ) ) {
+				played = [];
+				updatePlayedness();
+			}
+		},
+
+		playlistFilter: () => {
+			if ( numberOfNotBrokenTracks() ) {
+				if ( playlist_filter.classList.toggle( "show" ) ) {
+					playlist_filter.querySelector( 'input[name="contains"]' ).focus();
+					if ( queueEditorShowing() ) {
+						clickQueueEditor();
+					}
+					playlist.classList.add( "filtered" );
+					return;
+				}
+			}
+			closePlaylistFilter();
+		},
+
+		queueEditor: () => {
+			if ( queueEditorShowing() ) {
+				clickQueueEditor();
+			} else {
+				if ( queue.length ) {
+					let clone;
+					queue.forEach( q => {
+						clone = q.cloneNode( true );
+						clone.draggable = true;
+						queue_editor_list.append( clone );
+					} );
+					if ( playlist_filter.classList.contains( "show" ) ) {
+						closePlaylistFilter();
+					}
+					queue_editor.classList.add( "show" );
+				}
+			}
+		},
+
+		clearPlaylist: () => {
+			if ( fromPlaylist.tracks.all().length && confirm( "Clear the playlist?" ) ) {
+				TRANSPORT.stopTrack( true );
+				playlist.innerHTML = "";
+				setTitle( "KISS My Ears" );
+				updatePlaylistLength();
+				controls.times.dataset.dura = controls.times.dataset.rema = secondsToStr( 0 );
+			}
+			chrome.storage.local.get( store => {
+				if ( store.paths && confirm( "Clear the automatically included tracks?" ) ) {
+					chrome.storage.local.remove( "paths" );
+				}
+				if ( store.libraries && confirm( "Clear the stored libraries?" ) ) {
+					chrome.storage.local.remove( "libraries" );
+				}
+			} );
+		}
+	},
 
 	setTrackSrc = listing => {
 		audio.src = listing.dataset.abs_path;
@@ -213,7 +256,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		if ( paused ) {
 			selectNext( prev );
 		} else {
-			TRANSPORT.play( prev );
+			TRANSPORT.playTrack( prev );
 		}
 	},
 
@@ -235,7 +278,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		controls.playlist_length.dataset.folders = multiTrack( fromPlaylist.folders.all().length, "FOLDER" );
 		controls.playlist_length.dataset.tracks = multiTrack( numberOfNotBrokenTracks() );
 		controls.playlist_length.dataset.broken = ( btl ? ` + ${btl} BROKEN` : "" );
-		controls.fix.classList.toggle( "show", btl ); // TODO fixBreakages
+		controls.fixBreakages.classList.toggle( "show", btl ); // TODO CONTROLS.fixBreakages()
 	},
 
 	setLibraries = libs => { // TODO edit libraries
@@ -379,12 +422,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			playlist_fragment.append( oli );
 			if ( end ) {
 				playlist.append( playlist_fragment );
-				updatePlaylistLength();
 				fromPlaylist.folders.all().sort( ( a, b ) => {
 					let ap = a.dataset.path,
 						bp = b.dataset.path;
 					return ( ap > bp ? 1 : ( ap < bp ? -1 : 0 ) );
 				} ).forEach( li => playlist.append( li ) );
+				updatePlaylistLength();
 				showPlaying();
 			}
 		}
@@ -447,7 +490,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 							// b) don't shift the queue here, but do it at track end? sounds complicated
 
 						queuend = !queue.length;
-						if ( queue_editor.classList.contains( "show" ) ) {
+						if ( queueEditorShowing() ) {
 							if ( queuend ) {
 								clickQueueEditor();
 							} else {
@@ -465,8 +508,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 											lstndx = tof.indexOf( currently_playing_track || notPop( played ) );
 										if ( ~lstndx ) {
 											listing = tof[ lstndx + 1 ];
-											// TODO prev handling
-											// TODO also previous/next folder
+											// TODO previous/back/next folder
 											if ( lstndx === tof.length - 2 ) {
 												currently_playing_folder.classList.add( "played" );
 												currently_playing_folder = null;
@@ -499,7 +541,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					// TODO reset all the things
 					audio.removeAttribute( "src" );
 					displayTrackData();
-					TRANSPORT.play();
+					TRANSPORT.playTrack();
 				}
 			}
 			resolve( true );
@@ -512,8 +554,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	seekTrack = evt => audio.currentTime = evt.target.value,
 
-	fixBreakages = () => console.warn( "fixBreakages", fromPlaylist.tracks.broken() ),
-
 	setTrackDuration = () => controls.times.dataset.dura = secondsToStr( seek.control.max = Math.ceil( audio.duration ) ),
 
 	dragStart = evt => {
@@ -523,14 +563,14 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	trackError = evt => {
-		// console.error( "trackError", evt, currently_playing_track );
+		// console.error( "trackError", currently_playing_track, evt );
 		currently_playing_track.classList.add( "broken" );
 		updatePlaylistLength();
-		TRANSPORT.next();
+		TRANSPORT.nextTrack();
 
 		// TODO mark folders as broken if all their tracks are?
 		// TODO offer to remove or do it automatically and give notice?
-			// fixBreakages
+			// CONTROLS.fixBreakages()
 		// TODO clean up GUI "breakages" button and counter after broken tracks are removed
 			// updatePlaylistLength
 	},
@@ -559,6 +599,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	liFromEvtPath = evt => {
+		// console.log( "liFromEvtPath", evt );
 		let li = evt.composedPath().find( e => e.tagName && e.tagName.toLowerCase() === "li" );
 		if ( li.dataset.path ) {
 			return { "folder": li, "tracks": tracksOfFolder( li ) };
@@ -573,31 +614,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			let fnc = trg.name;
 			if ( CONTROLS.hasOwnProperty( fnc ) ) {
 				CONTROLS[ fnc ]();
-			}
-		}
-	},
-
-	clickTransport = evt => {
-		// console.log( "clickTransport", evt );
-		let trg = evt.target;
-		if ( isBtn( trg ) ) {
-			let fnc = trg.name;
-			if ( TRANSPORT.hasOwnProperty( fnc ) ) {
-				evt.stopPropagation();
+			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
 				TRANSPORT[ fnc ]();
 			}
 		}
-	},
-
-	playlistFilter = () => {
-		if ( numberOfNotBrokenTracks() ) {
-			if ( playlist_filter.classList.toggle( "show" ) ) {
-				playlist_filter.querySelector( 'input[name="contains"]' ).focus();
-				playlist.classList.add( "filtered" );
-				return;
-			}
-		}
-		closePlaylistFilter();
 	},
 
 	clickQueueEditor = evt => {
@@ -673,35 +693,17 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	clearPlaylist = () => {
-		if ( fromPlaylist.tracks.all().length && confirm( "Clear the playlist?" ) ) {
-			TRANSPORT.stop( true );
-			playlist.innerHTML = "";
-			setTitle( "KISS My Ears" );
-			updatePlaylistLength();
-			controls.times.dataset.dura = controls.times.dataset.rema = secondsToStr( 0 );
-		}
-		chrome.storage.local.get( store => {
-			if ( store.paths && confirm( "Clear the automatically included tracks?" ) ) {
-				chrome.storage.local.remove( "paths" );
-			}
-			if ( store.libraries && confirm( "Clear the stored libraries?" ) ) {
-				chrome.storage.local.remove( "libraries" );
-			}
-		} );
-	},
-
-	keyDown = evt => {
+	keyDown = evt => { // TODO ArrowUp/ArrowDown should move by track and act as a selector
 		// console.log( "keyDown", evt );
 		let k = evt.key;
 		if ( evt.ctrlKey ) {
 			if ( k === "f" ) {
 				evt.preventDefault();
-				playlistFilter();
+				CONTROLS.playlistFilter();
 			} else if ( k === "q" ) {
 				CONTROLS.queueEditor();
 			}
-		} else if ( document.activeElement === document.body ) { // TODO
+		} else if ( document.activeElement === document.body ) {
 			if ( k === "PageUp" ) {
 				playpen.scrollBy( 0, -playpen.offsetHeight );
 			} else if ( k === "ArrowUp" ) {
@@ -711,7 +713,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			} else if ( k === "ArrowDown" ) {
 				playpen.scrollBy( 0, 20 );
 			} else if ( k === " " ) {
-				TRANSPORT.paws();
+				TRANSPORT.pawsTrack();
 			}
 		}
 	},
@@ -730,7 +732,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			cont = false;
 		}
 		if ( cont ) {
-			TRANSPORT.play();
+			TRANSPORT.playTrack();
 		} else {
 			selectNext().then( t => {
 				setTitle( "[STOPPED]", true );
@@ -739,8 +741,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	applyPlaylistFilter = evt => {
-		// console.log( "applyPlaylistFilter", evt );
+	inputPlaylistFilter = evt => {
+		// console.log( "inputPlaylistFilter", evt );
 		let fltrs = arrayFrom( playlist_filter.querySelectorAll( 'input[type="text"]' ) ).filter( f => f.value );
 		if ( fltrs.length ) {
 			let fresh = ( playlist_filter.onlyunplayed.checked ? ":not(.played)" : "" ), // TODO skiplayed?
@@ -779,22 +781,22 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				if ( fltrd.length > lessqueued.length && confirm( "Exclude tracks already in the queue?" ) ) {
 					fltrd = lessqueued;
 				}
-				if ( fltrd.length > 1 /* && controls.shuffle.checked */ ) { // TODO skiplayed?
-					if ( confirm( "Shuffle tracks before appending to the queue?" ) ) {
+				if ( fltrd.length > 1 ) { // TODO skiplayed?
+					if ( confirm( "Shuffle tracks before appending to the queue?" ) ) { // TODO always append or follow controls.clicky.value?
 						shuffleArray( fltrd );
-					} else {
-						shuffle = confirm( "Shuffle the entire resultant queue?" ); // TODO if appending to an already populated queue, offer this first
+					} else if ( queue.length ) {
+						shuffle = confirm( "Shuffle the entire resultant queue?" );
 					}
 				}
 				if ( !fltrd.length ) return;
-				if ( controls.clicky.value !== "delist" ) {
+				if ( controls.clicky.value === "delist" ) {
+					// TODO delisting which?
+				} else {
 					if ( controls.clicky.value === "end" ) {
 						queue = queue.concat( fltrd );
 					} else {
 						queue = fltrd.concat( queue );
 					}
-				} else {
-					// TODO delisting which?
 				}
 				if ( shuffle ) {
 					shuffleArray( queue );
@@ -838,7 +840,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						// TODO provide some kind of progress indicator
 
 						if ( paths.length ) {
-							TRANSPORT.play();
+							TRANSPORT.playTrack();
 							if ( confirm( "Remember these files for automatic inclusion in future?" ) ) {
 								chrome.storage.local.getBytesInUse( bytes => {
 									let nl = { "path": slv, "name": libnme },
@@ -853,17 +855,19 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 										} ) ).length
 									) ) {
 										chrome.storage.local.set( { "libraries": libraries, "paths": paths } );
-									} else if ( confirm( `There are too many files to remember. An alternative method exists.
+									} else if ( confirm( `There are too many files to remember but an alternative exists;
 Would you like to store the information as a file to be saved in your audio library?` ) ) {
-										giveFile( "store", json ); // TODO and then what?
+										giveFile( "store", json );
+										// TODO and then what?
+											// file to be placed in library and loaded on init
 									}
 								} );
 							}
 						}
 					} );
 				}
+				toggleLibraryVisibility( false );
 				sources.reset();
-				toggleLibraryVisibility();
 			}
 		}
 	},
@@ -897,14 +901,15 @@ Would you like to store the information as a file to be saved in your audio libr
 					queue.splice( qp, 1 );
 				}
 			}
-			// TODO if ( controls.shuffle etc ) offer to shuffle before adding folders to the queue?
-			// TODO if ( a queued track has been delisted ) make sure the further options are clearly indicated as not required
 
+			// TODO if ( controls.shuffle etc ) offer to shuffle before adding folders to the queue?
+
+			// TODO if ( a queued track has been delisted ) make sure the further options are clearly indicated as not required
 			if ( cv === "delist" ) {
 				if ( confirm( `Remove this ${tia ? "folder" : "track"} from the playlist?` ) ) {
 					if ( confirm( "Do not automatically include in future?" ) ) {
 						chrome.storage.local.get( store => {
-							let dcdtrg = decodePaths( tia ? trg.tracks : [ trg ] );
+							let dcdtrg = decodePaths( tia ? arrayFrom( trg.tracks ) : [ trg ] );
 							chrome.storage.local.set( { "paths": store.paths.filter( sp => {
 								if ( tia ) {
 									return !dcdtrg.some( p => identicalPathArrays( sp.path, p ) );
@@ -914,7 +919,7 @@ Would you like to store the information as a file to be saved in your audio libr
 						} );
 					}
 					if ( ( tia && ~trg.tracks.indexOf( currently_playing_track ) ) || trg === currently_playing_track ) {
-						TRANSPORT.next();
+						TRANSPORT.nextTrack();
 					}
 					if ( tia ) {
 						played = played.filter( li => !~trg.tracks.indexOf( li ) );
@@ -928,7 +933,7 @@ Would you like to store the information as a file to be saved in your audio libr
 				}
 			} else if ( cv === "now" ) {
 				if ( !tia && trg === currently_playing_track ) {
-					TRANSPORT.back();
+					TRANSPORT.backTrack();
 					return;
 				}
 				if ( tia ) {
@@ -936,7 +941,7 @@ Would you like to store the information as a file to be saved in your audio libr
 				} else {
 					queue.unshift( trg );
 				}
-				TRANSPORT.next();
+				TRANSPORT.nextTrack();
 			} else {
 				if ( cv === "next" ) {
 					if ( tia ) {
@@ -956,7 +961,7 @@ Would you like to store the information as a file to be saved in your audio libr
 		}
 	},
 
-	storeSettings = evt => {
+	storeSettings = () => {
 		chrome.storage.local.set( {
 			// TODO played folders
 			"played": played.map( li => li.dataset.abs_path ), // TODO check if there's enough space; if not?
@@ -1013,18 +1018,14 @@ audio.addEventListener( "loadedmetadata", setTrackDuration, { passive: true } );
 sources.addEventListener( "change", importFiles, { passive: true } );
 
 controls.addEventListener( "input", inputControls, { passive: true } );
-controls.addEventListener( "click", clickControls, { passive: true } ); // TODO one click handler for controls
-controls.fix.addEventListener( "click", fixBreakages );
-controls.filter.addEventListener( "click", playlistFilter );
-controls.clear.addEventListener( "click", clearPlaylist, { passive: true } );
-controls.transport.addEventListener( "click", clickTransport, { passive: true } );
+controls.addEventListener( "click", clickControls, { passive: true } );
 
 seek.addEventListener( "input", seekTrack, { passive: true } );
 
 playlist.addEventListener( "contextmenu", contextMenu );
 playlist.addEventListener( "click", clickPlaylist, { passive: true } );
 
-playlist_filter.addEventListener( "input", applyPlaylistFilter, { passive: true } );
+playlist_filter.addEventListener( "input", inputPlaylistFilter, { passive: true } );
 playlist_filter.addEventListener( "click", clickPlaylistFilter, { passive: true } );
 
 queue_editor.addEventListener( "click", clickQueueEditor, { passive: true } );
@@ -1040,7 +1041,7 @@ chrome.storage.local.get( store => {
 	applySettings( store.settings ).then( t => {
 		pathsToPlaylist( store.paths ).then( t => {
 			applyStoredArrays( store ).then( t => {
-				TRANSPORT.play();
+				TRANSPORT.playTrack();
 			} );
 		} );
 	} );

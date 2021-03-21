@@ -56,6 +56,10 @@
 	float: right;
 }
 
+.fleft {
+	float: left;
+}
+
 body, div, form {
 	background-color: var( --darker-grey );
 }
@@ -86,6 +90,7 @@ div.secright {
 }
 
 #seek {
+	border-top: var( --dark-turq-border );
 	width: calc( 80vw - 2rem );
 	position: absolute;
 	padding: 1rem;
@@ -123,8 +128,8 @@ div.dropzone {
 	border: var( --dark-turq-border );
 	display: inline-block;
 	border-radius: .2rem;
-	margin-left: 1rem;
 	padding: .5rem;
+	margin: 0 1rem;
 }
 
 ol.dropzone {
@@ -206,6 +211,10 @@ legend {
 	color: var( --turq );
 }
 
+fieldset.legend.wrap label {
+	display: inline-block;
+}
+
 fieldset.legend {
 	border: 1px solid var( --dark-turq );
 	border-radius: .2rem;
@@ -255,11 +264,11 @@ output[name="playlist_length"] {
 	display: block;
 }
 
-input[name="fix"] {
+input[name="fixBreakages"] {
 	display: none;
 }
 
-input[name="fix"].show {
+input[name="fixBreakages"].show {
 	display: inline-block;
 }
 
@@ -377,12 +386,32 @@ fieldset[name="transport"] input:hover {
 	background-color: var( --dark-turq );
 }
 
-input[name="paws"] { background-image: url( "paws.png" ) }
-input[name="prev"] { background-image: url( "prev.png" ) }
-input[name="back"] { background-image: url( "back.png" ) }
-input[name="play"] { background-image: url( "play.png" ) }
-input[name="next"] { background-image: url( "next.png" ) }
-input[name="stop"] { background-image: url( "stop.png" ) }
+input[name="prevFolder"],
+input[name="prevTrack"] {
+	background-image: url( "prev.png" );
+}
+
+input[name="backFolder"],
+input[name="backTrack"] {
+	background-image: url( "back.png" );
+}
+
+input[name="nextFolder"],
+input[name="nextTrack"] {
+	background-image: url( "next.png" );
+}
+
+input[name="pawsTrack"] {
+	background-image: url( "paws.png" );
+}
+
+input[name="playTrack"] {
+	background-image: url( "play.png" );
+}
+
+input[name="stopTrack"] {
+	background-image: url( "stop.png" );
+}
 
 input:checked {
 	background-color: var( --turq );
@@ -477,11 +506,21 @@ input[type="button"].orange {
 #controls.hide_cont_folder span.skip_folders,
 #controls.hide_cont_folder label.cont_folder,
 #controls.hide_shuffle_by span.skip_folders,
-#controls span.skip_tracks {
+#controls span.skip_tracks,
+fieldset[name="folder"] {
 	display: none;
 }
 
 #controls.hide_cont_folder span.skip_tracks,
 #controls.hide_shuffle_by span.skip_tracks {
 	display: inline;
+}
+
+#controls:not(.hide_cont_folder):not(.hide_shuffle_by) fieldset[name="folder"] {
+	display: block;
+}
+
+fieldset[name="folder"] span {
+	color: var( --dark-turq );
+	font-size: 250%;
 }
