@@ -104,9 +104,10 @@ div.secright {
 }
 
 fieldset[name="transport"],
+fieldset[name="folder"],
 output[name="times"] {
-    width: calc( 20vw - 2rem );
-    text-align: center;
+	width: calc( 20vw - 2rem );
+	text-align: center;
 }
 
 form.overlay {
@@ -234,8 +235,8 @@ fieldset:not(:first-child) {
 
 fieldset.child {
 	border-radius: 0 0 .2rem .2rem;
-  margin: .25rem 0 .5rem 0;
-  border-top: 0;
+	margin: .25rem 0 .5rem 0;
+	border-top: 0;
 }
 
 output[name="played_length"]:after {
@@ -277,8 +278,8 @@ ol li span:after {
 }
 
 ol li {
-	color: var( --turq );
 	padding: .2rem 1rem 0;
+	color: var( --turq );
 	white-space: nowrap;
 }
 
@@ -377,7 +378,7 @@ fieldset[name="transport"] input {
 	background-repeat: no-repeat;
 	background-position: center;
 	background-size: contain;
-	border-radius: 0.5rem;
+	border-radius: 0.4rem;
 	height: 3rem;
 	width: 3rem;
 }
@@ -521,6 +522,9 @@ fieldset[name="folder"] {
 }
 
 fieldset[name="folder"] span {
+	vertical-align: text-bottom;
 	color: var( --dark-turq );
-	font-size: 250%;
+	margin: 0 1.3rem 1.3rem;
+	display: inline-block;
+	font-size: 200%;
 }

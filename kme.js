@@ -91,8 +91,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	defaultEndOf = () => controls.endof.value = controls.dataset.endof,
 
-	identicalPathArrays = ( a1, a2 ) => a1.join( "" ) === a2.join( "" ),
-
 	queueEditorShowing = () => queue_editor.classList.contains( "show" ),
 
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
@@ -113,8 +111,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	// TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
 	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ),
-
-	decodePaths = lis => lis.map( li => li.dataset.abs_path.split( "/" ).filter( ( pp, i ) => i && pp ).map( pp => decodeURIComponent( pp ) ) ),
 
 	TRANSPORT = {
 		backTrack: () => audio.currentTime = 0,
@@ -232,10 +228,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				controls.times.dataset.dura = controls.times.dataset.rema = secondsToStr( 0 );
 			}
 			chrome.storage.local.get( store => {
-				if ( store.paths && confirm( "Clear the automatically included tracks?" ) ) {
+				if ( store.paths && store.paths.length && confirm( "Clear the automatically included tracks?" ) ) {
 					chrome.storage.local.remove( "paths" );
 				}
-				if ( store.libraries && confirm( "Clear the stored libraries?" ) ) {
+				if ( store.libraries && store.libraries.length && confirm( "Clear the stored libraries?" ) ) {
 					chrome.storage.local.remove( "libraries" );
 				}
 			} );
@@ -243,7 +239,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	setTrackSrc = listing => {
-		audio.src = listing.dataset.abs_path;
+		audio.src = `file:///${listing.dataset.abs_path}`;
 		displayTrackData( listing );
 	},
 
@@ -292,6 +288,14 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		if ( currently_playing_track && controls.highlight.checked ) {
 			playpen.scrollTo( 0, ( currently_playing_track.offsetTop - ( playpen.offsetHeight * 0.5 ) ) - playpen.offsetTop );
 		}
+	},
+
+	sortPlaylist = () => {
+		fromPlaylist.folders.all().sort( ( a, b ) => {
+			let ap = a.dataset.path,
+				bp = b.dataset.path;
+				return ( ap > bp ? 1 : ( ap < bp ? -1 : 0 ) );
+			} ).forEach( li => playlist.append( li ) );
 	},
 
 	closePlaylistFilter = () => {
@@ -422,12 +426,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			playlist_fragment.append( oli );
 			if ( end ) {
 				playlist.append( playlist_fragment );
-				fromPlaylist.folders.all().sort( ( a, b ) => {
-					let ap = a.dataset.path,
-						bp = b.dataset.path;
-					return ( ap > bp ? 1 : ( ap < bp ? -1 : 0 ) );
-				} ).forEach( li => playlist.append( li ) );
 				updatePlaylistLength();
+				sortPlaylist();
 				showPlaying();
 			}
 		}
@@ -450,7 +450,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					folder.path = path.d;
 					if ( mtch = path.f.match( /^([0-9]+)?[ \-]*(.+)\.([a-z0-9]+)$/ ) ) {
 						folder.tracks.push( {
-							"abspath": `file:///${path.a}`,
+							"abspath": path.a,
 							"title": mtch[ 2 ],
 							"type": mtch[ 3 ],
 							"num": mtch[ 1 ]
@@ -488,6 +488,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						// TODO if stop at the end of track lands here and the player is refreshed, the queue starts again at its next entry
 							// a) was_queued = listing? a kind of honorary queue track to be cleared only when the track is ended or skipped
 							// b) don't shift the queue here, but do it at track end? sounds complicated
+
+							// at the same time;
+								// address the crappy issue of not being able to stop at the end of the queue when the last track of the queue is playing
 
 						queuend = !queue.length;
 						if ( queueEditorShowing() ) {
@@ -826,6 +829,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				sp = slv.split( "/" ).filter( f => f );
 				paths = arrayFrom( trg.files ).filter( file => /^audio\//.test( file.type ) ).map( file => {
 					cp = sp.concat( file.webkitRelativePath.split( "/" ).filter( f => f ) );
+
+					// TODO sortPlaylist() goes wonky if there's a mix of relative sources
+						// only sensibly fixable with "album" recognition via tags?
+						// possible dissection of the absolute file path to establish where it could fit might work :(
+
 					return {
 						"a": cp.map( pp => encodeURIComponent( pp ) ).join( "/" ),
 						"f": cp.pop(),
@@ -909,12 +917,8 @@ Would you like to store the information as a file to be saved in your audio libr
 				if ( confirm( `Remove this ${tia ? "folder" : "track"} from the playlist?` ) ) {
 					if ( confirm( "Do not automatically include in future?" ) ) {
 						chrome.storage.local.get( store => {
-							let dcdtrg = decodePaths( tia ? arrayFrom( trg.tracks ) : [ trg ] );
 							chrome.storage.local.set( { "paths": store.paths.filter( sp => {
-								if ( tia ) {
-									return !dcdtrg.some( p => identicalPathArrays( sp.path, p ) );
-								}
-								return !identicalPathArrays( sp.path, dcdtrg[ 0 ] );
+								return ( tia ? !trg.tracks.some( li => sp.a === li.dataset.abs_path ) : sp.a !== trg.dataset.abs_path );
 							} ) } );
 						} );
 					}
