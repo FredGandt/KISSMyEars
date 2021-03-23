@@ -14,7 +14,9 @@ Having tried many local music players, on Windoze and Linux, I have frequently b
    * have so many optional extra features that it requires an online wiki or forum to comprehend
    * utilise deep learning AI, and via a wet wired BCI, examine my mood and make selections it deems suitable
 
-With this premise in mind, I am working to build a Chrome web browser extension that provides **only** the features I **need** and presents them in a one stop control panel.
+With this premise in mind, I am working to build a Chrome web browser extension that provides **only** the features I **need** and presents them in a one stop control panel. It currently looks like this:
+
+![KISSMyEars](https://user-images.githubusercontent.com/3055947/112183517-3c9bef00-8bf6-11eb-9d17-b83e2aba89d6.png)
 
 ## Devlopment
 I haven't even finished building it yet and it's already, by far, the most satisfying music player I have used, but there is still a lot of coding to do.
