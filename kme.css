@@ -9,6 +9,7 @@
 
 	--slightly-lighter-turq: #349d9d; /* 1% lighter than --turq via HSL */
 	--darkest-turq: #0d3435;
+	--bright-turq: #00ffdd;
 	--dark-turq: #246a6a;
 	--mid-turq: #2c7b7b;
 	--turq: #339999;
@@ -82,6 +83,7 @@ div.section {
 div.secleft {
 	height: calc( 100vh - 5.3rem );
 	width: calc( 80vw - 2rem );
+	scroll-behavior: smooth;
 }
 
 div.secright {
@@ -483,9 +485,14 @@ select {
 
 #playlist li.playing:not(.broken) {
 	background-color: var( --dark-turq ) !important;
+}
+
+#playlist li.playing:not(.broken):not(.focussed) {
 	color: var( --darkest-grey ) !important;
-	padding-top: 0.4rem;
-	font-size: 150%;
+}
+
+#playlist li.focussed {
+	color: var( --bright-turq ) !important;
 }
 
 #playlist ol li span[data-queue]:not([data-queue=""]):before,
