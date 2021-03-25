@@ -86,6 +86,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	fromPlaylist = new FromPlaylist(),
 
+	collator = new Intl.Collator( undefined, {
+		ignorePunctuation: true,
+		sensitivity: "base",
+		caseFirst: "upper",
+		numeric: true
+	} ),
+
 	notPop = arr => arr.slice( -1 )[ 0 ],
 
 	arrayFrom = lst => Array.from( lst ),
@@ -300,24 +307,15 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		} );
 	},
 
+	sortPlaylist = () => {
+		fromPlaylist.folders.all().sort( ( a, b ) => collator.compare( a.dataset.path, b.dataset.path ) ).forEach( li => playlist.append( li ) );
+	},
+
 	setLibraries = libs => { // TODO edit libraries
 		if ( libs ) {
 			sources.libraries.innerHTML = `<option value="" selected>add new library</option>` +
 				libs.map( ( l, i ) => `<option value="${l.path}" title="${l.path}">${l.name}</option>` ).join( "" );
 		}
-	},
-
-	sortPlaylist = () => {
-		fromPlaylist.folders.all().sort( ( a, b ) => {
-			let ap = a.dataset.path,
-				bp = b.dataset.path;
-			return new Intl.Collator( { // TODO seems faster somehow, but still doesn't work for "folder 10" being greater than "folder 2"
-				ignorePunctuation: true,
-    		sensitivity: "base",
-    		caseFirst: "upper",
-    		numeric: true
-			} ).compare( ap, bp ); // ( ap > bp ? 1 : ( ap < bp ? -1 : 0 ) );
-		} ).forEach( li => playlist.append( li ) );
 	},
 
 	closePlaylistFilter = () => {
