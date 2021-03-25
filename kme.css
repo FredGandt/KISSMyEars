@@ -3,11 +3,11 @@
 	--darkerer-grey: #383838;
 	--darker-grey: #404040;
 	--dark-grey: #4a4a4a;
-	--light-grey: #909090;
+	--light-grey: #606060;
+	--lighter-grey: #909090;
 
 	--dark-turq-border: 1px solid var( --dark-turq );
 
-	--slightly-lighter-turq: #349d9d; /* 1% lighter than --turq via HSL */
 	--darkest-turq: #0d3435;
 	--bright-turq: #00ffdd;
 	--dark-turq: #246a6a;
@@ -67,7 +67,7 @@ body, div, form {
 
 body {
 	font-family: monospace, monospace;
-	color: var( --light-grey );
+	color: var( --lighter-grey );
 	overflow: hidden;
 	font-size: 16px;
 	margin: 0;
@@ -286,6 +286,10 @@ ol li {
 }
 
 li.played {
+	color: var( --light-grey ) !important;
+}
+
+ol li.played {
 	color: var( --dark-turq ) !important;
 }
 
@@ -353,7 +357,7 @@ input[type="file"] {
 input[type="file"]:before {
 	background-color: var( --darkest-grey );
 	padding: .2rem .4rem .1rem;
-	color: var( --light-grey );
+	color: var( --lighter-grey );
 	content: "SELECT FOLDERS";
 	border-radius: .2rem;
 	cursor: pointer;
@@ -460,7 +464,7 @@ select {
 	font-weight: bold;
 }
 
-#playlist > li:not(:first-of-type) {
+#playlist:not(.collapsed) > li:not(:first-of-type) {
 	border-top: var( --dark-turq-border );
 	padding-top: .5rem;
 }
@@ -469,25 +473,25 @@ select {
 	margin-top: .5rem;
 }
 
+#playlist.collapsed:not(.filtered) > li:not(.playing) ol {
+	display: none;
+}
+
+#playlist.collapsed:not(.filtered) > li:nth-child( odd ),
 #playlist:not(.filtered) ol li:nth-child( odd ) {
 	background-color: var( --darkerer-grey );
-	color: var( --slightly-lighter-turq );
 }
 
 #playlist.filtered li.filtered li.filtered {
 	background-color: var( --darkest-turq );
-	color: var( --light-grey );
+	color: var( --lighter-grey );
 }
 
-#playlist.filtered li.filtered li {
-	display: list-item;
-}
-
-#playlist li.playing:not(.broken) {
+#playlist ol li.playing:not(.broken) {
 	background-color: var( --dark-turq ) !important;
 }
 
-#playlist li.playing:not(.broken):not(.focussed) {
+#playlist ol li.playing:not(.broken):not(.focussed) {
 	color: var( --darkest-grey ) !important;
 }
 
@@ -529,9 +533,9 @@ fieldset[name="folder"] {
 }
 
 fieldset[name="folder"] span {
-	vertical-align: text-bottom;
+	width: calc( ( 3.5rem * 3 ) + .5rem );
 	color: var( --dark-turq );
-	margin: 0 1.3rem 1.3rem;
 	display: inline-block;
+	vertical-align: top;
 	font-size: 200%;
 }
