@@ -3,7 +3,7 @@
 	--darkerer-grey: #383838;
 	--darker-grey: #404040;
 	--dark-grey: #4a4a4a;
-	--light-grey: #606060;
+	--light-grey: #747474;
 	--lighter-grey: #909090;
 
 	--dark-turq-border: 1px solid var( --dark-turq );
@@ -262,6 +262,17 @@ output[name="playlist_length"]:after {
 	color: var( --red );
 }
 
+label[data-kbd]:after {
+	content: "(" attr( data-kbd ) ")";
+	color: var( --light-grey );
+	vertical-align: text-top;
+	font-size: 90%;
+}
+
+label.kbd[data-kbd]:after {
+	margin-left: .5rem;
+}
+
 output[name="playlist_length"] {
 	margin-bottom: .3rem;
 	display: block;
@@ -432,9 +443,11 @@ input.orange.split:checked {
 	background-image: linear-gradient( to right, var( --turq ) 50%, var( --orange ) 50% );
 }
 
+output:not([name="playlist_length"]) + label.kbd,
 output:not([name="playlist_length"]) + input,
 input + input:not([type="file"]),
-input[name="volume"] {
+input[name="volume"],
+input + label.kbd {
 	margin-left: .5rem;
 }
 
@@ -470,16 +483,22 @@ select {
 }
 
 #playlist ol {
+	background-color: var( --darker-grey );
 	margin-top: .5rem;
 }
 
-#playlist.collapsed:not(.filtered) > li:not(.playing) ol {
+#playlist.collapsed:not(.filtered) > li:not(.playing):not(.focussed) ol {
 	display: none;
 }
 
 #playlist.collapsed:not(.filtered) > li:nth-child( odd ),
 #playlist:not(.filtered) ol li:nth-child( odd ) {
 	background-color: var( --darkerer-grey );
+}
+
+#playlist.collapsed > li.playing {
+	border-bottom: var(--dark-turq-border);
+	border-top: var(--dark-turq-border);
 }
 
 #playlist.filtered li.filtered li.filtered {

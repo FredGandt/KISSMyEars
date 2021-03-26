@@ -2,10 +2,10 @@
 // https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
 
 // TODO maybe
-		// desktop notifications
-		// repeat queue or played
-		// player controls popout
-		// use virtual DOM for playlist
+	// desktop notifications
+	// repeat queue or played
+	// player controls popout
+	// use virtual DOM for playlist
 
 // TODO start shuffle play again after e.g. finishing a folder etc.
 
@@ -318,6 +318,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	updatePlayedness = () => {
+		fromPlaylist.tracks.played().forEach( li => li.classList.remove( "played" ) );
+		controls.played_length.dataset.pl = multiTrack( played.length );
+		played.forEach( li => li.classList.add( "played" ) );
+	},
+
 	closePlaylistFilter = () => {
 		playlist_filter.classList.remove( "show" );
 		playlist.classList.remove( "filtered" );
@@ -340,17 +346,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		return [];
 	},
 
-	updatePlayedness = () => {
-		let pl = played.length;
-		fromPlaylist.tracks.played().forEach( li => li.classList.remove( "played" ) );
-		if ( pl ) {
-			played.forEach( li => li.classList.add( "played" ) );
-		}
-		controls.played_length.dataset.pl = multiTrack( pl );
-	},
-
 	showPlaying = () => {
-		if ( currently_playing_track && ctrlChckd( "highlight" ) && !fromPlaylist.focussed() ) {
+		if ( currently_playing_track && ctrlChckd( "scrolltoplaying" ) && !fromPlaylist.focussed() ) {
 			let cpe = currently_playing_folder,
 				offst = playpen.scrollTop;
 			if ( !ctrlChckd( "collapsed" ) ) { // TODO isShuffleBy( "folder" )??
@@ -565,16 +562,14 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 								if ( isShuffleBy( "folder" ) ) {
 									if ( currently_playing_folder ) {
 										let tof = tracksOfFolder( currently_playing_folder ),
-											lstndx = tof.indexOf( currently_playing_track || notPop( played ) );
-										if ( ~lstndx ) {
-											listing = tof[ lstndx + 1 ];
-											// TODO previous/back/next folder
-											if ( lstndx === tof.length - 2 ) {
-												currently_playing_folder.classList.add( "played" );
-												currently_playing_folder = null;
-											}
+											lstndx = tof.indexOf( currently_playing_track );
+										if ( lstndx < tof.length - 1 ) {
+											listing = tof[ lstndx + 1 ]; // TODO previous/back/next folder
+										} else {
+											currently_playing_folder.classList.add( "played" ); // TODO check this
 										}
-									} else {
+									}
+									if ( !listing ) {
 										if ( ctrlChckd( "skiplayed" ) ) {
 											list = fromPlaylist.folders.notPlayed();
 										} else {
@@ -597,7 +592,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				}
 				if ( listing ) {
 					setTrackSrc( listing );
-				} else if ( untilEndOf( "world" ) && numberOfNotBrokenTracks() ) { // TODO not if shuffling by folder and there are some unplayed
+				} else if ( untilEndOf( "world" ) && numberOfNotBrokenTracks() ) {
 					// TODO reset all the things
 					audio.removeAttribute( "src" );
 					displayTrackData();
@@ -680,19 +675,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	clickControls = evt => {
-		// console.log( "clickControls", evt );
-		let trg = evt.target;
-		if ( isBtn( trg ) ) {
-			let fnc = trg.name;
-			if ( CONTROLS.hasOwnProperty( fnc ) ) {
-				CONTROLS[ fnc ]();
-			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
-				TRANSPORT[ fnc ]();
-			}
-		}
-	},
-
 	clickQueueEditor = evt => {
 		// console.log( "clickQueueEditor", evt );
 		if ( queue.length && evt && evt.target.name === "clear" && confirm( "Clear the queue?" ) ) {
@@ -706,6 +688,21 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		queue_editor_list.innerHTML = "";
 	},
 
+	clickControls = evt => {
+		// console.log( "clickControls", evt );
+		let trg = evt.target;
+		if ( isBtn( trg ) ) {
+			let fnc = trg.name;
+			if ( CONTROLS.hasOwnProperty( fnc ) ) {
+				CONTROLS[ fnc ]();
+			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
+				TRANSPORT[ fnc ]();
+			}
+		} else if ( trg && /^(range|checkbox|radio)$/.test( trg.type ) ) {
+			trg.dataset.clicked = true;
+		}
+	},
+
 	inputControls = evt => {
 		// console.log( "inputControls", evt );
 		let trg = evt.target,
@@ -717,7 +714,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			} else {
 				let nme = trg.name;
 				if ( typ === "checkbox" ) {
-					if ( nme === "highlight" ) {
+					if ( nme === "scrolltoplaying" ) {
 						removeFocussed();
 						showPlaying();
 					} else if ( nme === "collapsed" ) {
@@ -730,6 +727,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					}
 				}
 				toggleOptionVisibility();
+			}
+			if ( trg.dataset.clicked ) {
+				trg.blur();
+				trg.dataset.clicked = "";
 			}
 		}
 	},
@@ -857,13 +858,15 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		if ( ctrl && k === "f" ) {
 			evt.preventDefault();
 			CONTROLS.playlistFilter();
-		} else if ( !/^(input|select)$/i.test( evt.target.tagName ) && !/^Tab$/.test( k ) ) { // document.activeElement
-			evt.preventDefault();
+		} else if ( !/^(input|select)$/i.test( evt.target.tagName ) ) { // document.activeElement
 			if ( k === " " ) {
+				evt.preventDefault();
 				TRANSPORT.pawsTrack();
 			} else if ( ctrl && k === "q" ) {
+				evt.preventDefault();
 				CONTROLS.queueEditor();
 			} else if ( ( ctrl && k === "g" ) || /^(Escape|Enter)$/.test( k ) ) {
+				evt.preventDefault();
 				let fcs = removeFocussed();
 				if ( fcs ) {
 					let fldr = folder( fcs );
@@ -876,9 +879,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				showPlaying();
 			} else if ( !queueEditorShowing() && !playlistFilterShowing() ) { // TODO make it work with filtered?
 				if ( /^(Arrow|Page)(Up|Down)$/.test( k ) ) {
+					evt.preventDefault();
 					let arrw = /^Arrow/.test( k );
 					if ( arrw && ctrlChckd( "collapsed" ) ) {
-						return; // TODO navigate folder tracks only // allow breakout? :(
+						return; // TODO navigate folder tracks only // allow breakout
 					}
 					let all = fromPlaylist[ arrw ? "tracks" : "folders" ].all(),
 						waw = playpen.scrollTop + ( arrw ? ( playpen.offsetHeight * 0.5 ) : 0 ),
@@ -902,8 +906,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						}
 					}
 					if ( fcs ) {
-						fcs.classList.add( "focussed" );
 						playpen.scrollBy( 0, fcs.offsetTop - waw );
+						fcs.classList.add( "focussed" );
 					}
 				}
 			}
@@ -1070,10 +1074,10 @@ Would you like to store the information as a text file to be saved in your audio
 			"played": played.map( li => li.dataset.abs_path ), // TODO check if there's enough space; if not?
 			"queue": queue.map( li => li.dataset.abs_path ),
 			"settings": {
+				scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
 				combifilter: fltrChckd( "combifilter" ),
 				casensitive: fltrChckd( "casensitive" ),
 				volume: controls.volume.valueAsNumber,
-				highlight: ctrlChckd( "highlight" ),
 				collapsed: ctrlChckd( "collapsed" ),
 				skiplayed: ctrlChckd( "skiplayed" ),
 				shuffleby: ctrlVlu( "shuffle_by" ),
@@ -1087,11 +1091,11 @@ Would you like to store the information as a text file to be saved in your audio
 	applySettings = settings => {
 		return new Promise( resolve => {
 			let sttngs = Object.assign( {
+				scrolltoplaying: true,
 				combifilter: false,
 				casensitive: false,
 				shuffleby: "track",
 				collapsed: false,
-				highlight: true,
 				skiplayed: true,
 				endof: "world",
 				shuffle: true,
@@ -1100,10 +1104,10 @@ Would you like to store the information as a text file to be saved in your audio
 			}, settings || {} );
 			playlist.classList.toggle( "collapsed", controls.collapsed.checked = sttngs.collapsed );
 			controls.dataset.endof = controls.endof.value = sttngs.endof;
+			controls.scrolltoplaying.checked = sttngs.scrolltoplaying;
 			playlist_filter.combifilter.checked = sttngs.combifilter;
 			playlist_filter.casensitive.checked = sttngs.casensitive;
 			audio.volume = controls.volume.value = sttngs.volume;
-			controls.highlight.checked = sttngs.highlight;
 			controls.skiplayed.checked = sttngs.skiplayed;
 			controls.shuffle_by.value = sttngs.shuffleby;
 			controls.shuffle.checked = sttngs.shuffle;
