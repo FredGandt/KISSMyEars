@@ -81,6 +81,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	queue_editor_trash = queue_editor.querySelector( "div" ),
 	queue_editor_list = queue_editor.querySelector( "ol" ),
+	blur_oasis = controls.querySelector( "button" ),
 	audio = document.querySelector( "audio" ),
 	playpen = playlist.parentElement,
 
@@ -605,6 +606,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	/* event functions */
 
+	focusButton = evt => evt.target.blur(),
+
 	dragEnd = () => dragee.classList.remove( "dragee" ),
 
 	seekTrack = evt => audio.currentTime = evt.target.value,
@@ -700,6 +703,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			}
 		} else if ( trg && /^(range|checkbox|radio)$/.test( trg.type ) ) {
 			trg.dataset.clicked = true;
+		} else if ( trg === blur_oasis ) {
+			evt.preventDefault();
 		}
 	},
 
@@ -729,8 +734,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				toggleOptionVisibility();
 			}
 			if ( trg.dataset.clicked ) {
-				trg.blur();
 				trg.dataset.clicked = "";
+				trg.blur();
 			}
 		}
 	},
@@ -1128,7 +1133,7 @@ audio.addEventListener( "loadedmetadata", setTrackDuration, { passive: true } );
 sources.addEventListener( "change", importFiles, { passive: true } );
 
 controls.addEventListener( "input", inputControls, { passive: true } );
-controls.addEventListener( "click", clickControls, { passive: true } );
+controls.addEventListener( "click", clickControls );
 
 seek.addEventListener( "input", seekTrack, { passive: true } );
 

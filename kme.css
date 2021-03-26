@@ -148,10 +148,6 @@ h1 {
 	margin-bottom: 1rem;
 }
 
-#sources fieldset[name="new_lib"].hide {
-	display: none;
-}
-
 #sources select,
 #sources input {
 	width: -webkit-fill-available;
@@ -176,12 +172,6 @@ h1 {
 	padding: 1rem;
 	left: 0;
 	top: 0;
-}
-
-#queue_editor ol li span:not(:nth-child(2)),
-#playlist.filtered li:not(.filtered),
-#queue_editor div.dropzone li {
-	display: none;
 }
 
 #queue_editor li.dragee {
@@ -276,10 +266,6 @@ label.kbd[data-kbd]:after {
 output[name="playlist_length"] {
 	margin-bottom: .3rem;
 	display: block;
-}
-
-input[name="fixBreakages"] {
-	display: none;
 }
 
 input[name="fixBreakages"].show {
@@ -487,10 +473,6 @@ select {
 	margin-top: .5rem;
 }
 
-#playlist.collapsed:not(.filtered) > li:not(.playing):not(.focussed) ol {
-	display: none;
-}
-
 #playlist.collapsed:not(.filtered) > li:nth-child( odd ),
 #playlist:not(.filtered) ol li:nth-child( odd ) {
 	background-color: var( --darkerer-grey );
@@ -533,11 +515,17 @@ input[type="button"].orange {
 	padding: 0 .5rem;
 }
 
+#playlist.collapsed:not(.filtered) > li:not(.playing):not(.focussed) ol,
 #controls.hide_shuffle_by fieldset.shuffle_by,
 #controls.hide_cont_folder span.skip_folders,
 #controls.hide_cont_folder label.cont_folder,
 #controls.hide_shuffle_by span.skip_folders,
+#queue_editor ol li span:not(:nth-child(2)),
+#sources fieldset[name="new_lib"].hide,
+#playlist.filtered li:not(.filtered),
+#queue_editor div.dropzone li,
 #controls span.skip_tracks,
+input[name="fixBreakages"],
 fieldset[name="folder"] {
 	display: none;
 }
@@ -545,6 +533,11 @@ fieldset[name="folder"] {
 #controls.hide_cont_folder span.skip_tracks,
 #controls.hide_shuffle_by span.skip_tracks {
 	display: inline;
+}
+
+fieldset[name="folder"] {
+	background-color: var( --darker-grey );
+	padding-top: 2rem;
 }
 
 #controls:not(.hide_cont_folder):not(.hide_shuffle_by) fieldset[name="folder"] {
@@ -557,4 +550,14 @@ fieldset[name="folder"] span {
 	display: inline-block;
 	vertical-align: top;
 	font-size: 200%;
+}
+
+button {
+	background-color: var( --darker-grey );
+	border: var( --dark-turq-border );
+	color: var( --light-grey );
+	border-radius: .3rem;
+	margin-top: 1rem;
+	font-size: .9rem;
+	padding: .5rem;
 }
