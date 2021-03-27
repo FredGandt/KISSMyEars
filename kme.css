@@ -3,7 +3,7 @@
 	--darkerer-grey: #383838;
 	--darker-grey: #404040;
 	--dark-grey: #4a4a4a;
-	--light-grey: #747474;
+	--light-grey: #808080;
 	--lighter-grey: #909090;
 
 	--dark-turq-border: 1px solid var( --dark-turq );
@@ -515,7 +515,7 @@ input[type="button"].orange {
 	padding: 0 .5rem;
 }
 
-#playlist.collapsed:not(.filtered) > li:not(.playing):not(.focussed) ol,
+#playlist.collapsed:not(.filtered) > li:not(.playing):not(.focussed):not(.focussed_folder) ol,
 #controls.hide_shuffle_by fieldset.shuffle_by,
 #controls.hide_cont_folder span.skip_folders,
 #controls.hide_cont_folder label.cont_folder,
@@ -557,7 +557,13 @@ button {
 	border: var( --dark-turq-border );
 	color: var( --light-grey );
 	border-radius: .3rem;
+	font-family: inherit;
 	margin-top: 1rem;
-	font-size: .9rem;
+	font-size: .8rem;
 	padding: .5rem;
+}
+
+kbd {
+	background-color: var( --darkest-grey );
+	padding: 0 .3em;
 }

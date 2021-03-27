@@ -46,17 +46,17 @@ function FromPlaylist() {
 		return arr;
 	};
 	this.tracks = {
-		all: ndx => this.get( "ol li", ndx ),
-		played: ndx => this.get( "ol li.played", ndx ),
-		broken: ndx => this.get( "ol li.broken", ndx ),
-		filtered: ndx => this.get( "ol li.filtered", ndx ),
+		queued: ndx => this.get( 'span[data-queue]:not([data-queue=""])', ndx ),
 		notPlayed: ndx => this.get( "ol li:not(.played)", ndx ),
 		notBroken: ndx => this.get( "ol li:not(.broken)", ndx ),
-		queued: ndx => this.get( 'span[data-queue]:not([data-queue=""])', ndx )
+		filtered: ndx => this.get( "ol li.filtered", ndx ),
+		played: ndx => this.get( "ol li.played", ndx ),
+		broken: ndx => this.get( "ol li.broken", ndx ),
+		all: ndx => this.get( "ol li", ndx )
 	};
 	this.folders = {
-		all: ndx => this.get( "li[data-path]", ndx ),
-		notPlayed: ndx => this.get( "li[data-path]:not(.played)", ndx )
+		notPlayed: ndx => this.get( "li[data-path]:not(.played)", ndx ),
+		all: ndx => this.get( "li[data-path]", ndx )
 	};
 	this.filtered = ndx => this.get( "li.filtered", ndx );
 	this.focussed = () => this.get( "li.focussed", 0 );
@@ -94,6 +94,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		numeric: true
 	} ),
 
+	folderPath = li => li.dataset.path,
+
+	absPath = li => li.dataset.abs_path,
+
 	notPop = arr => arr.slice( -1 )[ 0 ],
 
 	arrayFrom = lst => Array.from( lst ),
@@ -128,11 +132,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	trackTitleDataset = listing => listing.querySelector( "span[data-title]" ).dataset,
 
-	folder = li => ( li.dataset.path ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
+	queueMatch = dragee => queue.findIndex( li => absPath( li ) === absPath( dragee ) ),
+
+	folder = li => ( folderPath( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
 
 	clearFilters = () => fromPlaylist.filtered().forEach( l => l.classList.remove( "filtered" ) ),
-
-	queueMatch = dragee => queue.findIndex( li => li.dataset.abs_path === dragee.dataset.abs_path ),
 
 	pathsToTracks = paths => paths.map( p => playlist.querySelector( `li[data-abs_path="${p}"]` ) ),
 
@@ -252,11 +256,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 		clearPlaylist: () => {
 			if ( fromPlaylist.tracks.all().length && confirm( "Clear the playlist?" ) ) {
+				let tds = controls.times.dataset;
 				TRANSPORT.stopTrack( true );
-				playlist.innerHTML = "";
 				setTitle( "KISS My Ears" );
+				playlist.innerHTML = "";
 				updatePlaylistLength();
-				controls.times.dataset.dura = controls.times.dataset.rema = secondsToStr( 0 );
+				tds.dura = tds.rema = secondsToStr( 0 );
 			}
 			chrome.storage.local.get( store => {
 				if ( store.paths && store.paths.length && confirm( "Clear the automatically included tracks?" ) ) {
@@ -269,30 +274,18 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	sortPlaylist = () => {
+		fromPlaylist.folders.all().sort( ( a, b ) => collator.compare( folderPath( a ), folderPath( b ) ) ).forEach( li => playlist.append( li ) );
+	},
+
 	setTrackSrc = listing => {
-		audio.src = `file:///${listing.dataset.abs_path}`;
+		audio.src = `file:///${absPath( listing )}`;
 		displayTrackData( listing );
 	},
 
 	toggleLibraryVisibility = tog => {
 		sources.new_lib.classList.toggle( "hide", tog );
 		sources.name.value = sources.path.value = "";
-	},
-
-	removeFocussed = () => {
-		let fcs = fromPlaylist.focussed();
-		if ( fcs ) {
-			fcs.classList.remove( "focussed" );
-			return fcs;
-		}
-	},
-
-	pausiblyPlay = ( paused, prev ) => {
-		if ( paused ) {
-			selectNext( prev );
-		} else {
-			TRANSPORT.playTrack( prev );
-		}
 	},
 
 	randNum = n => {
@@ -308,13 +301,37 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		} );
 	},
 
-	sortPlaylist = () => {
-		fromPlaylist.folders.all().sort( ( a, b ) => collator.compare( a.dataset.path, b.dataset.path ) ).forEach( li => playlist.append( li ) );
+	pausiblyPlay = ( paused, prev ) => {
+		if ( paused ) {
+			selectNext( prev );
+		} else {
+			TRANSPORT.playTrack( prev );
+		}
+	},
+
+	addFocussed = fcs => {
+		if ( fcs ) {
+			if ( !folderPath( fcs ) ) {
+				folderOfTrack( fcs ).classList.add( "focussed_folder" );
+			}
+			fcs.classList.add( "focussed" );
+		}
+	},
+
+	removeFocussed = () => {
+		let fcs = fromPlaylist.focussed();
+		if ( fcs ) {
+			if ( !folderPath( fcs ) ) {
+				folderOfTrack( fcs ).classList.remove( "focussed_folder" );
+			}
+			fcs.classList.remove( "focussed" );
+			return fcs;
+		}
 	},
 
 	setLibraries = libs => { // TODO edit libraries
 		if ( libs ) {
-			sources.libraries.innerHTML = `<option value="" selected>add new library</option>` +
+			sources.libraries.innerHTML = `<option value="" selected>ADD NEW LIBRARY</option>` +
 				libs.map( ( l, i ) => `<option value="${l.path}" title="${l.path}">${l.name}</option>` ).join( "" );
 		}
 	},
@@ -369,10 +386,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	updatePlaylistLength = () => {
-		let btl = fromPlaylist.tracks.broken().length;
-		controls.playlist_length.dataset.folders = multiTrack( fromPlaylist.folders.all().length, "FOLDER" );
-		controls.playlist_length.dataset.tracks = multiTrack( numberOfNotBrokenTracks() );
-		controls.playlist_length.dataset.broken = ( btl ? ` + ${btl} BROKEN` : "" );
+		let btl = fromPlaylist.tracks.broken().length,
+			pllds = controls.playlist_length.dataset;
+		pllds.folders = multiTrack( fromPlaylist.folders.all().length, "FOLDER" );
+		pllds.tracks = multiTrack( numberOfNotBrokenTracks() );
+		pllds.broken = ( btl ? ` + ${btl} BROKEN` : "" );
 		controls.fixBreakages.classList.toggle( "show", btl ); // TODO CONTROLS.fixBreakages()
 	},
 
@@ -663,14 +681,15 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	trackTimeUpdate = () => {
-		let curt = audio.currentTime;
-		controls.times.dataset.curt = secondsToStr( seek.control.value = curt );
-		controls.times.dataset.rema = secondsToStr( ( audio.duration - curt ) || 0 );
+		let curt = audio.currentTime,
+			tds = controls.times.dataset;
+		tds.curt = secondsToStr( seek.control.value = curt );
+		tds.rema = secondsToStr( ( audio.duration - curt ) || 0 );
 	},
 
 	googleSearch = trg => {
 		if ( navigator.onLine ) {
-			let query = ( trg.folder ? trg.folder.dataset.path : `${folderOfTrack( trg ).dataset.path} | ${trg.dataset.title}` );
+			let query = ( trg.folder ? folderPath( trg.folder ) : `${folderPath( folderOfTrack( trg ) )} | ${trg.dataset.title}` );
 			if ( query && confirm( `Google Web Search:
 "${query}"` ) ) {
 				chrome.tabs.create( { "url": `https://www.google.com/search?q=${query}`, "active": true } );
@@ -870,50 +889,88 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			} else if ( ctrl && k === "q" ) {
 				evt.preventDefault();
 				CONTROLS.queueEditor();
-			} else if ( ( ctrl && k === "g" ) || /^(Escape|Enter)$/.test( k ) ) {
+			} else if ( ctrl && k === "g" ) {
 				evt.preventDefault();
-				let fcs = removeFocussed();
+				let fcs = fromPlaylist.focussed();
 				if ( fcs ) {
-					let fldr = folder( fcs );
-					if ( k === "Enter" ) {
-						clickPlaylist( { "trg": fldr, "ctrlKey": ctrl, "metaKey": evt.metaKey, "altKey": evt.altKey } );
-					} else if ( k === "g" ) {
-						googleSearch( fldr );
-					}
+					googleSearch( folder( fcs ) );
 				}
+			} else if ( k === "Enter" ) {
+				evt.preventDefault();
+				let fcs = fromPlaylist.focussed();
+				if ( fcs ) {
+					clickPlaylist( { "trg": folder( fcs ), "ctrlKey": ctrl, "metaKey": evt.metaKey, "altKey": evt.altKey } );
+				}
+			} else if ( k === "Escape" ) {
+				evt.preventDefault();
+				removeFocussed();
 				showPlaying();
 			} else if ( !queueEditorShowing() && !playlistFilterShowing() ) { // TODO make it work with filtered?
 				if ( /^(Arrow|Page)(Up|Down)$/.test( k ) ) {
 					evt.preventDefault();
-					let arrw = /^Arrow/.test( k );
+
+					// TODO merge the following mess as much as is sensible
+
+					let arrw = /^Arrow/.test( k ),
+						fcs = removeFocussed(),
+						up = /Up$/.test( k );
+
 					if ( arrw && ctrlChckd( "collapsed" ) ) {
-						return; // TODO navigate folder tracks only // allow breakout
-					}
-					let all = fromPlaylist[ arrw ? "tracks" : "folders" ].all(),
-						waw = playpen.scrollTop + ( arrw ? ( playpen.offsetHeight * 0.5 ) : 0 ),
-						fcs = removeFocussed() || [].concat( all ).sort( ( a, b ) => ( a.offsetTop - waw ) + ( b.offsetTop - waw ) )[ 0 ];
-					if ( fcs ) {
-						let up = /Up$/.test( k );
-						if ( arrw && fcs.dataset.path ) {
-							if ( up ) {
-								fcs = notPop( tracksOfFolder( fcs.previousElementSibling ) );
+						let es = `${up ? "previous" : "next" }ElementSibling`;
+						if ( fcs ) {
+							if ( folderPath( fcs ) ) {
+								if ( up ) {
+									fcs = notPop( tracksOfFolder( fcs ) );
+								} else {
+									fcs = tracksOfFolder( fcs, 0 );
+								}
 							} else {
-								fcs = tracksOfFolder( fcs, 0 );
+								fcs = fcs[ es ] || folderOfTrack( fcs )[ es ];
 							}
-						} else if ( !arrw && !fcs.dataset.path ) {
-							if ( up ) {
-								fcs = folderOfTrack( fcs );
-							} else {
-								fcs = folderOfTrack( fcs ).nextElementSibling;
+						} else if ( currently_playing_track ) {
+							if ( !( fcs = currently_playing_track[ es ] ) ) {
+								fcs = folderOfTrack( currently_playing_track );
+								if ( !up ) {
+									fcs = fcs.nextElementSibling;
+								}
 							}
 						} else {
-							fcs = all[ all.indexOf( fcs ) + ( up ? -1 : 1 ) ];
+							// TODO fcs = the nearest folder
+						}
+						if ( fcs ) {
+							// TODO scrolling
+							addFocussed( fcs );
 						}
 					}
-					if ( fcs ) {
-						playpen.scrollBy( 0, fcs.offsetTop - waw );
-						fcs.classList.add( "focussed" );
+
+					else {
+						let all = fromPlaylist[ arrw ? "tracks" : "folders" ].all(),
+							waw = playpen.scrollTop + ( arrw ? ( playpen.offsetHeight * 0.5 ) : 0 );
+						fcs = fcs || [].concat( all ).sort( ( a, b ) => ( a.offsetTop - waw ) + ( b.offsetTop - waw ) )[ 0 ];
+						if ( fcs ) {
+							if ( arrw && folderPath( fcs ) ) {
+								if ( up ) {
+									fcs = notPop( tracksOfFolder( fcs.previousElementSibling ) );
+								} else {
+									fcs = tracksOfFolder( fcs, 0 );
+								}
+							} else if ( !arrw && !folderPath( fcs ) ) {
+								if ( up ) {
+									fcs = folderOfTrack( fcs );
+								} else {
+									fcs = folderOfTrack( fcs ).nextElementSibling;
+								}
+							} else {
+								fcs = all[ all.indexOf( fcs ) + ( up ? -1 : 1 ) ];
+							}
+						}
+						if ( fcs ) {
+							playpen.scrollBy( 0, fcs.offsetTop - waw ); // TODO long folders
+							addFocussed( fcs );
+						}
 					}
+
+
 				}
 			}
 		}
@@ -1026,7 +1083,7 @@ Would you like to store the information as a text file to be saved in your audio
 					if ( confirm( "Do not automatically include in future?" ) ) {
 						chrome.storage.local.get( store => {
 							chrome.storage.local.set( { "paths": store.paths.filter( sp => {
-								return ( tia ? !trg.tracks.some( li => sp.a === li.dataset.abs_path ) : sp.a !== trg.dataset.abs_path );
+								return ( tia ? !trg.tracks.some( li => sp.a === absPath( li ) ) : sp.a !== absPath( trg ) );
 							} ) } );
 						} );
 					}
@@ -1076,8 +1133,8 @@ Would you like to store the information as a text file to be saved in your audio
 	storeSettings = () => {
 		chrome.storage.local.set( {
 			// TODO played folders
-			"played": played.map( li => li.dataset.abs_path ), // TODO check if there's enough space; if not?
-			"queue": queue.map( li => li.dataset.abs_path ),
+			"played": played.map( li => absPath( li ) ), // TODO check if there's enough space; if not?
+			"queue": queue.map( li => absPath( li ) ),
 			"settings": {
 				scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
 				combifilter: fltrChckd( "combifilter" ),
