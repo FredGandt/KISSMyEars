@@ -82,18 +82,18 @@ div.section {
 
 div.secleft {
 	height: calc( 100vh - 5.3rem );
-	width: calc( 80vw - 2rem );
+	width: calc( 75vw - 2rem );
 	scroll-behavior: smooth;
 }
 
 div.secright {
-	width: calc( 20vw - 2rem );
+	width: calc( 25vw - 2rem );
 	height: 100vh;
 }
 
 #seek {
 	border-top: var( --dark-turq-border );
-	width: calc( 80vw - 2rem );
+	width: calc( 75vw - 2rem );
 	position: absolute;
 	padding: 1rem;
 	margin: 0;
@@ -108,8 +108,12 @@ div.secright {
 fieldset[name="transport"],
 fieldset[name="folder"],
 output[name="times"] {
-	width: calc( 20vw - 2rem );
+	width: calc( 25vw - 2rem );
 	text-align: center;
+}
+
+output[name="times"] {
+	display: inline-block;
 }
 
 form.overlay {
@@ -151,8 +155,11 @@ h1 {
 #sources select,
 #sources input {
 	width: -webkit-fill-available;
-	margin: .5rem 0;
 	display: block;
+}
+
+#sources input:not([type="file"]) {
+	margin: .5rem 0;
 }
 
 #sources fieldset {
@@ -161,12 +168,12 @@ h1 {
 
 #queue_editor {
 	height: calc( 100vh - 5.3rem );
-	width: calc( 80vw - 2rem );
+	width: calc( 75vw - 2rem );
 	overflow: auto;
 }
 
 #queue_editor > fieldset {
-	width: calc( 80vw - 3rem );
+	width: calc( 75vw - 3rem );
 	background-color: inherit;
 	position: fixed;
 	padding: 1rem;
@@ -200,6 +207,11 @@ fieldset {
 	border: 0;
 }
 
+fieldset,
+button {
+	margin-top: .5rem;
+}
+
 legend {
 	color: var( --turq );
 }
@@ -219,10 +231,6 @@ fieldset.legend label {
 
 fieldset:not(.legend) {
 	padding: 0;
-}
-
-fieldset:not(:first-child) {
-	margin-top: 1rem;
 }
 
 fieldset.child {
@@ -347,7 +355,6 @@ input[type="radio"] {
 input[type="file"] {
 	background-color: var( --darker-grey );
 	color: transparent;
-	margin-top: .5rem;
 	display: block;
 }
 
@@ -369,6 +376,11 @@ input[type="range"] {
 	appearance: none;
 	overflow: hidden;
 	margin: 0;
+}
+
+label.range + label.range {
+	margin-top: .5rem;
+	display: block;
 }
 
 fieldset[name="transport"] {
@@ -432,6 +444,7 @@ input.orange.split:checked {
 output:not([name="playlist_length"]) + label.kbd,
 output:not([name="playlist_length"]) + input,
 input + input:not([type="file"]),
+input[name="fade_stop"],
 input[name="volume"],
 input + label.kbd {
 	margin-left: .5rem;
@@ -450,7 +463,6 @@ input[type="text"] {
 
 select {
 	padding-bottom: .2rem;
-	margin-bottom: .5rem;
 }
 
 input[type="button"],
@@ -537,7 +549,8 @@ fieldset[name="folder"] {
 
 fieldset[name="folder"] {
 	background-color: var( --darker-grey );
-	padding-top: 2rem;
+	border-top: var( --dark-turq-border );
+	padding-top: .5rem;
 }
 
 #controls:not(.hide_cont_folder):not(.hide_shuffle_by) fieldset[name="folder"] {
@@ -558,7 +571,6 @@ button {
 	color: var( --light-grey );
 	border-radius: .3rem;
 	font-family: inherit;
-	margin-top: 1rem;
 	font-size: .8rem;
 	padding: .5rem;
 }

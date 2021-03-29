@@ -173,8 +173,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			}
 		},
 
-		stopTrack: rs => {
+		stopTrack: async rs => {
 			if ( audio.src ) {
+				let fade, vol;
+				if ( !rs && ( fade = controls.fade_stop.valueAsNumber ) && ( vol = audio.volume ) ) {
+					await fadeStop( fade /= 10, vol / fade );
+				}
 				audio.pause();
 				TRANSPORT.backTrack();
 				if ( rs ) {
@@ -272,6 +276,25 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				}
 			} );
 		}
+	},
+
+	fadeStop = ( fade, vol ) => { // TODO yikes
+		return new Promise( resolve => {
+			while ( fade ) {
+				setTimeout( () => {
+					try {
+						audio.volume -= vol;
+					} catch( err ) {
+						audio.volume = 0;
+					}
+					if ( audio.volume < vol ) {
+						audio.volume = controls.volume.valueAsNumber;
+						resolve( true );
+					}
+				}, fade * 10 );
+				--fade;
+			}
+		} );
 	},
 
 	sortPlaylist = () => {
@@ -514,7 +537,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					mtch, pastpath;
 				playlist_fragment = document.createDocumentFragment();
 				resolve( stored.concat( paths.filter( path => {
-					if ( stored.some( sp => sp.a === path.a ) ) return false;
+					if ( stored.some( sp => sp.a === path.a ) ) return false; // TODO check if anyth paths stored no longer exist
 					if ( pastpath !== path.d ) {
 						pastpath = path.d;
 						collectionToHTML( folder );
@@ -732,11 +755,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		let trg = evt.target,
 			typ = trg.type;
 		if ( typ ) {
-			let vlu = trg.value;
+			let vlu = trg.value,
+				nme = trg.name;
 			if ( typ === "range" ) {
-				audio.volume = trg.valueAsNumber;
+				if ( nme === "volume" ) {
+					audio.volume = trg.valueAsNumber;
+				}
 			} else {
-				let nme = trg.name;
 				if ( typ === "checkbox" ) {
 					if ( nme === "scrolltoplaying" ) {
 						removeFocussed();
@@ -905,7 +930,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				evt.preventDefault();
 				removeFocussed();
 				showPlaying();
-			} else if ( !queueEditorShowing() && !playlistFilterShowing() ) { // TODO make it work with filtered?
+			} else if ( !queueEditorShowing() && !playlistFilterShowing() ) { // TODO make it work with filtered and queueEditor?
 				if ( /^(Arrow|Page)(Up|Down)$/.test( k ) ) {
 					evt.preventDefault();
 
@@ -1137,6 +1162,7 @@ Would you like to store the information as a text file to be saved in your audio
 			"queue": queue.map( li => absPath( li ) ),
 			"settings": {
 				scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
+				fadestop: controls.fade_stop.valueAsNumber,
 				combifilter: fltrChckd( "combifilter" ),
 				casensitive: fltrChckd( "casensitive" ),
 				volume: controls.volume.valueAsNumber,
@@ -1157,11 +1183,12 @@ Would you like to store the information as a text file to be saved in your audio
 				combifilter: false,
 				casensitive: false,
 				shuffleby: "track",
-				collapsed: false,
+				collapsed: true,
 				skiplayed: true,
 				endof: "world",
 				shuffle: true,
 				clicky: "end",
+				fadestop: 0,
 				volume: 0.5
 			}, settings || {} );
 			playlist.classList.toggle( "collapsed", controls.collapsed.checked = sttngs.collapsed );
@@ -1172,6 +1199,7 @@ Would you like to store the information as a text file to be saved in your audio
 			audio.volume = controls.volume.value = sttngs.volume;
 			controls.skiplayed.checked = sttngs.skiplayed;
 			controls.shuffle_by.value = sttngs.shuffleby;
+			controls.fade_stop.value = sttngs.fadestop;
 			controls.shuffle.checked = sttngs.shuffle;
 			controls.clicky.value = sttngs.clicky;
 			toggleOptionVisibility();

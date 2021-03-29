@@ -69,10 +69,10 @@
 				--></fieldset><!--
 				--><fieldset class="legend"><!--
 				--><legend>CLICK A TRACK OR FOLDER TO</legend><!--
-				--><label data-kbd="+ ctrl">PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
-				--><label data-kbd="+ ctrl + alt">ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end"></label><!--
-				--><label data-kbd="+ ctrl + meta">ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
-				--><label data-kbd="+ meta + alt">DELIST IT<input class="orange split" name="clicky" type="radio" value="delist"></label><!--
+				--><label data-kbd="+CTRL">PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
+				--><label data-kbd="+CTRL+ALT">ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end"></label><!--
+				--><label data-kbd="+CTRL+META">ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
+				--><label data-kbd="+META+ALT">DELIST IT<input class="orange split" name="clicky" type="radio" value="delist"></label><!--
 				--></fieldset><!--
 				--><fieldset class="legend wrap"><!--
 					--><legend>PLAY UNTIL THE END OF THE</legend><!--
@@ -85,7 +85,7 @@
 				--><fieldset><!--
 				--><output name="playlist_length" data-tracks="0 TRACKS" data-folders="0 FOLDERS" data-broken=""></output><!--
 					--><input name="clearPlaylist" type="button" value="CLEAR"><!--
-					--><label class="kbd" data-kbd="ctrl + F"><input name="playlistFilter" type="button" value="FILTER"></label><!--
+					--><label class="kbd" data-kbd="CTRL+F"><input name="playlistFilter" type="button" value="FILTER"></label><!--
 					--><input name="fixBreakages" type="button" value="BREAKAGES"><!--
 				--></fieldset><!--
 				--><fieldset><!--
@@ -94,12 +94,13 @@
 				--></fieldset><!--
 				--><fieldset><!--
 					--><output name="queue_length" data-ql="0 TRACKS"></output><!--
-					--><label class="kbd" data-kbd="ctrl + Q"><input class="orange" name="queueEditor" type="button" value="EDIT"></label><!--
+					--><label class="kbd" data-kbd="CTRL+Q"><input class="orange" name="queueEditor" type="button" value="EDIT"></label><!--
 				--></fieldset><!--
 				--><fieldset><!--
-					--><label>VOLUME<input name="volume" type="range" min="0" step="0.01" max="1" value="0.5"></label><!--
+				--><label class="range">FADE TO STOP<input name="fade_stop" type="range" min="0" step="10" max="10000"></label><!--
+					--><label class="range">VOLUME<input name="volume" type="range" min="0" step="0.01" max="1"></label><!--
 				--></fieldset><!--
-				--><button>Use <kbd>Arrow/Page-Up/Down</kbd> to navigate playlist tracks and folders, <kbd>Enter</kbd> (+ modifier keys) on a focussed track/folder to perform the related click action, and <kbd>Esc</kbd> to return to controls navigation</button><!--
+				--><button>USE <kbd>ARROW/PAGE-UP/DOWN</kbd> TO NAVIGATE PLAYLIST TRACKS AND FOLDERS, <kbd>ENTER</kbd> (+MODIFIER) ON A FOCUSSED TRACK/FOLDER TO PERFORM THE RELATED CLICK ACTION, AND <kbd>ESC</kbd> TO RETURN TO CONTROLS NAVIGATION</button><!--
 				--><fieldset name="transport"><!--
 					--><fieldset name="folder"><!--
 						--><input name="prevFolder" type="button"><!--
