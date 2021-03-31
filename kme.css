@@ -267,7 +267,7 @@ label[data-kbd]:after {
 	font-size: 90%;
 }
 
-label.kbd[data-kbd]:after {
+label.kbd[data-kbd]:not(.cb):after {
 	margin-left: .5rem;
 }
 

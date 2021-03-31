@@ -124,6 +124,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
 
+	showFocussed = ( li, val ) => playpen.scrollBy( 0, li.offsetTop - val ),
+
 	playlistFilterShowing = () => playlist_filter.classList.contains( "show" ),
 
 	multiTrack = ( n, tof ) => `${n} ${tof ? tof : "TRACK"}${n !== 1 ? "S" : ""}`,
@@ -133,6 +135,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	trackTitleDataset = listing => listing.querySelector( "span[data-title]" ).dataset,
 
 	queueMatch = dragee => queue.findIndex( li => absPath( li ) === absPath( dragee ) ),
+
+	suchWaw = param => playpen.scrollTop + ( param ? ( playpen.offsetHeight * 0.5 ) : 0 ),
 
 	folder = li => ( folderPath( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
 
@@ -278,25 +282,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	fadeStop = ( fade, vol ) => { // TODO yikes
-		return new Promise( resolve => {
-			while ( fade ) {
-				setTimeout( () => {
-					try {
-						audio.volume -= vol;
-					} catch( err ) {
-						audio.volume = 0;
-					}
-					if ( audio.volume < vol ) {
-						audio.volume = controls.volume.valueAsNumber;
-						resolve( true );
-					}
-				}, fade * 10 );
-				--fade;
-			}
-		} );
-	},
-
 	sortPlaylist = () => {
 		fromPlaylist.folders.all().sort( ( a, b ) => collator.compare( folderPath( a ), folderPath( b ) ) ).forEach( li => playlist.append( li ) );
 	},
@@ -359,6 +344,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	toggleCollapsed = () => {
+		let cllpsd = controls.collapsed;
+		playlist.classList.toggle( "collapsed", cllpsd.checked = !cllpsd.checked );
+		// TODO if ( cllpsd.checked && a track or folder is focussed ) { scroll to it } else {
+		showPlaying();
+	},
+
 	updatePlayedness = () => {
 		fromPlaylist.tracks.played().forEach( li => li.classList.remove( "played" ) );
 		controls.played_length.dataset.pl = multiTrack( played.length );
@@ -387,18 +379,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		return [];
 	},
 
-	showPlaying = () => {
-		if ( currently_playing_track && ctrlChckd( "scrolltoplaying" ) && !fromPlaylist.focussed() ) {
-			let cpe = currently_playing_folder,
-				offst = playpen.scrollTop;
-			if ( !ctrlChckd( "collapsed" ) ) { // TODO isShuffleBy( "folder" )??
-			 	offst += ( playpen.offsetHeight * 0.5 ); // TODO unless currently_playing_track is not visible i.e. long folder
-				cpe = currently_playing_track;
-			}
-			requestIdleCallback( () => playpen.scrollBy( 0, cpe.offsetTop - offst ) );
-		}
-	},
-
 	updateQueuetness = () => {
 		let ql = queue.length;
 		fromPlaylist.tracks.queued().forEach( xq => xq.dataset.queue = "" );
@@ -406,6 +386,18 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			queue.forEach( ( q, i ) => trackTitleDataset( q ).queue = ( i + 1 === ql ? ( ql === 1 ? "ONLY" : "LAST" ) : ( !i ? "NEXT" : i + 1 ) ) );
 		}
 		controls.queue_length.dataset.ql = multiTrack( ql );
+	},
+
+	showPlaying = () => {
+		if ( currently_playing_track && ctrlChckd( "scrolltoplaying" ) && !fromPlaylist.focussed() ) {
+			let cpe = currently_playing_folder,
+				offst = playpen.scrollTop;
+			if ( !ctrlChckd( "collapsed" ) ) { // TODO isShuffleBy( "folder" )??
+			 	offst += ( playpen.offsetHeight * 0.5 ); // TODO unless currently_playing_track is not visible i.e. long folders
+				cpe = currently_playing_track;
+			}
+			requestIdleCallback( () => showFocussed( cpe, offst ) );
+		}
 	},
 
 	updatePlaylistLength = () => {
@@ -440,6 +432,25 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		a.click();
 		a.remove();
 		URL.revokeObjectURL( ourl );
+	},
+
+	fadeStop = ( fade, vol ) => { // TODO yikes
+		return new Promise( resolve => {
+			while ( fade ) {
+				setTimeout( () => {
+					try {
+						audio.volume -= vol;
+					} catch( err ) {
+						audio.volume = 0;
+					}
+					if ( audio.volume < vol ) {
+						audio.volume = controls.volume.valueAsNumber;
+						resolve( true );
+					}
+				}, fade * 10 );
+				--fade;
+			}
+		} );
 	},
 
 	applyStoredArrays = store => {
@@ -750,40 +761,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	inputControls = evt => {
-		// console.log( "inputControls", evt );
-		let trg = evt.target,
-			typ = trg.type;
-		if ( typ ) {
-			let vlu = trg.value,
-				nme = trg.name;
-			if ( typ === "range" ) {
-				if ( nme === "volume" ) {
-					audio.volume = trg.valueAsNumber;
-				}
-			} else {
-				if ( typ === "checkbox" ) {
-					if ( nme === "scrolltoplaying" ) {
-						removeFocussed();
-						showPlaying();
-					} else if ( nme === "collapsed" ) {
-						playlist.classList.toggle( "collapsed", trg.checked );
-						showPlaying();
-					}
-				} else if ( typ === "radio" ) {
-					if ( nme === "endof" && ( vlu === "world" || vlu === "list" ) ) {
-						controls.dataset.endof = vlu;
-					}
-				}
-				toggleOptionVisibility();
-			}
-			if ( trg.dataset.clicked ) {
-				trg.dataset.clicked = "";
-				trg.blur();
-			}
-		}
-	},
-
 	drop = evt => {
 		// console.log( "drop", evt );
 		if ( dragee.parentElement ) {
@@ -856,6 +833,39 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	inputControls = evt => {
+		// console.log( "inputControls", evt );
+		let trg = evt.target,
+			typ = trg.type;
+		if ( typ ) {
+			let vlu = trg.value,
+				nme = trg.name;
+			if ( typ === "range" ) {
+				if ( nme === "volume" ) {
+					audio.volume = trg.valueAsNumber;
+				}
+			} else {
+				if ( typ === "checkbox" ) {
+					if ( nme === "scrolltoplaying" ) {
+						removeFocussed();
+						showPlaying();
+					} else if ( nme === "collapsed" ) {
+						toggleCollapsed();
+					}
+				} else if ( typ === "radio" ) {
+					if ( nme === "endof" && ( vlu === "world" || vlu === "list" ) ) {
+						controls.dataset.endof = vlu;
+					}
+				}
+				toggleOptionVisibility();
+			}
+			if ( trg.dataset.clicked ) {
+				trg.dataset.clicked = "";
+				trg.blur();
+			}
+		}
+	},
+
 	clickPlaylistFilter = evt => {
 		// console.log( "clickPlaylistFilter", evt );
 		let trg = evt.target;
@@ -911,6 +921,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			if ( k === " " ) {
 				evt.preventDefault();
 				TRANSPORT.pawsTrack();
+			} else if ( ctrl && k === "c" ) {
+				evt.preventDefault();
+				toggleCollapsed();
 			} else if ( ctrl && k === "q" ) {
 				evt.preventDefault();
 				CONTROLS.queueEditor();
@@ -933,13 +946,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			} else if ( !queueEditorShowing() && !playlistFilterShowing() ) { // TODO make it work with filtered and queueEditor?
 				if ( /^(Arrow|Page)(Up|Down)$/.test( k ) ) {
 					evt.preventDefault();
-
-					// TODO merge the following mess as much as is sensible
-
 					let arrw = /^Arrow/.test( k ),
 						fcs = removeFocussed(),
 						up = /Up$/.test( k );
-
 					if ( arrw && ctrlChckd( "collapsed" ) ) {
 						let es = `${up ? "previous" : "next" }ElementSibling`;
 						if ( fcs ) {
@@ -952,7 +961,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 							} else {
 								fcs = fcs[ es ] || folderOfTrack( fcs )[ es ];
 							}
-						} else if ( currently_playing_track ) {
+						} else if ( currently_playing_track ) { // TODO ignore currently playing; find the nearest folder and grab the first track
 							if ( !( fcs = currently_playing_track[ es ] ) ) {
 								fcs = folderOfTrack( currently_playing_track );
 								if ( !up ) {
@@ -963,14 +972,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 							// TODO fcs = the nearest folder
 						}
 						if ( fcs ) {
-							// TODO scrolling
-							addFocussed( fcs );
+							addFocussed( fcs ); // the order of these operations matters
+							showFocussed( fcs, suchWaw( !folderPath( fcs ) ) );
 						}
-					}
-
-					else {
+					} else {
 						let all = fromPlaylist[ arrw ? "tracks" : "folders" ].all(),
-							waw = playpen.scrollTop + ( arrw ? ( playpen.offsetHeight * 0.5 ) : 0 );
+							waw = suchWaw( arrw );
 						fcs = fcs || [].concat( all ).sort( ( a, b ) => ( a.offsetTop - waw ) + ( b.offsetTop - waw ) )[ 0 ];
 						if ( fcs ) {
 							if ( arrw && folderPath( fcs ) ) {
@@ -990,12 +997,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 							}
 						}
 						if ( fcs ) {
-							playpen.scrollBy( 0, fcs.offsetTop - waw ); // TODO long folders
-							addFocussed( fcs );
+							showFocussed( fcs, waw );
+							addFocussed( fcs ); // the order of these operations matters
 						}
 					}
-
-
 				}
 			}
 		}
@@ -1071,7 +1076,7 @@ Would you like to store the information as a text file to be saved in your audio
 
 	clickPlaylist = evt => {
 		// console.log( "clickPlaylist", evt );
-		let trg = ( evt.trg || liFromEvtPath( evt ) );
+		let trg = ( evt.trg || liFromEvtPath( evt ) ); // TODO if ctrlChckd( "collapsed" ) clicking a folder expands it
 		if ( trg ) {
 			let cv = ctrlVlu( "clicky" ),
 				ctrl = evt.ctrlKey,
