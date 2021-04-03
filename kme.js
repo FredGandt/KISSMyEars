@@ -106,6 +106,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	ctrlChckd = ctrl => controls[ ctrl ].checked,
 
+	halfPlaypen = () => playpen.offsetHeight * 0.5,
+
 	untilEndOf = cont => isCtrlVlu( "endof", cont ),
 
 	isShuffleBy = sb => isCtrlVlu( "shuffle_by", sb ),
@@ -120,11 +122,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	defaultEndOf = () => controls.endof.value = controls.dataset.endof,
 
+	suchWaw = param => playpen.scrollTop + ( param ? halfPlaypen() : 0 ),
+
 	queueEditorShowing = () => queue_editor.classList.contains( "show" ),
 
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
-
-	showFocussed = ( li, val ) => playpen.scrollBy( 0, li.offsetTop - val ),
 
 	playlistFilterShowing = () => playlist_filter.classList.contains( "show" ),
 
@@ -136,9 +138,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	queueMatch = dragee => queue.findIndex( li => absPath( li ) === absPath( dragee ) ),
 
-	suchWaw = param => playpen.scrollTop + ( param ? ( playpen.offsetHeight * 0.5 ) : 0 ),
-
 	folder = li => ( folderPath( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
+
+	showFocussed = ( li, val ) => playpen.scrollBy( 0, li.offsetTop - playpen.offsetTop - val ),
 
 	clearFilters = () => fromPlaylist.filtered().forEach( l => l.classList.remove( "filtered" ) ),
 
@@ -393,7 +395,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			let cpe = currently_playing_folder,
 				offst = playpen.scrollTop;
 			if ( !ctrlChckd( "collapsed" ) ) { // TODO isShuffleBy( "folder" )??
-			 	offst += ( playpen.offsetHeight * 0.5 ); // TODO unless currently_playing_track is not visible i.e. long folders
+			 	offst += halfPlaypen(); // TODO unless currently_playing_track is not visible i.e. long folders
 				cpe = currently_playing_track;
 			}
 			requestIdleCallback( () => showFocussed( cpe, offst ) );
@@ -841,8 +843,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			let vlu = trg.value,
 				nme = trg.name;
 			if ( typ === "range" ) {
-				if ( nme === "volume" ) {
-					audio.volume = trg.valueAsNumber;
+				let van = trg.valueAsNumber;
+				trg.parentElement.dataset.op = van;
+				if ( trg.name === "volume" ) {
+					audio.volume = van;
 				}
 			} else {
 				if ( typ === "checkbox" ) {
@@ -1196,15 +1200,15 @@ Would you like to store the information as a text file to be saved in your audio
 				fadestop: 0,
 				volume: 0.5
 			}, settings || {} );
+			audio.volume = controls.volume.value = controls.volume.parentElement.dataset.op = sttngs.volume;
+			controls.fade_stop.value = controls.fade_stop.parentElement.dataset.op = sttngs.fadestop;
 			playlist.classList.toggle( "collapsed", controls.collapsed.checked = sttngs.collapsed );
 			controls.dataset.endof = controls.endof.value = sttngs.endof;
 			controls.scrolltoplaying.checked = sttngs.scrolltoplaying;
 			playlist_filter.combifilter.checked = sttngs.combifilter;
 			playlist_filter.casensitive.checked = sttngs.casensitive;
-			audio.volume = controls.volume.value = sttngs.volume;
 			controls.skiplayed.checked = sttngs.skiplayed;
 			controls.shuffle_by.value = sttngs.shuffleby;
-			controls.fade_stop.value = sttngs.fadestop;
 			controls.shuffle.checked = sttngs.shuffle;
 			controls.clicky.value = sttngs.clicky;
 			toggleOptionVisibility();

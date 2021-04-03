@@ -20,18 +20,18 @@
 }
 
 ::-webkit-scrollbar {
-	height: .5rem;
-	width: .8rem;
+	height: 1rem;
+	width: 1rem;
 }
 
 ::-webkit-scrollbar-track,
 ::-webkit-scrollbar-thumb {
 	background-color: var( --darkest-grey );
+	border-radius: 1rem;
 }
 
 ::-webkit-scrollbar-thumb {
 	box-shadow: 0 0 10rem 10rem var( --turq ) inset;
-	border-radius: 1rem;
 }
 
 ::-webkit-slider-thumb {
@@ -61,6 +61,10 @@
 	float: left;
 }
 
+.m {
+	margin-left: .5rem !important;
+}
+
 body, div, form {
 	background-color: var( --darker-grey );
 }
@@ -81,9 +85,10 @@ div.section {
 }
 
 div.secleft {
-	height: calc( 100vh - 5.3rem );
+	height: calc( 100vh - 6.3rem );
 	width: calc( 75vw - 2rem );
 	scroll-behavior: smooth;
+	margin: 1rem 0 0;
 }
 
 div.secright {
@@ -92,10 +97,9 @@ div.secright {
 }
 
 #seek {
-	border-top: var( --dark-turq-border );
 	width: calc( 75vw - 2rem );
+	padding: 0 1rem 1rem;
 	position: absolute;
-	padding: 1rem;
 	margin: 0;
 	bottom: 0;
 	left: 0;
@@ -126,7 +130,7 @@ form.overlay.show {
 	z-index: 1;
 }
 
-form.overlay.drop {
+form.overlay.show.drop {
 	box-shadow: 0 0 2rem 0rem black;
 	border-radius: .5rem;
 }
@@ -159,7 +163,7 @@ h1 {
 }
 
 #sources input:not([type="file"]) {
-	margin: .5rem 0;
+	margin: 0 0 .5rem 0;
 }
 
 #sources fieldset {
@@ -258,17 +262,6 @@ output[name="playlist_length"]:before {
 output[name="playlist_length"]:after {
 	content: attr( data-broken );
 	color: var( --red );
-}
-
-label[data-kbd]:after {
-	content: "(" attr( data-kbd ) ")";
-	color: var( --light-grey );
-	vertical-align: text-top;
-	font-size: 90%;
-}
-
-label.kbd[data-kbd]:not(.cb):after {
-	margin-left: .5rem;
 }
 
 output[name="playlist_length"] {
@@ -383,6 +376,14 @@ label.range + label.range {
 	display: block;
 }
 
+label.range:after {
+	content: attr( data-op ) attr( data-q );
+	color: var( --lighter-grey );
+	vertical-align: text-top;
+	margin-left: .5rem;
+	font-size: 90%;
+}
+
 fieldset[name="transport"] {
 	position: absolute;
 	bottom: 1rem;
@@ -441,12 +442,8 @@ input.orange.split:checked {
 	background-image: linear-gradient( to right, var( --turq ) 50%, var( --orange ) 50% );
 }
 
-output:not([name="playlist_length"]) + label.kbd,
 output:not([name="playlist_length"]) + input,
-input + input:not([type="file"]),
-input[name="fade_stop"],
-input[name="volume"],
-input + label.kbd {
+input + input:not([type="file"]) {
 	margin-left: .5rem;
 }
 
@@ -463,6 +460,7 @@ input[type="text"] {
 
 select {
 	padding-bottom: .2rem;
+	margin-bottom: .5rem;
 }
 
 input[type="button"],
@@ -491,8 +489,7 @@ select {
 }
 
 #playlist.collapsed > li.playing {
-	border-bottom: var(--dark-turq-border);
-	border-top: var(--dark-turq-border);
+	padding-top: .5rem;
 }
 
 #playlist.filtered li.filtered li.filtered {
@@ -510,6 +507,10 @@ select {
 
 #playlist li.focussed {
 	color: var( --bright-turq ) !important;
+}
+
+#playlist.collapsed > li.focussed {
+	padding-top: .5rem;
 }
 
 #playlist ol li span[data-queue]:not([data-queue=""]):before,
@@ -576,6 +577,18 @@ button {
 }
 
 kbd {
-	background-color: var( --darkest-grey );
-	padding: 0 .3em;
+	color: var( --mid-turq );
+}
+
+label kbd {
+	vertical-align: text-top;
+	font-size: 90%;
+}
+
+label kbd:before {
+	content: "(";
+}
+
+label kbd:after {
+	content: ")";
 }
