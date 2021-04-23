@@ -3,6 +3,7 @@
 	--darkerer-grey: #383838;
 	--darker-grey: #404040;
 	--dark-grey: #4a4a4a;
+	--rude-grey: #696969;
 	--light-grey: #808080;
 	--lighter-grey: #909090;
 
@@ -284,7 +285,7 @@ ol li {
 }
 
 li.played {
-	color: var( --light-grey ) !important;
+	color: var( --rude-grey ) !important;
 }
 
 ol li.played {

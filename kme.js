@@ -30,6 +30,8 @@
 		// shuffle by tag
 		// replaygain
 		// images :(
+		// scrobbling :(
+			// https://www.last.fm/api/scrobbling
 
 // TODO skip silent sections in tracks e.g. leading to hidden tracks.
 // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
@@ -346,9 +348,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	toggleCollapsed = () => {
+	toggleCollapsed = clck => {
 		let cllpsd = controls.collapsed;
-		playlist.classList.toggle( "collapsed", cllpsd.checked = !cllpsd.checked );
+		playlist.classList.toggle( "collapsed", clck ? cllpsd.checked : ( cllpsd.checked = !cllpsd.checked ) );
 		// TODO if ( cllpsd.checked && a track or folder is focussed ) { scroll to it } else {
 		showPlaying();
 	},
@@ -621,7 +623,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 										if ( lstndx < tof.length - 1 ) {
 											listing = tof[ lstndx + 1 ]; // TODO previous/back/next folder
 										} else {
-											currently_playing_folder.classList.add( "played" ); // TODO check this
+											currently_playing_folder.classList.add( "played" ); // TODO check this // possibly doesn't remove "playing"
 										}
 									}
 									if ( !listing ) {
@@ -854,7 +856,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						removeFocussed();
 						showPlaying();
 					} else if ( nme === "collapsed" ) {
-						toggleCollapsed();
+						toggleCollapsed( true );
 					}
 				} else if ( typ === "radio" ) {
 					if ( nme === "endof" && ( vlu === "world" || vlu === "list" ) ) {
