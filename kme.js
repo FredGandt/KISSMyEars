@@ -1015,7 +1015,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	importFiles = evt => {
 		// console.log( "importFiles", evt );
 		let trg = evt.target,
-			slv = sources.libraries.value;
+			slv = String.raw`${sources.libraries.value}`;
 		if ( trg === sources.libraries ) {
 			toggleLibraryVisibility( slv );
 		} else if ( trg === sources.include ) {
@@ -1024,12 +1024,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				libnme = sources.libraries.querySelectorAll( "option" )[ sources.libraries.selectedIndex ].textContent;
 			} else {
 				libnme = sources.name.value;
-				slv = sources.path.value;
+				slv = String.raw`${sources.path.value}`;
 			}
 			if ( !( slv && libnme ) ) {
 				alert( "You must provide the path to the library from which you intend to select folders, and a name for it." );
 			} else {
-				sp = slv.split( "/" ).filter( f => f );
+				sp = slv.split( /\\|\//g ).filter( f => f );
 				paths = arrayFrom( trg.files ).filter( file => /^audio\//.test( file.type ) ).map( file => {
 					cp = sp.concat( file.webkitRelativePath.split( "/" ).filter( f => f ) );
 
