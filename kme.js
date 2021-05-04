@@ -52,7 +52,6 @@ function FromPlaylist() {
 		notPlayed: ndx => this.get( "ol li:not(.played)", ndx ),
 		notBroken: ndx => this.get( "ol li:not(.broken)", ndx ),
 		filtered: ndx => this.get( "ol li.filtered", ndx ),
-		played: ndx => this.get( "ol li.played", ndx ),
 		broken: ndx => this.get( "ol li.broken", ndx ),
 		all: ndx => this.get( "ol li", ndx )
 	};
@@ -62,6 +61,7 @@ function FromPlaylist() {
 	};
 	this.filtered = ndx => this.get( "li.filtered", ndx );
 	this.focussed = () => this.get( "li.focussed", 0 );
+	this.played = ndx => this.get( "li.played", ndx );
 };
 
 let currently_playing_folder,
@@ -72,7 +72,9 @@ let currently_playing_folder,
 	played = [],
 	queue = [],
 	dragee,
-	dropee;
+	dropee,
+
+	debugging = false;
 
 const playlist_filter = document.getElementById( "playlist_filter" ),
 	queue_editor = document.getElementById( "queue_editor" ),
@@ -216,11 +218,15 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			}
 		},
 
-		prevFolder: () => console.log( "prevFolder" ), // TODO
+		backFolder: () => {
+			currently_playing_track = null;
+			TRANSPORT.nextTrack();
+		},
 
-		backFolder: () => console.log( "backFolder" ), // TODO
-
-		nextFolder: () => console.log( "nextFolder" ) // TODO
+		nextFolder: () => {
+			currently_playing_folder = null;
+			TRANSPORT.nextTrack()
+		}
 	},
 
 	CONTROLS = {
@@ -356,9 +362,16 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	updatePlayedness = () => {
-		fromPlaylist.tracks.played().forEach( li => li.classList.remove( "played" ) );
+		fromPlaylist.played().forEach( li => li.classList.remove( "played" ) );
 		controls.played_length.dataset.pl = multiTrack( played.length );
-		played.forEach( li => li.classList.add( "played" ) );
+		let fldr;
+		played.forEach( li => {
+			li.classList.add( "played" );
+			fldr = folderOfTrack( li );
+			if ( !tracksOfFolder( fldr ).filter( trck => !trck.classList.contains( "played" ) ).length ) {
+				fldr.classList.add( "played" );
+			}
+		} );
 	},
 
 	closePlaylistFilter = () => {
@@ -621,9 +634,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 										let tof = tracksOfFolder( currently_playing_folder ),
 											lstndx = tof.indexOf( currently_playing_track );
 										if ( lstndx < tof.length - 1 ) {
-											listing = tof[ lstndx + 1 ]; // TODO previous/back/next folder
+											listing = tof[ lstndx + 1 ];
 										} else {
-											currently_playing_folder.classList.add( "played" ); // TODO check this // possibly doesn't remove "playing"
+											currently_playing_folder.classList.remove( "playing" ); // TODO check this // why doesn't this happen at displayTrackData?
+											currently_playing_folder.classList.add( "played" );
 										}
 									}
 									if ( !listing ) {
@@ -711,10 +725,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	contextMenu = evt => {
 		// console.log( "contextMenu", evt );
-		let trg = liFromEvtPath( evt );
-		if ( trg ) {
-			evt.preventDefault();
-			googleSearch( trg );
+		if ( !debugging ) {
+			let trg = liFromEvtPath( evt );
+			if ( trg ) {
+				evt.preventDefault();
+				googleSearch( trg );
+			}
 		}
 	},
 
@@ -826,7 +842,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			clearFilters();
 			playlist.querySelectorAll( fltr ).forEach( li => {
 				li.classList.add( "filtered" );
-				if ( li.dataset.title ) {
+				if ( !folderPath( li ) ) {
 					folderOfTrack( li ).classList.add( "filtered" );
 				} else {
 					li.querySelectorAll( `li${fresh}` ).forEach( li => li.classList.add( "filtered" ) );
