@@ -19,7 +19,7 @@
 
 		--><audio></audio><!--
 
-		--><form class="overlay" id="queue_editor"><!--
+		--><form class="overlay" id="list_editor"><!--
 			--><fieldset><!--
 			--><h1 class="fleft">DRAGON DROPPINGS</h1><!--
 				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
@@ -90,11 +90,11 @@
 				--></fieldset><!--
 				--><fieldset><!--
 					--><output name="played_length" data-pl="0 TRACKS"></output><!--
-					--><input name="clearPlayedTracks" type="button" value="CLEAR"><!--
+					--><label><input class="m" name="listEditor" data-list="played" type="button" value="EDIT"><kbd class="m">CTRL+P</kbd></label><!--
 				--></fieldset><!--
 				--><fieldset><!--
 					--><output name="queue_length" data-ql="0 TRACKS"></output><!--
-					--><label><input class="orange m" name="queueEditor" type="button" value="EDIT"><kbd class="m">CTRL+Q</kbd></label><!--
+					--><label><input class="orange m" name="listEditor" data-list="queue" type="button" value="EDIT"><kbd class="m">CTRL+Q</kbd></label><!--
 				--></fieldset><!--
 				--><fieldset><!--
 				--><label class="range" data-op="" data-q="ms">FADE TO STOP<input class="m" name="fade_stop" type="range" min="0" step="10" max="5000"></label><!--

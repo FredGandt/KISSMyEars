@@ -171,22 +171,23 @@ h1 {
 	margin-top: 0;
 }
 
-#queue_editor {
+#list_editor {
 	height: calc( 100vh - 5.3rem );
 	width: calc( 75vw - 2rem );
 	overflow: auto;
 }
 
-#queue_editor > fieldset {
+#list_editor > fieldset {
 	width: calc( 75vw - 3rem );
 	background-color: inherit;
 	position: fixed;
+	margin-top: 0;
 	padding: 1rem;
 	left: 0;
 	top: 0;
 }
 
-#queue_editor li.dragee {
+#list_editor li.dragee {
 	opacity: .25;
 }
 
@@ -284,12 +285,12 @@ ol li {
 	white-space: nowrap;
 }
 
-li.played {
-	color: var( --rude-grey ) !important;
+#playlist ol li.played {
+	color: var( --dark-turq ) !important;
 }
 
-ol li.played {
-	color: var( --dark-turq ) !important;
+#playlist li.played {
+	color: var( --rude-grey ) !important;
 }
 
 li.broken {
@@ -533,10 +534,10 @@ input[type="button"].orange {
 #controls.hide_cont_folder span.skip_folders,
 #controls.hide_cont_folder label.cont_folder,
 #controls.hide_shuffle_by span.skip_folders,
-#queue_editor ol li span:not(:nth-child(2)),
+#list_editor ol li span:not(:nth-child(2)),
 #sources fieldset[name="new_lib"].hide,
 #playlist.filtered li:not(.filtered),
-#queue_editor div.dropzone li,
+#list_editor div.dropzone li,
 #controls span.skip_tracks,
 input[name="fixBreakages"],
 fieldset[name="folder"] {

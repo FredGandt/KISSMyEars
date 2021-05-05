@@ -77,14 +77,14 @@ let currently_playing_folder,
 	debugging = false;
 
 const playlist_filter = document.getElementById( "playlist_filter" ),
-	queue_editor = document.getElementById( "queue_editor" ),
+	list_editor = document.getElementById( "list_editor" ),
 	playlist = document.getElementById( "playlist" ),
 	controls = document.getElementById( "controls" ),
 	sources = document.getElementById( "sources" ),
 	seek = document.getElementById( "seek" ),
 
-	queue_editor_trash = queue_editor.querySelector( "div" ),
-	queue_editor_list = queue_editor.querySelector( "ol" ),
+	list_editor_trash = list_editor.querySelector( "div" ),
+	list_editor_list = list_editor.querySelector( "ol" ),
 	blur_oasis = controls.querySelector( "button" ),
 	audio = document.querySelector( "audio" ),
 	playpen = playlist.parentElement,
@@ -97,8 +97,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		caseFirst: "upper",
 		numeric: true
 	} ),
-
-	folderPath = li => li.dataset.path,
 
 	absPath = li => li.dataset.abs_path,
 
@@ -116,6 +114,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	isShuffleBy = sb => isCtrlVlu( "shuffle_by", sb ),
 
+	folderPath = li => li ? li.dataset.path : undefined,
+
 	fltrChckd = ctrl => playlist_filter[ ctrl ].checked,
 
 	isCtrlVlu = ( ctrl, vlu ) => ctrlVlu( ctrl ) === vlu,
@@ -124,13 +124,15 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	isBtn = trg => trg && trg.type && trg.type === "button",
 
+	listEditorShowing = () => list_editor.classList.contains( "show" ),
+
 	defaultEndOf = () => controls.endof.value = controls.dataset.endof,
 
 	suchWaw = param => playpen.scrollTop + ( param ? halfPlaypen() : 0 ),
 
-	queueEditorShowing = () => queue_editor.classList.contains( "show" ),
-
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
+
+	whichList = lstnme => ( { "queue": queue, "played": played }[ lstnme ] ),
 
 	playlistFilterShowing = () => playlist_filter.classList.contains( "show" ),
 
@@ -140,8 +142,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	trackTitleDataset = listing => listing.querySelector( "span[data-title]" ).dataset,
 
-	queueMatch = dragee => queue.findIndex( li => absPath( li ) === absPath( dragee ) ),
-
 	folder = li => ( folderPath( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
 
 	showFocussed = ( li, val ) => playpen.scrollBy( 0, li.offsetTop - playpen.offsetTop - val ),
@@ -149,6 +149,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	clearFilters = () => fromPlaylist.filtered().forEach( l => l.classList.remove( "filtered" ) ),
 
 	pathsToTracks = paths => paths.map( p => playlist.querySelector( `li[data-abs_path="${p}"]` ) ),
+
+	listMatch = ( dragee, q ) => ( q ? queue : played ).findIndex( li => absPath( li ) === absPath( dragee ) ),
 
 	// TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
 	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ),
@@ -243,8 +245,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			if ( numberOfNotBrokenTracks() ) {
 				if ( playlist_filter.classList.toggle( "show" ) ) {
 					playlist_filter.querySelector( 'input[name="contains"]' ).focus();
-					if ( queueEditorShowing() ) {
-						clickQueueEditor();
+					if ( listEditorShowing() ) {
+						clickListEditor();
 					}
 					playlist.classList.add( "filtered" );
 					return;
@@ -253,22 +255,23 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			closePlaylistFilter();
 		},
 
-		queueEditor: () => { // TODO make a general list editor and include ability to edit played
-			if ( queueEditorShowing() ) {
-				clickQueueEditor();
-			} else {
-				if ( queue.length ) {
-					let clone;
-					queue.forEach( q => {
-						clone = q.cloneNode( true );
-						clone.draggable = true;
-						queue_editor_list.append( clone );
-					} );
-					if ( playlistFilterShowing() ) {
-						closePlaylistFilter();
-					}
-					queue_editor.classList.add( "show" );
+		listEditor: trg => {
+			let lstnme = trg.dataset.list,
+				list = whichList( lstnme );
+			if ( listEditorShowing() ) {
+				clickListEditor();
+			} else if ( list.length ) {
+				let clone;
+				list.forEach( q => {
+					clone = q.cloneNode( true );
+					clone.draggable = true;
+					list_editor_list.append( clone );
+				} );
+				if ( playlistFilterShowing() ) {
+					closePlaylistFilter();
 				}
+				list_editor.dataset.list = lstnme;
+				list_editor.classList.add( "show" );
 			}
 		},
 
@@ -347,7 +350,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	setLibraries = libs => { // TODO edit libraries
+	setLibraries = libs => {
 		if ( libs ) {
 			sources.libraries.innerHTML = `<option value="" selected>ADD NEW LIBRARY</option>` +
 				libs.map( ( l, i ) => `<option value="${l.path}" title="${l.path}">${l.name}</option>` ).join( "" );
@@ -531,7 +534,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				oli = document.createElement( "li" ),
 				li, spn;
 			oli.dataset.path = folder.path;
-			// TODO filter out duplicates (side effect of allowing the loading of unstored tracks)
 			folder.tracks.sort( ( a, b ) => a.num - b.num ).forEach( track => {
 				li = document.createElement( "li" );
 				li.dataset.abs_path = track.abspath;
@@ -565,7 +567,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					mtch, pastpath;
 				playlist_fragment = document.createDocumentFragment();
 				resolve( stored.concat( paths.filter( path => {
-					if ( stored.some( sp => sp.a === path.a ) ) return false; // TODO check if anyth paths stored no longer exist
+					if ( stored.some( sp => sp.a === path.a ) ) return false; // TODO check if any stored paths no longer exist
 					if ( pastpath !== path.d ) {
 						pastpath = path.d;
 						collectionToHTML( folder );
@@ -617,11 +619,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 								// address the crappy issue of not being able to stop at the end of the queue when the last track of the queue is playing
 
 						queuend = !queue.length;
-						if ( queueEditorShowing() ) {
+						if ( listEditorShowing() ) {
 							if ( queuend ) {
-								clickQueueEditor();
+								clickListEditor();
 							} else {
-								queue_editor.querySelector( "ol li" ).remove();
+								list_editor.querySelector( "ol li" ).remove();
 							}
 						}
 						updateQueuetness();
@@ -630,6 +632,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						if ( list.length ) {
 							if ( ctrlChckd( "shuffle" ) ) {
 								if ( isShuffleBy( "folder" ) ) {
+
+									// TODO on startup (assuming we end up here) pick up where we left off
+									// currently finds a new folder to start instead of carrying on with the last one, even if there are tracks remaining to play
+
 									if ( currently_playing_folder ) {
 										let tof = tracksOfFolder( currently_playing_folder ),
 											lstndx = tof.indexOf( currently_playing_track );
@@ -712,7 +718,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		// evt.offsetY
 		// dropzone.scrollTop
 
-		// if queue_editor height is greater than the available space i.e. is scrollable
+		// if list_editor height is greater than the available space i.e. is scrollable
 			// if the drag is near the top and the scroll isn't topped out
 			// or if the drag is near the bottom and the scroll isn't bottomed out
 				// scroll faster the nearer the edge gets
@@ -751,17 +757,23 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	clickQueueEditor = evt => {
-		// console.log( "clickQueueEditor", evt );
-		if ( queue.length && evt && evt.target.name === "clear" && confirm( "Clear the queue?" ) ) {
-			queue = [];
-			updateQueuetness();
+	clickListEditor = evt => {
+		// console.log( "clickListEditor", evt );
+		let lstnme = list_editor.dataset.list;
+		if ( whichList( lstnme ).length && evt && evt.target.name === "clear" && confirm( `Clear ${lstnme}?` ) ) {
+			if ( lstnme === "queue" ) {
+				queue = [];
+				updateQueuetness();
+			} else {
+				played = [];
+				updatePlayedness();
+			}
 		}
 		if ( evt && evt.target && !evt.target.type ) {
 			return;
 		}
-		queue_editor.classList.remove( "show" );
-		queue_editor_list.innerHTML = "";
+		list_editor.classList.remove( "show" );
+		list_editor_list.innerHTML = "";
 	},
 
 	clickControls = evt => {
@@ -770,7 +782,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		if ( isBtn( trg ) ) {
 			let fnc = trg.name;
 			if ( CONTROLS.hasOwnProperty( fnc ) ) {
-				CONTROLS[ fnc ]();
+				CONTROLS[ fnc ]( trg );
 			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
 				TRANSPORT[ fnc ]();
 			}
@@ -783,24 +795,29 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	drop = evt => {
 		// console.log( "drop", evt );
+		let q = list_editor.dataset.list === "queue";
 		if ( dragee.parentElement ) {
 			evt.preventDefault();
 			let trg = evt.target;
-			if ( trg === queue_editor_trash ) {
-				queue_editor_trash.append( dragee );
-				queue.splice( queueMatch( dragee ), 1 );
+			if ( trg === list_editor_trash ) {
+				list_editor_trash.append( dragee );
+				( q ? queue : played ).splice( listMatch( dragee, q ), 1 );
 				dragee.remove();
-			} else {
-				let movee = queue.splice( queueMatch( dragee ), 1 )[ 0 ];
-				if ( trg === queue_editor_list ) {
-					queue_editor_list.append( dragee );
+			} else if ( q ) {
+				let movee = queue.splice( listMatch( dragee, true ), 1 )[ 0 ];
+				if ( trg === list_editor_list ) {
+					list_editor_list.append( dragee );
 					queue.push( movee );
 				} else {
-					queue_editor_list.insertBefore( dragee, dropee );
-					queue.splice( queueMatch( dropee ), 0, movee );
+					list_editor_list.insertBefore( dragee, dropee );
+					queue.splice( listMatch( dropee, true ), 0, movee );
 				}
 			}
-			updateQueuetness();
+			if ( q ) {
+				updateQueuetness();
+			} else {
+				updatePlayedness();
+			}
 		}
 	},
 
@@ -810,6 +827,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		if ( currently_playing_track ) {
 			played.push( currently_playing_track );
 			updatePlayedness();
+			/* if ( listEditorShowing() ) {
+				list_editor_list.append( currently_playing_track.cloneNode( true ) );
+			} */
 		}
 		audio.removeAttribute( "src" );
 		if ( queuend && !queue.length && untilEndOf( "queue" ) ) {
@@ -965,7 +985,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				evt.preventDefault();
 				removeFocussed();
 				showPlaying();
-			} else if ( !queueEditorShowing() && !playlistFilterShowing() ) { // TODO make it work with filtered and queueEditor?
+			} else if ( !listEditorShowing() && !playlistFilterShowing() ) { // TODO make it work with filtered and queueEditor?
 				if ( /^(Arrow|Page)(Up|Down)$/.test( k ) ) {
 					evt.preventDefault();
 					let arrw = /^Arrow/.test( k ),
@@ -1126,7 +1146,6 @@ Would you like to store the information as a text file to be saved in your audio
 				}
 			}
 
-			// TODO play immediately doesn't if the player is stopped
 			// TODO if ( controls.shuffle etc ) offer to shuffle before adding folders to the queue?
 
 			// TODO if ( a queued track has been delisted ) make sure the further options are clearly indicated as not required
@@ -1162,7 +1181,7 @@ Would you like to store the information as a text file to be saved in your audio
 				} else {
 					queue.unshift( trg );
 				}
-				TRANSPORT.nextTrack();
+				TRANSPORT.nextTrack(); // TODO play immediately doesn't if the player is stopped
 			} else {
 				if ( cv === "next" ) {
 					if ( tia ) {
@@ -1184,7 +1203,6 @@ Would you like to store the information as a text file to be saved in your audio
 
 	storeSettings = () => {
 		chrome.storage.local.set( {
-			// TODO played folders
 			"played": played.map( li => absPath( li ) ), // TODO check if there's enough space; if not?
 			"queue": queue.map( li => absPath( li ) ),
 			"settings": {
@@ -1255,10 +1273,10 @@ playlist.addEventListener( "click", clickPlaylist, { passive: true } );
 playlist_filter.addEventListener( "input", inputPlaylistFilter, { passive: true } );
 playlist_filter.addEventListener( "click", clickPlaylistFilter, { passive: true } );
 
-queue_editor.addEventListener( "click", clickQueueEditor, { passive: true } );
-queue_editor.addEventListener( "dragstart", dragStart, { passive: true } );
-queue_editor.addEventListener( "dragend", dragEnd, { passive: true } );
-queue_editor.querySelectorAll( ".dropzone" ).forEach( dz => {
+list_editor.addEventListener( "click", clickListEditor, { passive: true } );
+list_editor.addEventListener( "dragstart", dragStart, { passive: true } );
+list_editor.addEventListener( "dragend", dragEnd, { passive: true } );
+list_editor.querySelectorAll( ".dropzone" ).forEach( dz => {
 	dz.addEventListener( "dragover", dragOver );
 	dz.addEventListener( "drop", drop );
 } );
