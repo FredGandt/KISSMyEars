@@ -132,8 +132,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
 
-	whichList = lstnme => ( { "queue": queue, "played": played }[ lstnme ] ),
-
 	playlistFilterShowing = () => playlist_filter.classList.contains( "show" ),
 
 	multiTrack = ( n, tof ) => `${n} ${tof ? tof : "TRACK"}${n !== 1 ? "S" : ""}`,
@@ -255,9 +253,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			closePlaylistFilter();
 		},
 
-		listEditor: trg => {
-			let lstnme = trg.dataset.list,
-				list = whichList( lstnme );
+		listEditor: list => {
 			if ( listEditorShowing() ) {
 				clickListEditor();
 			} else if ( list.length ) {
@@ -270,7 +266,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				if ( playlistFilterShowing() ) {
 					closePlaylistFilter();
 				}
-				list_editor.dataset.list = lstnme;
+				list_editor.dataset.list = ( list === queue ? "queue" : "played" );
 				list_editor.classList.add( "show" );
 			}
 		},
@@ -757,14 +753,32 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	clickControls = evt => {
+		// console.log( "clickControls", evt );
+		let trg = evt.target;
+		if ( isBtn( trg ) ) {
+			let fnc = trg.name;
+			if ( CONTROLS.hasOwnProperty( fnc ) ) {
+				CONTROLS[ fnc ]( fnc === "listEditor" ? ( trg.dataset.list === "queue" ? queue : played ) : null );
+			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
+				TRANSPORT[ fnc ]();
+			}
+		} else if ( trg && /^(range|checkbox|radio)$/.test( trg.type ) ) {
+			trg.dataset.clicked = true;
+		} else if ( trg === blur_oasis ) {
+			evt.preventDefault();
+		}
+	},
+
 	clickListEditor = evt => {
 		// console.log( "clickListEditor", evt );
-		let lstnme = list_editor.dataset.list;
-		if ( whichList( lstnme ).length && evt && evt.target.name === "clear" && confirm( `Clear ${lstnme}?` ) ) {
-			if ( lstnme === "queue" ) {
-				queue = [];
-				updateQueuetness();
-			} else {
+		if ( evt && evt.target.name === "clear" ) {
+			if ( list_editor.dataset.list === "queue" ) {
+				if ( queue.length && confirm( "Clear the queue?" ) ) {
+					queue = [];
+					updateQueuetness();
+				}
+			} else if ( played.length && confirm( "Clear played tracks?" ) ) {
 				played = [];
 				updatePlayedness();
 			}
@@ -774,23 +788,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 		list_editor.classList.remove( "show" );
 		list_editor_list.innerHTML = "";
-	},
-
-	clickControls = evt => {
-		// console.log( "clickControls", evt );
-		let trg = evt.target;
-		if ( isBtn( trg ) ) {
-			let fnc = trg.name;
-			if ( CONTROLS.hasOwnProperty( fnc ) ) {
-				CONTROLS[ fnc ]( trg );
-			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
-				TRANSPORT[ fnc ]();
-			}
-		} else if ( trg && /^(range|checkbox|radio)$/.test( trg.type ) ) {
-			trg.dataset.clicked = true;
-		} else if ( trg === blur_oasis ) {
-			evt.preventDefault();
-		}
 	},
 
 	drop = evt => {
@@ -968,7 +965,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				toggleCollapsed();
 			} else if ( ctrl && k === "q" ) {
 				evt.preventDefault();
-				CONTROLS.queueEditor();
+				CONTROLS.listEditor( queue );
+			} else if ( ctrl && k === "p" ) {
+				evt.preventDefault();
+				CONTROLS.listEditor( played );
 			} else if ( ctrl && k === "g" ) {
 				evt.preventDefault();
 				let fcs = fromPlaylist.focussed();
@@ -985,7 +985,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				evt.preventDefault();
 				removeFocussed();
 				showPlaying();
-			} else if ( !listEditorShowing() && !playlistFilterShowing() ) { // TODO make it work with filtered and queueEditor?
+			} else if ( !listEditorShowing() && !playlistFilterShowing() ) { // TODO make it work with filtered and listEditor?
 				if ( /^(Arrow|Page)(Up|Down)$/.test( k ) ) {
 					evt.preventDefault();
 					let arrw = /^Arrow/.test( k ),
