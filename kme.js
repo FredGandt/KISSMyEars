@@ -570,10 +570,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						folder = { "tracks": [], "path": "" };
 					}
 					folder.path = path.d;
-					if ( mtch = path.f.match( /^([0-9]+)?[ \-]*(.+)\.([a-z0-9]+)$/ ) ) {
+					if ( mtch = path.f.match( /^([0-9]+)?[ \-_]*(.+)\.([a-z0-9]+)$/ ) ) {
 						folder.tracks.push( {
+							"title": mtch[ 2 ].replace( /_+/g, " " ),
 							"abspath": path.a,
-							"title": mtch[ 2 ],
 							"type": mtch[ 3 ],
 							"num": mtch[ 1 ]
 						} );
