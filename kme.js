@@ -746,9 +746,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	googleSearch = trg => {
 		if ( navigator.onLine ) {
 			let query = ( trg.folder ? folderPath( trg.folder ) : `${folderPath( folderOfTrack( trg ) )} | ${trg.dataset.title}` );
+			// TODO with tags; track search should be "{artist} {title}"
 			if ( query && confirm( `Google Web Search:
 "${query}"` ) ) {
-				chrome.tabs.create( { "url": `https://www.google.com/search?q=${query}`, "active": true } );
+				chrome.tabs.create( { "url": `https://www.google.com/search?q=${encodeURIComponent( query )}`, "active": true } );
 			}
 		}
 	},
