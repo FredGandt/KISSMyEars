@@ -2,10 +2,9 @@
 // https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
 
 // TODO maybe
-	// desktop notifications
 	// repeat queue or played
-	// player controls popout
 	// use virtual DOM for playlist
+	// indexedDB instead of localStorage
 
 // TODO start shuffle play again after e.g. finishing a folder etc.
 
@@ -27,6 +26,7 @@
 	// https://pypi.org/project/pytaglib/
 	// https://en.wikipedia.org/wiki/TagLib
 	// https://developer.mozilla.org/en-US/docs/WebAssembly
+	// https://emscripten.org/docs/getting_started/Tutorial.html
 		// shuffle by tag
 		// replaygain
 		// images :(
@@ -83,6 +83,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	sources = document.getElementById( "sources" ),
 	seek = document.getElementById( "seek" ),
 
+	playlist_filter_pff = playlist_filter.querySelector( ".pf" ),
+	list_editor_f = list_editor.querySelector( "fieldset" ),
 	list_editor_trash = list_editor.querySelector( "div" ),
 	list_editor_list = list_editor.querySelector( "ol" ),
 	blur_oasis = controls.querySelector( "button" ),
@@ -242,6 +244,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		playlistFilter: () => {
 			if ( numberOfNotBrokenTracks() ) {
 				if ( playlist_filter.classList.toggle( "show" ) ) {
+					playlist_filter_pff.disabled = false;
 					playlist_filter.querySelector( 'input[name="contains"]' ).focus();
 					if ( listEditorShowing() ) {
 						clickListEditor();
@@ -268,6 +271,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				}
 				list_editor.dataset.list = ( list === queue ? "queue" : "played" );
 				list_editor.classList.add( "show" );
+				list_editor_f.disabled = false;
 			}
 		},
 
@@ -376,6 +380,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	closePlaylistFilter = () => {
 		playlist_filter.classList.remove( "show" );
 		playlist.classList.remove( "filtered" );
+		playlist_filter_pff.disabled = true;
 		document.activeElement.blur();
 		playlist_filter.reset();
 		clearFilters();
@@ -588,7 +593,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					[ "path", "title" ].forEach( col => {
 						guts = tmplt.content.firstElementChild.cloneNode( true );
 						guts.firstElementChild.textContent = col.toUpperCase();
-						playlist_filter.append( guts );
+						playlist_filter_pff.append( guts );
 					} );
 				}
 			}
@@ -789,6 +794,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 		list_editor.classList.remove( "show" );
 		list_editor_list.innerHTML = "";
+		list_editor_f.disabled = true;
 	},
 
 	drop = evt => {
@@ -952,97 +958,122 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	keyDown = evt => {
 		// console.log( "keyDown", evt.key, evt );
-		let ctrl = evt.ctrlKey,
-			k = evt.key;
-		if ( ctrl && k === "f" ) {
+		let k = evt.key,
+			arrw = /^Arrow/.test( k );
+		if ( !listEditorShowing() && !playlistFilterShowing() && /^(Arrow|Page)(Up|Down)$/.test( k ) ) { // TODO make it work with filtered and listEditor
+			let fcs = removeFocussed(),
+				up = /Up$/.test( k );
 			evt.preventDefault();
-			CONTROLS.playlistFilter();
-		} else if ( !/^(input|select)$/i.test( evt.target.tagName ) ) { // document.activeElement
-			if ( k === " " ) {
-				evt.preventDefault();
-				TRANSPORT.pawsTrack();
-			} else if ( ctrl && k === "c" ) {
-				evt.preventDefault();
-				toggleCollapsed();
-			} else if ( ctrl && k === "q" ) {
-				evt.preventDefault();
-				CONTROLS.listEditor( queue );
-			} else if ( ctrl && k === "p" ) {
-				evt.preventDefault();
-				CONTROLS.listEditor( played );
-			} else if ( ctrl && k === "g" ) {
-				evt.preventDefault();
-				let fcs = fromPlaylist.focussed();
+			if ( arrw && ctrlChckd( "collapsed" ) ) {
+				let es = `${up ? "previous" : "next" }ElementSibling`;
 				if ( fcs ) {
-					googleSearch( folder( fcs ) );
-				}
-			} else if ( k === "Enter" ) {
-				evt.preventDefault();
-				let fcs = fromPlaylist.focussed();
-				if ( fcs ) {
-					clickPlaylist( { "trg": folder( fcs ), "ctrlKey": ctrl, "metaKey": evt.metaKey, "altKey": evt.altKey } );
-				}
-			} else if ( k === "Escape" ) {
-				evt.preventDefault();
-				removeFocussed();
-				showPlaying();
-			} else if ( !listEditorShowing() && !playlistFilterShowing() ) { // TODO make it work with filtered and listEditor?
-				if ( /^(Arrow|Page)(Up|Down)$/.test( k ) ) {
-					evt.preventDefault();
-					let arrw = /^Arrow/.test( k ),
-						fcs = removeFocussed(),
-						up = /Up$/.test( k );
-					if ( arrw && ctrlChckd( "collapsed" ) ) {
-						let es = `${up ? "previous" : "next" }ElementSibling`;
-						if ( fcs ) {
-							if ( folderPath( fcs ) ) {
-								if ( up ) {
-									fcs = notPop( tracksOfFolder( fcs ) );
-								} else {
-									fcs = tracksOfFolder( fcs, 0 );
-								}
-							} else {
-								fcs = fcs[ es ] || folderOfTrack( fcs )[ es ];
-							}
-						} else if ( currently_playing_track ) { // TODO ignore currently playing; find the nearest folder and grab the first track
-							if ( !( fcs = currently_playing_track[ es ] ) ) {
-								fcs = folderOfTrack( currently_playing_track );
-								if ( !up ) {
-									fcs = fcs.nextElementSibling;
-								}
-							}
+					if ( folderPath( fcs ) ) {
+						if ( up ) {
+							fcs = notPop( tracksOfFolder( fcs ) );
 						} else {
-							// TODO fcs = the nearest folder
-						}
-						if ( fcs ) {
-							addFocussed( fcs ); // the order of these operations matters
-							showFocussed( fcs, suchWaw( !folderPath( fcs ) ) );
+							fcs = tracksOfFolder( fcs, 0 );
 						}
 					} else {
-						let all = fromPlaylist[ arrw ? "tracks" : "folders" ].all(),
-							waw = suchWaw( arrw );
-						fcs = fcs || [].concat( all ).sort( ( a, b ) => ( a.offsetTop - waw ) + ( b.offsetTop - waw ) )[ 0 ];
-						if ( fcs ) {
-							if ( arrw && folderPath( fcs ) ) {
-								if ( up ) {
-									fcs = notPop( tracksOfFolder( fcs.previousElementSibling ) );
-								} else {
-									fcs = tracksOfFolder( fcs, 0 );
-								}
-							} else if ( !arrw && !folderPath( fcs ) ) {
-								if ( up ) {
-									fcs = folderOfTrack( fcs );
-								} else {
-									fcs = folderOfTrack( fcs ).nextElementSibling;
-								}
-							} else {
-								fcs = all[ all.indexOf( fcs ) + ( up ? -1 : 1 ) ];
-							}
+						fcs = fcs[ es ] || folderOfTrack( fcs )[ es ];
+					}
+				} else if ( currently_playing_track ) { // TODO ignore currently playing; find the nearest folder and grab the first track
+					if ( !( fcs = currently_playing_track[ es ] ) ) {
+						fcs = folderOfTrack( currently_playing_track );
+						if ( !up ) {
+							fcs = fcs.nextElementSibling;
 						}
-						if ( fcs ) {
-							showFocussed( fcs, waw );
-							addFocussed( fcs ); // the order of these operations matters
+					}
+				} else {
+					// TODO fcs = the nearest folder
+				}
+				if ( fcs ) {
+					addFocussed( fcs ); // the order of these operations matters
+					showFocussed( fcs, suchWaw( !folderPath( fcs ) ) );
+				}
+			} else {
+				let all = fromPlaylist[ arrw ? "tracks" : "folders" ].all(),
+				waw = suchWaw( arrw );
+				fcs = fcs || [].concat( all ).sort( ( a, b ) => ( a.offsetTop - waw ) + ( b.offsetTop - waw ) )[ 0 ];
+				if ( fcs ) {
+					if ( arrw && folderPath( fcs ) ) {
+						if ( up ) {
+							fcs = notPop( tracksOfFolder( fcs.previousElementSibling ) );
+						} else {
+							fcs = tracksOfFolder( fcs, 0 );
 						}
+					} else if ( !arrw && !folderPath( fcs ) ) {
+						if ( up ) {
+							fcs = folderOfTrack( fcs );
+						} else {
+							fcs = folderOfTrack( fcs ).nextElementSibling;
+						}
+					} else {
+						fcs = all[ all.indexOf( fcs ) + ( up ? -1 : 1 ) ];
+					}
+				}
+				if ( fcs ) {
+					showFocussed( fcs, waw );
+					addFocussed( fcs ); // the order of these operations matters
+				}
+			}
+		} else if ( !/^(input|select)$/i.test( evt.target.tagName ) ) { // document.activeElement
+			if ( arrw ) {
+				if ( /Left$/.test( k ) ) {
+					evt.preventDefault();
+					if ( evt.altKey ) {
+						TRANSPORT.backTrack();
+					} else {
+						TRANSPORT.prevTrack();
+					}
+				} else if ( /Right$/.test( k ) ) {
+					evt.preventDefault();
+					TRANSPORT.nextTrack();
+				}
+			} else if ( evt.ctrlKey && k === "f" ) { // TODO toggle closed
+				evt.preventDefault();
+				CONTROLS.playlistFilter();
+			} else {
+				switch ( k ) {
+					case "k":
+					case " ": {
+						TRANSPORT.pawsTrack();
+						break;
+					}
+					case "s": {
+						TRANSPORT.stopTrack();
+						break;
+					}
+					case "c": {
+						toggleCollapsed();
+						break;
+					}
+					case "q": {
+						CONTROLS.listEditor( queue );
+						break;
+					}
+					case "p": {
+						CONTROLS.listEditor( played );
+						break;
+					}
+					case "g": {
+						let fcs = fromPlaylist.focussed();
+						if ( fcs ) {
+							googleSearch( folder( fcs ) );
+						}
+						break;
+					}
+					case "Enter": {
+						let fcs = fromPlaylist.focussed();
+						if ( fcs ) {
+							clickPlaylist( { "trg": folder( fcs ), "ctrlKey": evt.ctrlKey, "metaKey": evt.metaKey, "altKey": evt.altKey } );
+						}
+						break;
+					}
+					case "Escape": {
+						evt.preventDefault();
+						removeFocussed();
+						showPlaying();
+						break;
 					}
 				}
 			}

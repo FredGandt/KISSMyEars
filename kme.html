@@ -20,8 +20,8 @@
 		--><audio></audio><!--
 
 		--><form class="overlay" id="list_editor"><!--
-			--><fieldset><!--
-			--><h1 class="fleft">DRAGON DROPPINGS</h1><!--
+			--><fieldset disabled><!--
+				--><h1 class="fleft">DRAGON DROPPINGS</h1><!--
 				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
 				--><input name="clear" type="button" value="CLEAR"><!--
 				--><input class="orange" name="done" type="button" value="DONE"><!--
@@ -30,12 +30,14 @@
 		--></form><!--
 
 		--><form class="overlay drop" id="playlist_filter"><!--
-			--><input name="done" type="button" value="DONE"><!--
-			--><input name="toqueue" type="button" value="ADD TO QUEUE"><!--
-			--><fieldset><!--
-				--><label title="A matching track must match all filter values">COMBINE FILTERS<input name="combifilter" type="checkbox"></label><!--
-				--><label>EXCLUDE PLAYED<input name="onlyunplayed" type="checkbox"></label><!--
-				--><label>CASE SENSITIVE<input name="casensitive" type="checkbox"></label><!--
+			--><fieldset class="pf" disabled><!--
+				--><input name="done" type="button" value="DONE"><!--
+				--><input name="toqueue" type="button" value="ADD TO QUEUE"><!--
+				--><fieldset><!--
+					--><label title="A matching track must match all filter values">COMBINE FILTERS<input name="combifilter" type="checkbox"></label><!--
+					--><label>EXCLUDE PLAYED<input name="onlyunplayed" type="checkbox"></label><!--
+					--><label>CASE SENSITIVE<input name="casensitive" type="checkbox"></label><!--
+				--></fieldset><!--
 			--></fieldset><!--
 		--></form><!--
 
@@ -65,14 +67,14 @@
 					--></fieldset><!--
 					--><label>SKIP PLAYED<span class="skip_tracks"> TRACKS</span><span class="skip_folders"> FOLDERS</span><input name="skiplayed" type="checkbox"></label><!--
 					--><label title="Automatically scroll to show the currently playing track. Turn off and on again to jump">SCROLL TO PLAYING<input name="scrolltoplaying" type="checkbox"></label><!--
-					--><label>COLLAPSE FOLDERS<input name="collapsed" type="checkbox"><kbd>CTRL+C</kbd></label><!--
+					--><label>COLLAPSE FOLDERS<input name="collapsed" type="checkbox"><kbd>C</kbd></label><!--
 				--></fieldset><!--
 				--><fieldset class="legend"><!--
 				--><legend>CLICK A TRACK OR FOLDER TO</legend><!--
-				--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"><kbd>+CTRL</kbd></label><!--
-				--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end"><kbd>+CTRL+ALT</kbd></label><!--
-				--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"><kbd>+CTRL+META</kbd></label><!--
-				--><label>DELIST IT<input class="orange split" name="clicky" type="radio" value="delist"><kbd>+META+ALT</kbd></label><!--
+				--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"><kbd>+ CTRL</kbd></label><!--
+				--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end"><kbd>+ CTRL + ALT</kbd></label><!--
+				--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"><kbd>+ CTRL + META</kbd></label><!--
+				--><label>DELIST IT<input class="orange split" name="clicky" type="radio" value="delist"><kbd>+ META + ALT</kbd></label><!--
 				--></fieldset><!--
 				--><fieldset class="legend wrap"><!--
 					--><legend>PLAY UNTIL THE END OF THE</legend><!--
@@ -85,16 +87,16 @@
 				--><fieldset><!--
 				--><output name="playlist_length" data-tracks="0 TRACKS" data-folders="0 FOLDERS" data-broken=""></output><!--
 					--><input name="clearPlaylist" type="button" value="CLEAR"><!--
-					--><label><input class="m" name="playlistFilter" type="button" value="FILTER"><kbd class="m">CTRL+F</kbd></label><!--
+					--><label><input class="m" name="playlistFilter" type="button" value="FILTER"><kbd class="m">CTRL + F</kbd></label><!--
 					--><input name="fixBreakages" type="button" value="BREAKAGES"><!--
 				--></fieldset><!--
 				--><fieldset><!--
 					--><output name="played_length" data-pl="0 TRACKS"></output><!--
-					--><label><input class="m" name="listEditor" data-list="played" type="button" value="EDIT"><kbd class="m">CTRL+P</kbd></label><!--
+					--><label><input class="m" name="listEditor" data-list="played" type="button" value="EDIT"><kbd class="m">P</kbd></label><!--
 				--></fieldset><!--
 				--><fieldset><!--
 					--><output name="queue_length" data-ql="0 TRACKS"></output><!--
-					--><label><input class="orange m" name="listEditor" data-list="queue" type="button" value="EDIT"><kbd class="m">CTRL+Q</kbd></label><!--
+					--><label><input class="orange m" name="listEditor" data-list="queue" type="button" value="EDIT"><kbd class="m">Q</kbd></label><!--
 				--></fieldset><!--
 				--><fieldset><!--
 				--><label class="range" data-op="" data-q="ms">FADE TO STOP<input class="m" name="fade_stop" type="range" min="0" step="10" max="5000"></label><!--
@@ -107,12 +109,12 @@
 						--><span>FOLDERS</span><!--
 						--><input name="nextFolder" type="button"><!--
 					--></fieldset><!--
-					--><input name="prevTrack" type="button"><!--
-					--><input name="backTrack" type="button"><!--
-					--><input name="pawsTrack" type="button"><!--
-					--><input name="stopTrack" type="button"><!--
-					--><input name="playTrack" type="button"><!--
-					--><input name="nextTrack" type="button"><!--
+					--><input name="prevTrack" title="ARROW LEFT" type="button"><!--
+					--><input name="backTrack" title="ALT + ARROW LEFT" type="button"><!--
+					--><input name="pawsTrack" title="K or SPACE" type="button"><!--
+					--><input name="stopTrack" title="S" type="button"><!--
+					--><input name="playTrack" title="K or SPACE" type="button"><!--
+					--><input name="nextTrack" title="ARROW RIGHT" type="button"><!--
 					--><output name="times" data-curt="00:00" data-dura="00:00" data-rema="00:00"></output><!--
 				--></fieldset><!--
 			--></form><!--

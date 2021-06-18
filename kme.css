@@ -177,7 +177,7 @@ h1 {
 	overflow: auto;
 }
 
-#list_editor > fieldset {
+#list_editor > fieldset:not(.pf) {
 	width: calc( 75vw - 3rem );
 	background-color: inherit;
 	position: fixed;
@@ -213,33 +213,33 @@ fieldset {
 	border: 0;
 }
 
-fieldset,
+fieldset:not(.pf),
 button {
 	margin-top: .5rem;
 }
 
-legend {
+legend:not(.pf) {
 	color: var( --turq );
 }
 
-fieldset.legend.wrap label {
+fieldset:not(.pf).legend.wrap label {
 	display: inline-block;
 }
 
-fieldset.legend {
+fieldset:not(.pf).legend {
 	border: 1px solid var( --dark-turq );
 	border-radius: .2rem;
 }
 
-fieldset.legend label {
+fieldset:not(.pf).legend label {
 	display: block;
 }
 
-fieldset:not(.legend) {
+fieldset:not(.pf):not(.legend) {
 	padding: 0;
 }
 
-fieldset.child {
+fieldset:not(.pf).child {
 	border-radius: 0 0 .2rem .2rem;
 	margin: .25rem 0 .5rem 0;
 	border-top: 0;
