@@ -83,11 +83,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	sources = document.getElementById( "sources" ),
 	seek = document.getElementById( "seek" ),
 
-	playlist_filter_pff = playlist_filter.querySelector( ".pf" ),
-	list_editor_f = list_editor.querySelector( "fieldset" ),
 	list_editor_trash = list_editor.querySelector( "div" ),
 	list_editor_list = list_editor.querySelector( "ol" ),
-	blur_oasis = controls.querySelector( "button" ),
 	audio = document.querySelector( "audio" ),
 	playpen = playlist.parentElement,
 
@@ -244,7 +241,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		playlistFilter: () => {
 			if ( numberOfNotBrokenTracks() ) {
 				if ( playlist_filter.classList.toggle( "show" ) ) {
-					playlist_filter_pff.disabled = false;
+					playlist_filter.pff.disabled = false;
 					playlist_filter.querySelector( 'input[name="contains"]' ).focus();
 					if ( listEditorShowing() ) {
 						clickListEditor();
@@ -271,7 +268,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				}
 				list_editor.dataset.list = ( list === queue ? "queue" : "played" );
 				list_editor.classList.add( "show" );
-				list_editor_f.disabled = false;
+				list_editor.pff.disabled = false;
+				list_editor.done.focus();
 			}
 		},
 
@@ -380,7 +378,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	closePlaylistFilter = () => {
 		playlist_filter.classList.remove( "show" );
 		playlist.classList.remove( "filtered" );
-		playlist_filter_pff.disabled = true;
+		playlist_filter.pff.disabled = true;
 		document.activeElement.blur();
 		playlist_filter.reset();
 		clearFilters();
@@ -593,7 +591,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					[ "path", "title" ].forEach( col => {
 						guts = tmplt.content.firstElementChild.cloneNode( true );
 						guts.firstElementChild.textContent = col.toUpperCase();
-						playlist_filter_pff.append( guts );
+						playlist_filter.pff.append( guts );
 					} );
 				}
 			}
@@ -771,7 +769,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			}
 		} else if ( trg && /^(range|checkbox|radio)$/.test( trg.type ) ) {
 			trg.dataset.clicked = true;
-		} else if ( trg === blur_oasis ) {
+		} else if ( trg === controls.blur_oasis ) {
 			evt.preventDefault();
 		}
 	},
@@ -794,7 +792,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 		list_editor.classList.remove( "show" );
 		list_editor_list.innerHTML = "";
-		list_editor_f.disabled = true;
+		list_editor.pff.disabled = true;
 	},
 
 	drop = evt => {
@@ -831,9 +829,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		if ( currently_playing_track ) {
 			played.push( currently_playing_track );
 			updatePlayedness();
-			/* if ( listEditorShowing() ) {
+			if ( listEditorShowing() && list_editor.dataset.list === "played" ) {
 				list_editor_list.append( currently_playing_track.cloneNode( true ) );
-			} */
+			}
 		}
 		audio.removeAttribute( "src" );
 		if ( queuend && !queue.length && untilEndOf( "queue" ) ) {

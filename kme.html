@@ -20,7 +20,7 @@
 		--><audio></audio><!--
 
 		--><form class="overlay" id="list_editor"><!--
-			--><fieldset disabled><!--
+		--><fieldset name="pff" disabled><!--
 				--><h1 class="fleft">DRAGON DROPPINGS</h1><!--
 				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
 				--><input name="clear" type="button" value="CLEAR"><!--
@@ -30,7 +30,7 @@
 		--></form><!--
 
 		--><form class="overlay drop" id="playlist_filter"><!--
-			--><fieldset class="pf" disabled><!--
+		--><fieldset name="pff" class="pf" disabled><!--
 				--><input name="done" type="button" value="DONE"><!--
 				--><input name="toqueue" type="button" value="ADD TO QUEUE"><!--
 				--><fieldset><!--
@@ -102,7 +102,7 @@
 				--><label class="range" data-op="" data-q="ms">FADE TO STOP<input class="m" name="fade_stop" type="range" min="0" step="10" max="5000"></label><!--
 				--><label class="range" data-op="" data-q="">VOLUME<input class="m" name="volume" type="range" min="0" step="0.01" max="1"></label><!--
 				--></fieldset><!--
-				--><button>USE <kbd>ARROW/PAGE-UP/DOWN</kbd> TO NAVIGATE PLAYLIST TRACKS AND FOLDERS, <kbd>ENTER</kbd> (+MODIFIER) ON A FOCUSSED TRACK/FOLDER TO PERFORM THE RELATED CLICK ACTION, AND <kbd>ESC</kbd> TO RETURN TO CONTROLS NAVIGATION</button><!--
+				--><button name="blur_oasis">USE <kbd>ARROW/PAGE-UP/DOWN</kbd> TO NAVIGATE PLAYLIST TRACKS AND FOLDERS, <kbd>ENTER</kbd> (+MODIFIER) ON A FOCUSSED TRACK/FOLDER TO PERFORM THE RELATED CLICK ACTION, AND <kbd>ESC</kbd> TO RETURN TO CONTROLS NAVIGATION</button><!--
 				--><fieldset name="transport"><!--
 					--><fieldset name="folder"><!--
 						--><input name="backFolder" type="button"><!--
