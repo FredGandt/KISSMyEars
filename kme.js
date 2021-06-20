@@ -302,11 +302,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		displayTrackData( listing );
 	},
 
-	toggleLibraryVisibility = tog => {
-		sources.new_lib.classList.toggle( "hide", tog );
-		sources.name.value = sources.path.value = "";
-	},
-
 	randNum = n => {
 		let u32a = new Uint32Array( 1 );
 		crypto.getRandomValues( u32a );
@@ -351,7 +346,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	setLibraries = libs => {
 		if ( libs ) {
 			sources.libraries.innerHTML = `<option value="" selected>ADD NEW LIBRARY</option>` +
-				libs.map( ( l, i ) => `<option value="${l.path}" title="${l.path}">${l.name}</option>` ).join( "" );
+				libs.map( ( l, i ) => `<option value="${l.lib_path}" title="${l.lib_path}">${l.lib_name}</option>` ).join( "" );
 		}
 	},
 
@@ -1080,69 +1075,68 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	importFiles = evt => {
 		// console.log( "importFiles", evt );
-		let trg = evt.target,
-			slv = String.raw`${sources.libraries.value}`;
-		if ( trg === sources.libraries ) {
-			toggleLibraryVisibility( slv );
-		} else if ( trg === sources.include ) {
-			let libnme, paths, sp, cp;
-			if ( slv ) {
+		let slv = String.raw`${sources.libraries.value}`,
+			libnme = sources.lib_name.value,
+			libpth = sources.lib_path.value,
+			trg = evt.target;
+		if ( slv ) {
+			sources.lib_name.value = sources.lib_path.value = "";
+			sources.include.disabled = false;
+			sources.new_lib.disabled = true;
+		} else {
+			sources.new_lib.disabled = false;
+			sources.include.disabled = !( libnme && libpth );
+		}
+		if ( trg === sources.include ) {
+			if ( slv ) { // TODO validate pathiness
 				libnme = sources.libraries.querySelectorAll( "option" )[ sources.libraries.selectedIndex ].textContent;
 			} else {
-				libnme = sources.name.value;
-				slv = String.raw`${sources.path.value}`;
+				slv = String.raw`${sources.lib_path.value}`;
 			}
-			if ( !( slv && libnme ) ) {
-				alert( "You must provide the path to the library from which you intend to select folders, and a name for it." );
-			} else {
-				sp = slv.split( /\\|\//g ).filter( f => f );
+			let sp = slv.split( /\\|\//g ).filter( f => f ),
 				paths = arrayFrom( trg.files ).filter( file => /^audio\//.test( file.type ) ).map( file => {
-					cp = sp.concat( file.webkitRelativePath.split( "/" ).filter( f => f ) );
-
+					let cp = sp.concat( file.webkitRelativePath.split( "/" ).filter( f => f ) );
 					// TODO sortPlaylist() goes wonky if there's a mix of relative sources
-						// only sensibly fixable with "album" recognition via tags?
-						// possible dissection of the absolute file path to establish where it could fit might work :(
-
+					// only sensibly fixable with "album" recognition via tags?
+					// possible dissection of the absolute file path to establish where it could fit might work
 					return {
 						"a": cp.map( pp => encodeURIComponent( pp ) ).join( "/" ),
 						"f": cp.pop(),
 						"d": cp.slice( sp.length ).join( " | " )
 					};
 				} );
-				if ( paths.length ) {
-					chrome.storage.local.get( async store => {
-						paths = await pathsToPlaylist( paths, store.paths );
-						if ( paths.length ) { // TODO only if something new is actually being added
-
-							// TODO offer to store even if all the paths were already included in playlist
-							// TODO provide some kind of progress indicator
-
-							TRANSPORT.playTrack();
-							if ( confirm( "Remember these files for automatic inclusion in future?" ) ) {
-								let nl = { "path": slv, "name": libnme },
-									libraries = ( store.libraries || [] ).filter( l => l.path !== nl.path ).concat( [ nl ] ),
-									json = JSON.stringify( paths );
-								setLibraries( libraries );
-								if ( ( json.length + JSON.stringify( Object.assign( {}, {
-									"settings": store.settings,
-									"libraries": libraries,
-									"played": store.played,
-									"queue": store.queue
-								} ) ).length ) <= chrome.storage.local.QUOTA_BYTES ) {
-									chrome.storage.local.set( { "libraries": libraries, "paths": paths } );
-								} else if ( confirm( `There are too many files to remember in local storage, but an alternative exists;
+			if ( paths.length ) {
+				chrome.storage.local.get( async store => {
+					paths = await pathsToPlaylist( paths, store.paths );
+					if ( paths.length ) { // TODO only if something new is actually being added
+						// TODO offer to store even if all the paths were already included in playlist
+						// TODO provide some kind of progress indicator
+						TRANSPORT.playTrack();
+						if ( confirm( "Remember these files for automatic inclusion in future?" ) ) {
+							let nl = { "lib_path": slv, "lib_name": libnme },
+							libraries = ( store.libraries || [] ).filter( l => l.lib_path !== nl.lib_path ).concat( [ nl ] ),
+							json = JSON.stringify( paths );
+							setLibraries( libraries );
+							if ( ( json.length + JSON.stringify( Object.assign( {}, {
+								"settings": store.settings,
+								"libraries": libraries,
+								"played": store.played,
+								"queue": store.queue
+							} ) ).length ) <= chrome.storage.local.QUOTA_BYTES ) {
+								chrome.storage.local.set( { "libraries": libraries, "paths": paths } );
+							} else if ( confirm( `There are too many files to remember in local storage, but an alternative exists;
 Would you like to store the information as a text file to be saved in your audio library?` ) ) {
-									giveFile( "store", json );
-									// TODO and then what?
-									// file to be placed in library and loaded on init
-								}
+								giveFile( "store", json );
+								// TODO and then what?
+								// file to be placed in library and loaded on init
 							}
 						}
-					} );
-				}
-				toggleLibraryVisibility( false );
-				sources.reset();
+					}
+				} );
 			}
+			sources.reset();
+			sources.new_lib.disabled = false;
+			sources.include.disabled = true;
 		}
 	},
 
@@ -1290,7 +1284,7 @@ audio.addEventListener( "ended", trackEnded, { passive: true } );
 audio.addEventListener( "timeupdate", trackTimeUpdate, { passive: true } );
 audio.addEventListener( "loadedmetadata", setTrackDuration, { passive: true } );
 
-sources.addEventListener( "change", importFiles, { passive: true } );
+sources.addEventListener( "input", importFiles, { passive: true } );
 
 controls.addEventListener( "input", inputControls, { passive: true } );
 controls.addEventListener( "click", clickControls );

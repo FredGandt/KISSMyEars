@@ -20,7 +20,7 @@
 		--><audio></audio><!--
 
 		--><form class="overlay" id="list_editor"><!--
-		--><fieldset name="pff" disabled><!--
+			--><fieldset name="pff" disabled><!--
 				--><h1 class="fleft">DRAGON DROPPINGS</h1><!--
 				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
 				--><input name="clear" type="button" value="CLEAR"><!--
@@ -30,7 +30,7 @@
 		--></form><!--
 
 		--><form class="overlay drop" id="playlist_filter"><!--
-		--><fieldset name="pff" class="pf" disabled><!--
+			--><fieldset name="pff" class="pf" disabled><!--
 				--><input name="done" type="button" value="DONE"><!--
 				--><input name="toqueue" type="button" value="ADD TO QUEUE"><!--
 				--><fieldset><!--
@@ -44,24 +44,28 @@
 		--><div class="section secleft"><!--
 			--><ul id="playlist"></ul><!--
 			--><form id="seek"><!--
-			--><input name="control" type="range" min="0" step="0.1" max="0" value="0"><!--
+				--><input name="control" type="range" min="0" step="0.1" max="0" value="0"><!--
 			--></form><!--
 		--></div><!--
+
 		--><div class="section secright"><!--
+
 			--><form id="sources"><!--
 				--><select name="libraries"><option value="" selected>ADD NEW LIBRARY</option></select><!--
 				--><fieldset name="new_lib"><!--
-					--><input name="name" type="text" placeholder="NAME"><!--
-					--><input name="path" type="text" placeholder="along/this/path"><!--
+					--><input name="lib_name" type="text" placeholder="NAME"><!--
+					--><input name="lib_path" type="text" placeholder="along/this/path"><!--
 				--></fieldset><!--
-				--><input name="include" type="file" webkitdirectory><!--
+				--><input name="include" type="file" webkitdirectory disabled><!--
 			--></form><!--
+
 			--><form id="controls"><!--
-			--><fieldset class="legend"><!--
+				--><fieldset class="legend"><!--
 					--><legend>TURN OFF-AND-ON-ABLE</legend><!--
 					--><label>SHUFFLE<input name="shuffle" type="checkbox"></label><!--
+
 					--><fieldset class="child legend wrap shuffle_by"><!--
-					--><legend>SHUFFLE BY</legend><!--
+						--><legend>SHUFFLE BY</legend><!--
 						--><label>TRACK<input name="shuffle_by" type="radio" value="track"></label><!--
 						--><label>FOLDER<input name="shuffle_by" type="radio" value="folder"></label><!--
 					--></fieldset><!--
@@ -69,13 +73,15 @@
 					--><label title="Automatically scroll to show the currently playing track. Turn off and on again to jump">SCROLL TO PLAYING<input name="scrolltoplaying" type="checkbox"></label><!--
 					--><label>COLLAPSE FOLDERS<input name="collapsed" type="checkbox"><kbd>C</kbd></label><!--
 				--></fieldset><!--
+
 				--><fieldset class="legend"><!--
-				--><legend>CLICK A TRACK OR FOLDER TO</legend><!--
-				--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"><kbd>+ CTRL</kbd></label><!--
-				--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end"><kbd>+ CTRL + ALT</kbd></label><!--
-				--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"><kbd>+ CTRL + META</kbd></label><!--
-				--><label>DELIST IT<input class="orange split" name="clicky" type="radio" value="delist"><kbd>+ META + ALT</kbd></label><!--
+					--><legend>CLICK A TRACK OR FOLDER TO</legend><!--
+					--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"><kbd>+ CTRL</kbd></label><!--
+					--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end"><kbd>+ CTRL + ALT</kbd></label><!--
+					--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"><kbd>+ CTRL + META</kbd></label><!--
+					--><label>DELIST IT<input class="orange split" name="clicky" type="radio" value="delist"><kbd>+ META + ALT</kbd></label><!--
 				--></fieldset><!--
+
 				--><fieldset class="legend wrap"><!--
 					--><legend>PLAY UNTIL THE END OF THE</legend><!--
 					--><label>WORLD<input name="endof" type="radio" value="world"></label><!--
@@ -84,25 +90,31 @@
 					--><label class="cont_folder">FOLDER<input name="endof" type="radio" value="folder"></label><!--
 					--><label>TRACK<input name="endof" type="radio" value="track"></label><!--
 				--></fieldset><!--
+
 				--><fieldset><!--
-				--><output name="playlist_length" data-tracks="0 TRACKS" data-folders="0 FOLDERS" data-broken=""></output><!--
+					--><output name="playlist_length" data-tracks="0 TRACKS" data-folders="0 FOLDERS" data-broken=""></output><!--
 					--><input name="clearPlaylist" type="button" value="CLEAR"><!--
 					--><label><input class="m" name="playlistFilter" type="button" value="FILTER"><kbd class="m">CTRL + F</kbd></label><!--
 					--><input name="fixBreakages" type="button" value="BREAKAGES"><!--
 				--></fieldset><!--
+
 				--><fieldset><!--
 					--><output name="played_length" data-pl="0 TRACKS"></output><!--
 					--><label><input class="m" name="listEditor" data-list="played" type="button" value="EDIT"><kbd class="m">P</kbd></label><!--
 				--></fieldset><!--
+
 				--><fieldset><!--
 					--><output name="queue_length" data-ql="0 TRACKS"></output><!--
 					--><label><input class="orange m" name="listEditor" data-list="queue" type="button" value="EDIT"><kbd class="m">Q</kbd></label><!--
 				--></fieldset><!--
+
 				--><fieldset><!--
-				--><label class="range" data-op="" data-q="ms">FADE TO STOP<input class="m" name="fade_stop" type="range" min="0" step="10" max="5000"></label><!--
-				--><label class="range" data-op="" data-q="">VOLUME<input class="m" name="volume" type="range" min="0" step="0.01" max="1"></label><!--
+					--><label class="range" data-op="" data-q="ms">FADE TO STOP<input class="m" name="fade_stop" type="range" min="0" step="10" max="5000"></label><!--
+					--><label class="range" data-op="" data-q="">VOLUME<input class="m" name="volume" type="range" min="0" step="0.01" max="1"></label><!--
 				--></fieldset><!--
+
 				--><button name="blur_oasis">USE <kbd>ARROW/PAGE-UP/DOWN</kbd> TO NAVIGATE PLAYLIST TRACKS AND FOLDERS, <kbd>ENTER</kbd> (+MODIFIER) ON A FOCUSSED TRACK/FOLDER TO PERFORM THE RELATED CLICK ACTION, AND <kbd>ESC</kbd> TO RETURN TO CONTROLS NAVIGATION</button><!--
+
 				--><fieldset name="transport"><!--
 					--><fieldset name="folder"><!--
 						--><input name="backFolder" type="button"><!--
@@ -118,6 +130,7 @@
 					--><output name="times" data-curt="00:00" data-dura="00:00" data-rema="00:00"></output><!--
 				--></fieldset><!--
 			--></form><!--
+			
 		--></div><!--
 	--></body>
 	<script type="text/javascript" src="kme.js"></script>
