@@ -343,18 +343,18 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	setLibraries = libs => {
-		if ( libs ) {
-			sources.libraries.innerHTML = `<option value="" selected>ADD NEW LIBRARY</option>` +
-				libs.map( ( l, i ) => `<option value="${l.lib_path}" title="${l.lib_path}">${l.lib_name}</option>` ).join( "" );
-		}
-	},
-
 	toggleCollapsed = clck => {
 		let cllpsd = controls.collapsed;
 		playlist.classList.toggle( "collapsed", clck ? cllpsd.checked : ( cllpsd.checked = !cllpsd.checked ) );
 		// TODO if ( cllpsd.checked && a track or folder is focussed ) { scroll to it } else {
 		showPlaying();
+	},
+
+	setLibraries = libs => {
+		if ( libs ) {
+			sources.libraries.innerHTML = `<option value="" selected>ADD NEW LIBRARY</option>` +
+				libs.map( ( l, i ) => `<option value="${l.lib_path}" title="${l.lib_path}">${l.lib_name}</option>` ).join( "" );
+		}
 	},
 
 	updatePlayedness = () => {
@@ -485,6 +485,23 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		} );
 	},
 
+	toggleOptionVisibility = () => {
+		if ( ctrlChckd( "shuffle" ) ) {
+			controls.classList.remove( "hide_shuffle_by" );
+			if ( isShuffleBy( "folder" ) ) {
+				controls.classList.remove( "hide_cont_folder" );
+			} else {
+				controls.classList.add( "hide_cont_folder" );
+				if ( untilEndOf( "folder" ) ) {
+					defaultEndOf();
+				}
+			}
+		} else {
+			controls.classList.add( "hide_shuffle_by" );
+			controls.classList.remove( "hide_cont_folder" );
+		}
+	},
+
 	displayTrackData = listing => {
 		if ( currently_playing_track ) {
 			currently_playing_track.classList.remove( "playing" );
@@ -502,23 +519,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			currently_playing_folder = currently_playing_track = null;
 			CONTROLS.clearPlayedTracks();
 			setTitle( "KISS My Ears" );
-		}
-	},
-
-	toggleOptionVisibility = () => {
-		if ( ctrlChckd( "shuffle" ) ) {
-			controls.classList.remove( "hide_shuffle_by" );
-			if ( isShuffleBy( "folder" ) ) {
-				controls.classList.remove( "hide_cont_folder" );
-			} else {
-				controls.classList.add( "hide_cont_folder" );
-				if ( untilEndOf( "folder" ) ) {
-					defaultEndOf();
-				}
-			}
-		} else {
-			controls.classList.add( "hide_shuffle_by" );
-			controls.classList.remove( "hide_cont_folder" );
 		}
 	},
 
@@ -707,16 +707,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	dragOver = evt => {
 		// console.log( "dragOver", evt );
-
-		// TODO scrolling when outside zone
-		// evt.offsetY
-		// dropzone.scrollTop
-
-		// if list_editor height is greater than the available space i.e. is scrollable
-			// if the drag is near the top and the scroll isn't topped out
-			// or if the drag is near the bottom and the scroll isn't bottomed out
-				// scroll faster the nearer the edge gets
-
 		evt.preventDefault();
 		dropee = liFromEvtPath( evt );
 		dragee.classList.add( "dragee" );
@@ -758,7 +748,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		if ( isBtn( trg ) ) {
 			let fnc = trg.name;
 			if ( CONTROLS.hasOwnProperty( fnc ) ) {
-				CONTROLS[ fnc ]( fnc === "listEditor" ? ( trg.dataset.list === "queue" ? queue : played ) : null );
+				CONTROLS[ fnc ]( fnc === "listEditor" ? ( trg.dataset.list === "queue" ? queue : played ) : null ); // TODO switch from "queue" to "played" and back
 			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
 				TRANSPORT[ fnc ]();
 			}

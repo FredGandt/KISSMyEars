@@ -144,11 +144,6 @@ div.dropzone {
 	margin: 0 1rem;
 }
 
-ol.dropzone {
-	height: calc( 100vh - 9rem );
-	margin-top: 3.5rem;
-}
-
 h1 {
 	margin: 0;
 }
@@ -172,19 +167,22 @@ h1 {
 }
 
 #list_editor {
-	height: calc( 100vh - 5.3rem );
+	height: calc( 100vh - 4.3rem );
 	width: calc( 75vw - 2rem );
-	overflow: auto;
+	padding-bottom: 0;
 }
 
 #list_editor > fieldset:not(.pf) {
-	width: calc( 75vw - 3rem );
 	background-color: inherit;
-	position: fixed;
+	padding: 0 0 1rem;
 	margin-top: 0;
-	padding: 1rem;
 	left: 0;
 	top: 0;
+}
+
+#list_editor > ol.dropzone {
+	height: calc( 100vh - 8rem );
+	overflow: auto;
 }
 
 #list_editor li.dragee {
