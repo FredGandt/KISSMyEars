@@ -551,7 +551,7 @@ fieldset[name="folder"] {
 fieldset[name="folder"] {
 	background-color: var( --darker-grey );
 	border-top: var( --dark-turq-border );
-	padding-top: .5rem;
+	padding-top: .5rem !important;
 }
 
 #controls:not(.hide_cont_folder):not(.hide_shuffle_by) fieldset[name="folder"] {

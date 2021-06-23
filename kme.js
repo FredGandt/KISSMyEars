@@ -97,6 +97,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		numeric: true
 	} ),
 
+	debugMsg = ( where, what, how ) => {
+		if ( debugging || how ) {
+			console[ how || "log" ]( where, what );
+		}
+	},
+
 	absPath = li => li.dataset.abs_path,
 
 	notPop = arr => arr.slice( -1 )[ 0 ],
@@ -217,6 +223,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			}
 		},
 
+		// TODO previous folder
+
 		backFolder: () => {
 			currently_playing_track = null;
 			TRANSPORT.nextTrack();
@@ -229,7 +237,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	CONTROLS = {
-		fixBreakages: () => console.warn( "fixBreakages", fromPlaylist.tracks.broken() ),
+		fixBreakages: () => debugMsg( "fixBreakages:", fromPlaylist.tracks.broken(), "warn" ),
 
 		clearPlayedTracks: () => {
 			if ( played.length && confirm( "Clear the play history?" ) ) {
@@ -253,7 +261,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			closePlaylistFilter();
 		},
 
-		listEditor: list => {
+		listEditor: list => { // TODO switch from "queue" to "played" and back
 			if ( listEditorShowing() ) {
 				clickListEditor();
 			} else if ( list.length ) {
@@ -542,6 +550,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				} );
 				ol.append( li );
 			} );
+			li.dataset.last_track = true;
 			oli.append( ol );
 			playlist_fragment.append( oli );
 			if ( end ) {
@@ -561,7 +570,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					mtch, pastpath;
 				playlist_fragment = document.createDocumentFragment();
 				resolve( stored.concat( paths.filter( path => {
-					if ( stored.some( sp => sp.a === path.a ) ) return false; // TODO check if any stored paths no longer exist
+					if ( stored.some( sp => sp.a === path.a ) ) {
+						return false; // TODO check if any stored paths no longer exist
+					}
 					if ( pastpath !== path.d ) {
 						pastpath = path.d;
 						collectionToHTML( folder );
@@ -577,7 +588,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						} );
 						return true;
 					}
-					console.warn( "Unprocessable file name format: ", path );
+					debugMsg( "Unprocessable file name format:", path, "warn" );
 					return false;
 				} ) ) );
 				collectionToHTML( folder, true );
@@ -687,13 +698,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	setTrackDuration = () => controls.times.dataset.dura = secondsToStr( seek.control.max = Math.ceil( audio.duration ) ),
 
 	dragStart = evt => {
-		// console.log( "dragStart", evt );
+		debugMsg( "dragStart:", evt );
 		evt.dataTransfer.effectAllowed = "move";
 		dragee = evt.target;
 	},
 
 	trackError = evt => {
-		// console.error( "trackError", currently_playing_track, evt );
+		debugMsg( "trackError:", { "evt": evt, "currently_playing_track": currently_playing_track }, "error" );
 		currently_playing_track.classList.add( "broken" );
 		updatePlaylistLength();
 		TRANSPORT.nextTrack();
@@ -706,7 +717,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	dragOver = evt => {
-		// console.log( "dragOver", evt );
+		debugMsg( "dragOver:", evt );
 		evt.preventDefault();
 		dropee = liFromEvtPath( evt );
 		dragee.classList.add( "dragee" );
@@ -714,7 +725,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	contextMenu = evt => {
-		// console.log( "contextMenu", evt );
+		debugMsg( "contextMenu:", evt );
 		if ( !debugging ) {
 			let trg = liFromEvtPath( evt );
 			if ( trg ) {
@@ -743,12 +754,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	clickControls = evt => {
-		// console.log( "clickControls", evt );
+		debugMsg( "clickControls:", evt );
 		let trg = evt.target;
 		if ( isBtn( trg ) ) {
 			let fnc = trg.name;
 			if ( CONTROLS.hasOwnProperty( fnc ) ) {
-				CONTROLS[ fnc ]( fnc === "listEditor" ? ( trg.dataset.list === "queue" ? queue : played ) : null ); // TODO switch from "queue" to "played" and back
+				CONTROLS[ fnc ]( fnc === "listEditor" ? ( trg.dataset.list === "queue" ? queue : played ) : null );
 			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
 				TRANSPORT[ fnc ]();
 			}
@@ -760,7 +771,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	clickListEditor = evt => {
-		// console.log( "clickListEditor", evt );
+		debugMsg( "clickListEditor:", evt );
 		if ( evt && evt.target.name === "clear" ) {
 			if ( list_editor.dataset.list === "queue" ) {
 				if ( queue.length && confirm( "Clear the queue?" ) ) {
@@ -781,7 +792,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	drop = evt => {
-		// console.log( "drop", evt );
+		debugMsg( "drop:", evt );
 		let q = list_editor.dataset.list === "queue";
 		if ( dragee.parentElement ) {
 			evt.preventDefault();
@@ -821,7 +832,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		audio.removeAttribute( "src" );
 		if ( queuend && !queue.length && untilEndOf( "queue" ) ) {
 			cont = queuend = false;
-		} else if ( untilEndOf( "track" ) || ( ( !ctrlChckd( "shuffle" ) || !currently_playing_folder ) && untilEndOf( "folder" ) ) ) {
+		} else if ( untilEndOf( "track" ) || ( untilEndOf( "folder" ) && currently_playing_track.dataset.last_track ) ) {
 			cont = false;
 		}
 		if ( cont ) {
@@ -835,7 +846,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	inputPlaylistFilter = evt => { // TODO collapsed....?
-		// console.log( "inputPlaylistFilter", evt );
+		debugMsg( "inputPlaylistFilter:", evt );
 		let fltrs = arrayFrom( playlist_filter.querySelectorAll( 'input[type="text"]' ) ).filter( f => f.value );
 		if ( fltrs.length ) {
 			let fresh = ( fltrChckd( "onlyunplayed" ) ? ":not(.played)" : "" ), // TODO skiplayed?
@@ -861,7 +872,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	inputControls = evt => {
-		// console.log( "inputControls", evt );
+		debugMsg( "inputControls:", evt );
 		let trg = evt.target,
 			typ = trg.type;
 		if ( typ ) {
@@ -896,7 +907,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	clickPlaylistFilter = evt => {
-		// console.log( "clickPlaylistFilter", evt );
+		debugMsg( "clickPlaylistFilter:", evt );
 		let trg = evt.target;
 		if ( isBtn( trg ) ) {
 			let nme = trg.name;
@@ -940,7 +951,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	keyDown = evt => {
-		// console.log( "keyDown", evt.key, evt );
+		debugMsg( "keyDown:", { "evt": evt, "key": evt.key } );
 		let k = evt.key,
 			arrw = /^Arrow/.test( k );
 		if ( !listEditorShowing() && !playlistFilterShowing() && /^(Arrow|Page)(Up|Down)$/.test( k ) ) { // TODO make it work with filtered and listEditor
@@ -1001,16 +1012,25 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			}
 		} else if ( !/^(input|select)$/i.test( evt.target.tagName ) ) { // document.activeElement
 			if ( arrw ) {
-				if ( /Left$/.test( k ) ) {
-					evt.preventDefault();
-					if ( evt.altKey ) {
-						TRANSPORT.backTrack();
-					} else {
-						TRANSPORT.prevTrack();
+				let right = /Right$/.test( k ),
+					left = /Left$/.test( k );
+				evt.preventDefault();
+				if ( isShuffleBy( "folder" ) && evt.ctrlKey ) {
+					if ( left ) {
+						TRANSPORT.backFolder(); // TODO previous folder
+					} else if ( right ) {
+						TRANSPORT.nextFolder();
 					}
-				} else if ( /Right$/.test( k ) ) {
-					evt.preventDefault();
-					TRANSPORT.nextTrack();
+				} else {
+					if ( left ) {
+						if ( evt.altKey ) {
+							TRANSPORT.backTrack();
+						} else {
+							TRANSPORT.prevTrack();
+						}
+					} else if ( right ) {
+						TRANSPORT.nextTrack();
+					}
 				}
 			} else if ( evt.ctrlKey && k === "f" ) { // TODO toggle closed
 				evt.preventDefault();
@@ -1064,7 +1084,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	importFiles = evt => {
-		// console.log( "importFiles", evt );
+		debugMsg( "importFiles:", evt );
 		let slv = String.raw`${sources.libraries.value}`,
 			libnme = sources.lib_name.value,
 			libpth = sources.lib_path.value,
@@ -1131,7 +1151,7 @@ Would you like to store the information as a text file to be saved in your audio
 	},
 
 	clickPlaylist = evt => {
-		// console.log( "clickPlaylist", evt );
+		debugMsg( "clickPlaylist:", evt );
 		let trg = ( evt.trg || liFromEvtPath( evt ) ); // TODO if ctrlChckd( "collapsed" ) clicking a folder expands it
 		if ( trg ) {
 			let cv = ctrlVlu( "clicky" ),
