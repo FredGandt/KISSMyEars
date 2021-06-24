@@ -66,8 +66,8 @@ function FromPlaylist() {
 
 let currently_playing_folder,
 	currently_playing_track,
+	played_index = null,
 	playlist_fragment,
-	played_index = 0,
 	queuend = false,
 	played = [],
 	queue = [],
@@ -113,6 +113,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	ctrlChckd = ctrl => controls[ ctrl ].checked,
 
+	randNum = n => Math.floor( Math.random() * n ),
+
 	halfPlaypen = () => playpen.offsetHeight * 0.5,
 
 	untilEndOf = cont => isCtrlVlu( "endof", cont ),
@@ -128,6 +130,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	folderOfTrack = li => li.parentElement.parentElement,
 
 	isBtn = trg => trg && trg.type && trg.type === "button",
+
+	playingPlayed = () => played_index && played_index !== null,
 
 	listEditorShowing = () => list_editor.classList.contains( "show" ),
 
@@ -164,6 +168,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		nextTrack: prev => {
 			let paused = audio.paused;
 			TRANSPORT.stopTrack( true );
+			if ( !prev && playingPlayed() ) {
+				++played_index;
+			}
 			pausiblyPlay( paused, prev );
 		},
 
@@ -188,11 +195,28 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			}
 		},
 
+		// TODO "previous" handling is a mess
+			// played needs to be all tracks that have been played for at least around 2 seconds
+			// an overide is needed so rather than previously played, it selects the previous track in the playlist
+
+		prevTrack: () => {
+			let pl = played.length;
+			if ( pl ) {
+				if ( playingPlayed() && Math.abs( played_index ) < pl ) {
+					--played_index;
+				} else {
+					played_index = -1;
+				}
+			}
+			TRANSPORT.nextTrack( true );
+		},
+
 		stopTrack: async rs => {
 			if ( audio.src ) {
-				let fade, vol;
-				if ( !rs && ( fade = controls.fade_stop.valueAsNumber ) && ( vol = audio.volume ) ) {
-					await fadeStop( fade /= 10, vol / fade );
+				let vol, fade;
+				if ( !rs && ( vol = audio.volume ) && ( fade = controls.fade_stop.valueAsNumber ) ) {
+					await fadeStop( vol, parseInt( fade / 100 ) );
+					audio.volume = controls.volume.valueAsNumber;
 				}
 				audio.pause();
 				TRANSPORT.backTrack();
@@ -201,25 +225,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				} else {
 					setTitle( "[STOPPED]", true );
 				}
-			}
-		},
-
-		// TODO "previous" handling is a mess
-			// played needs to be all tracks that have been played for at least around 2 seconds
-			// an overide is needed so rather than previously played, it selects the previous track in the playlist
-
-		prevTrack: () => {
-			let pl = played.length;
-			if ( pl ) {
-				if ( Math.abs( played_index ) < pl ) {
-					let paused = audio.paused,
-						listing = played[ pl + --played_index ];
-					TRANSPORT.stopTrack( true );
-					setTrackSrc( listing );
-					pausiblyPlay( paused );
-				}
-			} else {
-				TRANSPORT.nextTrack( true );
 			}
 		},
 
@@ -310,12 +315,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		displayTrackData( listing );
 	},
 
-	randNum = n => {
-		let u32a = new Uint32Array( 1 );
-		crypto.getRandomValues( u32a );
-		return Math.floor( u32a / 65536 / 65536 * n );
-	},
-
 	shuffleArray = arr => {
 		arr.forEach( ( r, i ) => {
 			r = randNum( i + 1 );
@@ -352,8 +351,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	toggleCollapsed = clck => {
-		let cllpsd = controls.collapsed;
-		playlist.classList.toggle( "collapsed", clck ? cllpsd.checked : ( cllpsd.checked = !cllpsd.checked ) );
+		let cllpsd = ctrlChckd( "collapsed" );
+		playlist.classList.toggle( "collapsed", clck ? cllpsd : ( controls.collapsed.checked = !cllpsd ) );
 		// TODO if ( cllpsd.checked && a track or folder is focussed ) { scroll to it } else {
 		showPlaying();
 	},
@@ -363,6 +362,25 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			sources.libraries.innerHTML = `<option value="" selected>ADD NEW LIBRARY</option>` +
 				libs.map( ( l, i ) => `<option value="${l.lib_path}" title="${l.lib_path}">${l.lib_name}</option>` ).join( "" );
 		}
+	},
+
+	fadeStop = ( vol, fade ) => {
+		return new Promise( resolve => {
+			let redux = vol / fade;
+			while ( fade ) {
+				setTimeout( () => {
+					try {
+						audio.volume -= redux; // TODO logarithmic
+					} catch {
+						audio.volume = 0;
+					}
+					if ( audio.volume < redux ) {
+						resolve( true );
+					}
+				}, 100 * fade );
+				--fade;
+			}
+		} );
 	},
 
 	updatePlayedness = () => {
@@ -454,25 +472,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		a.click();
 		a.remove();
 		URL.revokeObjectURL( ourl );
-	},
-
-	fadeStop = ( fade, vol ) => { // TODO yikes
-		return new Promise( resolve => {
-			while ( fade ) {
-				setTimeout( () => {
-					try {
-						audio.volume -= vol;
-					} catch( err ) {
-						audio.volume = 0;
-					}
-					if ( audio.volume < vol ) {
-						audio.volume = controls.volume.valueAsNumber;
-						resolve( true );
-					}
-				}, fade * 10 );
-				--fade;
-			}
-		} );
 	},
 
 	applyStoredArrays = store => {
@@ -609,10 +608,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			if ( !audio.src ) {
 				let listing,
 					pl = played.length;
-				if ( pl && played_index < -1 ) {
-					listing = played[ pl + ( ++played_index ) ];
+				if ( pl && playingPlayed() ) {
+					listing = played[ pl + played_index ];
 				} else {
-					played_index = 0;
+					played_index = null;
 					if ( queue.length ) {
 						listing = queue.shift();
 
@@ -823,10 +822,14 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		let cont = true;
 		controls.times.dataset.dura = secondsToStr( 0 );
 		if ( currently_playing_track ) {
-			played.push( currently_playing_track );
-			updatePlayedness();
-			if ( listEditorShowing() && list_editor.dataset.list === "played" ) {
-				list_editor_list.append( currently_playing_track.cloneNode( true ) );
+			if ( playingPlayed() ) {
+				++played_index;
+			} else {
+				played.push( currently_playing_track );
+				updatePlayedness();
+				if ( listEditorShowing() && list_editor.dataset.list === "played" ) {
+					list_editor_list.append( currently_playing_track.cloneNode( true ) );
+				}
 			}
 		}
 		audio.removeAttribute( "src" );
@@ -879,11 +882,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			let vlu = trg.value,
 				nme = trg.name;
 			if ( typ === "range" ) {
-				let van = trg.valueAsNumber;
-				trg.parentElement.dataset.op = van;
+				vlu = parseFloat( vlu );
 				if ( trg.name === "volume" ) {
-					audio.volume = van;
+					audio.volume = vlu;
+				} else {
+					vlu /= 1000;
 				}
+				trg.parentElement.dataset.op = vlu;
 			} else {
 				if ( typ === "checkbox" ) {
 					if ( nme === "scrolltoplaying" ) {
@@ -1270,8 +1275,8 @@ Would you like to store the information as a text file to be saved in your audio
 				fadestop: 0,
 				volume: 0.5
 			}, settings || {} );
+			controls.fade_stop.parentElement.dataset.op = ( controls.fade_stop.value = sttngs.fadestop ) / 1000;
 			audio.volume = controls.volume.value = controls.volume.parentElement.dataset.op = sttngs.volume;
-			controls.fade_stop.value = controls.fade_stop.parentElement.dataset.op = sttngs.fadestop;
 			playlist.classList.toggle( "collapsed", controls.collapsed.checked = sttngs.collapsed );
 			controls.dataset.endof = controls.endof.value = sttngs.endof;
 			controls.scrolltoplaying.checked = sttngs.scrolltoplaying;
