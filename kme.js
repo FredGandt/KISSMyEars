@@ -141,6 +141,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
 
+	listEditingQueue = trg => ( trg || list_editor ).dataset.list === "queue",
+
 	playlistFilterShowing = () => playlist_filter.classList.contains( "show" ),
 
 	multiTrack = ( n, tof ) => `${n} ${tof ? tof : "TRACK"}${n !== 1 ? "S" : ""}`,
@@ -616,7 +618,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 								// address the crappy issue of not being able to stop at the end of the queue when the last track of the queue is playing
 
 						queuend = !queue.length;
-						if ( listEditorShowing() ) {
+						if ( listEditorShowing() && listEditingQueue() ) {
 							if ( queuend ) {
 								clickListEditor();
 							} else {
@@ -751,7 +753,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		if ( isBtn( trg ) ) {
 			let fnc = trg.name;
 			if ( CONTROLS.hasOwnProperty( fnc ) ) {
-				CONTROLS[ fnc ]( fnc === "listEditor" ? ( trg.dataset.list === "queue" ? queue : played ) : null );
+				CONTROLS[ fnc ]( fnc === "listEditor" ? ( listEditingQueue( trg ) ? queue : played ) : null );
 			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
 				TRANSPORT[ fnc ]();
 			}
@@ -765,7 +767,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	clickListEditor = evt => {
 		debugMsg( "clickListEditor:", evt );
 		if ( evt && evt.target.name === "clear" ) {
-			if ( list_editor.dataset.list === "queue" ) {
+			if ( listEditingQueue() ) {
 				if ( queue.length && confirm( "Clear the queue?" ) ) {
 					queue = [];
 					updateQueuetness();
@@ -785,7 +787,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	drop = evt => {
 		debugMsg( "drop:", evt );
-		let q = list_editor.dataset.list === "queue";
+		let q = listEditingQueue();
 		if ( dragee.parentElement ) {
 			evt.preventDefault();
 			let trg = evt.target;
@@ -1179,8 +1181,9 @@ Would you like to store the information as a text file to be saved in your audio
 			}
 
 			// TODO if ( controls.shuffle etc ) offer to shuffle before adding folders to the queue?
-
 			// TODO if ( a queued track has been delisted ) make sure the further options are clearly indicated as not required
+			// TODO I don't like delist...
+
 			if ( cv === "delist" ) {
 				if ( confirm( `Remove this ${tia ? "folder" : "track"} from the playlist?` ) ) {
 					if ( confirm( "Do not automatically include in future?" ) ) {
