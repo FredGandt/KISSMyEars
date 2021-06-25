@@ -376,9 +376,9 @@ label.range + label.range {
 }
 
 label.range:after {
-	content: attr( data-op ) attr( data-q );
 	color: var( --lighter-grey );
 	vertical-align: text-top;
+	content: attr( data-op );
 	margin-left: .5rem;
 	font-size: 90%;
 }

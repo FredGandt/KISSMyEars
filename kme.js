@@ -213,12 +213,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 		stopTrack: async rs => {
 			if ( audio.src ) {
-				let vol, fade;
-				if ( !rs && ( vol = audio.volume ) && ( fade = controls.fade_stop.valueAsNumber ) ) {
-					await fadeStop( vol, parseInt( fade / 100 ) );
-					audio.volume = controls.volume.valueAsNumber;
+				let fade;
+				if ( !rs && audio.volume && ( fade = controls.fade_stop.valueAsNumber ) ) {
+					await fadeStop( Math.round( 0.02 * fade ) );
 				}
 				audio.pause();
+				audio.volume = controls.volume.valueAsNumber;
 				TRANSPORT.backTrack();
 				if ( rs ) {
 					audio.removeAttribute( "src" );
@@ -364,22 +364,15 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	fadeStop = ( vol, fade ) => {
+	fadeStop = ms => {
 		return new Promise( resolve => {
-			let redux = vol / fade;
-			while ( fade ) {
-				setTimeout( () => {
-					try {
-						audio.volume -= redux; // TODO logarithmic
-					} catch {
-						audio.volume = 0;
-					}
-					if ( audio.volume < redux ) {
-						resolve( true );
-					}
-				}, 100 * fade );
-				--fade;
-			}
+			let fadeout = setInterval( () => {
+				if ( ( audio.volume -= ( audio.volume / 100 ) * 10 ) < 0.002 ) {
+					clearInterval( fadeout );
+					audio.volume = 0;
+					resolve( true );
+				}
+			}, ms );
 		} );
 	},
 
