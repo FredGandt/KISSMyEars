@@ -60,10 +60,17 @@
 			--></form><!--
 
 			--><form id="controls"><!--
+
+				--><fieldset><!--
+					--><output name="playlist_length" data-tracks="0 TRACKS" data-folders="0 FOLDERS" data-broken=""></output><!--
+					--><input name="clearPlaylist" type="button" value="CLEAR"><!--
+					--><label><input class="m" name="playlistFilter" type="button" value="FILTER"><kbd class="m">CTRL + F</kbd></label><!--
+					--><input name="fixBreakages" type="button" value="BREAKAGES"><!--
+				--></fieldset><!--
+
 				--><fieldset class="legend"><!--
 					--><legend>TURN OFF-AND-ON-ABLE</legend><!--
 					--><label>SHUFFLE<input name="shuffle" type="checkbox"></label><!--
-
 					--><fieldset class="child legend wrap shuffle_by"><!--
 						--><legend>SHUFFLE BY</legend><!--
 						--><label>TRACK<input name="shuffle_by" type="radio" value="track"></label><!--
@@ -92,15 +99,9 @@
 				--></fieldset><!--
 
 				--><fieldset><!--
-					--><output name="playlist_length" data-tracks="0 TRACKS" data-folders="0 FOLDERS" data-broken=""></output><!--
-					--><input name="clearPlaylist" type="button" value="CLEAR"><!--
-					--><label><input class="m" name="playlistFilter" type="button" value="FILTER"><kbd class="m">CTRL + F</kbd></label><!--
-					--><input name="fixBreakages" type="button" value="BREAKAGES"><!--
-				--></fieldset><!--
-
-				--><fieldset><!--
 					--><output name="played_length" data-pl="0 TRACKS"></output><!--
 					--><label><input class="m" name="listEditor" data-list="played" type="button" value="EDIT"><kbd class="m">P</kbd></label><!--
+					--><label id="spp"><input class="m" name="stopPlayingPlayed" type="button" value="STOP PLAYING PLAYED"><kbd class="m">ALT + P</kbd></label><!--
 				--></fieldset><!--
 
 				--><fieldset><!--
@@ -109,7 +110,7 @@
 				--></fieldset><!--
 
 				--><fieldset><!--
-				--><label class="range" data-op="" data-q="">FADE TO STOP<input class="m" name="fade_stop" type="range" min="0" step="500" max="10000"></label><!--
+					--><label class="range" data-op="" data-q="">FADE TO STOP<input class="m" name="fade_stop" type="range" min="0" step="500" max="10000"></label><!--
 					--><label class="range" data-op="" data-q="">VOLUME<input class="m" name="volume" type="range" min="0" step="0.01" max="1"></label><!--
 				--></fieldset><!--
 

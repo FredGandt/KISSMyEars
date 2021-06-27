@@ -69,6 +69,7 @@ let currently_playing_folder,
 	played_index = null,
 	playlist_fragment,
 	queuend = false,
+	track_id = 0,
 	played = [],
 	queue = [],
 	dragee,
@@ -82,6 +83,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	controls = document.getElementById( "controls" ),
 	sources = document.getElementById( "sources" ),
 	seek = document.getElementById( "seek" ),
+	spp = document.getElementById( "spp" ),
 
 	list_editor_trash = list_editor.querySelector( "div" ),
 	list_editor_list = list_editor.querySelector( "ol" ),
@@ -102,6 +104,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			console[ how || "log" ]( where, what );
 		}
 	},
+
+	trackID = li => li.dataset.id,
 
 	absPath = li => li.dataset.abs_path,
 
@@ -131,8 +135,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	isBtn = trg => trg && trg.type && trg.type === "button",
 
-	playingPlayed = () => played_index && played_index !== null,
-
 	listEditorShowing = () => list_editor.classList.contains( "show" ),
 
 	defaultEndOf = () => controls.endof.value = controls.dataset.endof,
@@ -151,13 +153,15 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	trackTitleDataset = listing => listing.querySelector( "span[data-title]" ).dataset,
 
+	idsToTracks = ids => ids.map( id => playlist.querySelector( `li[data-id="${id}"]` ) ),
+
 	folder = li => ( folderPath( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
+
+	playingPlayed = () => spp.classList.toggle( "show", played_index && played_index !== null ),
 
 	showFocussed = ( li, val ) => playpen.scrollBy( 0, li.offsetTop - playpen.offsetTop - val ),
 
 	clearFilters = () => fromPlaylist.filtered().forEach( l => l.classList.remove( "filtered" ) ),
-
-	pathsToTracks = paths => paths.map( p => playlist.querySelector( `li[data-abs_path="${p}"]` ) ),
 
 	listMatch = ( dragee, q ) => ( q ? queue : played ).findIndex( li => absPath( li ) === absPath( dragee ) ),
 
@@ -245,6 +249,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	CONTROLS = {
 		fixBreakages: () => debugMsg( "fixBreakages:", fromPlaylist.tracks.broken(), "warn" ),
+
+		stopPlayingPlayed: () => {
+			// TODO if ( confirm( "Let this track finish first?" ) ) {}
+			played_index = null;
+			TRANSPORT.nextTrack();
+		},
 
 		clearPlayedTracks: () => {
 			if ( played.length && confirm( "Clear the play history?" ) ) {
@@ -369,7 +379,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	fadeStop = ms => {
 		return new Promise( resolve => {
 			let fadeout = setInterval( () => {
-				if ( ( audio.volume -= ( audio.volume / 100 ) * 10 ) < 0.002 ) {
+				if ( ( audio.volume -= audio.volume / 10 ) < 0.002 ) {
 					clearInterval( fadeout );
 					audio.volume = 0;
 					resolve( true );
@@ -475,11 +485,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				let p = store.played,
 					q = store.queue;
 				if ( p && p.length ) {
-					played = played.concat( pathsToTracks( p ) );
+					played = played.concat( idsToTracks( p ) );
 					updatePlayedness();
 				}
 				if ( q && q.length ) {
-					queue = queue.concat( pathsToTracks( q ) );
+					queue = queue.concat( idsToTracks( q ) );
 					updateQueuetness();
 				}
 			}
@@ -534,6 +544,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				li = document.createElement( "li" );
 				li.dataset.abs_path = track.abspath;
 				li.dataset.title = track.title;
+				li.dataset.id =  track.id;
 				[ ( parseInt( track.num ) || 0 ), track.title, track.type ].forEach( ( disp, i ) => {
 					spn = document.createElement( "span" );
 					spn.dataset.display = disp;
@@ -564,8 +575,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					mtch, pastpath;
 				playlist_fragment = document.createDocumentFragment();
 				resolve( stored.concat( paths.filter( path => {
-					if ( stored.some( sp => sp.a === path.a ) ) {
-						return false; // TODO check if any stored paths no longer exist
+					if ( stored.some( sp => sp.a === path.a ) ) { // TODO also check if any stored paths no longer exist
+						return false;
 					}
 					if ( pastpath !== path.d ) {
 						pastpath = path.d;
@@ -573,16 +584,18 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						folder = { "tracks": [], "path": "" };
 					}
 					folder.path = path.d;
+					track_id = Math.max( track_id, path.i );
 					if ( mtch = path.f.match( /^([0-9]+)?[ \-_]*(.+)\.([a-z0-9]+)$/ ) ) {
 						folder.tracks.push( {
 							"title": mtch[ 2 ].replace( /_+/g, " " ),
 							"abspath": path.a,
 							"type": mtch[ 3 ],
-							"num": mtch[ 1 ]
+							"num": mtch[ 1 ],
+							"id": path.i
 						} );
 						return true;
 					}
-					debugMsg( "Unprocessable file name format:", path, "warn" );
+					debugMsg( "Unprocessable file name format:", path, "warn" ); // TODO what if the folder is empty?
 					return false;
 				} ) ) );
 				collectionToHTML( folder, true );
@@ -764,7 +777,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	clickListEditor = evt => {
+	clickListEditor = evt => { // TODO all playlist click actions in list_editor too?
 		debugMsg( "clickListEditor:", evt );
 		if ( evt && evt.target.name === "clear" ) {
 			if ( listEditingQueue() ) {
@@ -954,7 +967,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		debugMsg( "keyDown:", { "evt": evt, "key": evt.key } );
 		let k = evt.key,
 			arrw = /^Arrow/.test( k );
-		if ( !listEditorShowing() && !playlistFilterShowing() && /^(Arrow|Page)(Up|Down)$/.test( k ) ) { // TODO make it work with filtered and listEditor
+		if ( !listEditorShowing() && !playlistFilterShowing() && /^(Arrow|Page)(Up|Down)$/.test( k ) ) {
+			// TODO make it work with filtered and listEditor
 			let fcs = removeFocussed(),
 				up = /Up$/.test( k );
 			evt.preventDefault();
@@ -1032,7 +1046,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						TRANSPORT.nextTrack();
 					}
 				}
-			} else if ( evt.ctrlKey && k === "f" ) { // TODO toggle closed
+			} else if ( evt.ctrlKey && k === "f" ) {
 				evt.preventDefault();
 				CONTROLS.playlistFilter();
 			} else {
@@ -1055,7 +1069,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						break;
 					}
 					case "p": {
-						CONTROLS.listEditor( played );
+						if ( evt.altKey && playingPlayed() ) {
+							evt.preventDefault();
+							CONTROLS.stopPlayingPlayed();
+						} else {
+							CONTROLS.listEditor( played );
+						}
 						break;
 					}
 					case "g": {
@@ -1107,12 +1126,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				paths = arrayFrom( trg.files ).filter( file => /^audio\//.test( file.type ) ).map( file => {
 					let cp = sp.concat( file.webkitRelativePath.split( "/" ).filter( f => f ) );
 					// TODO sortPlaylist() goes wonky if there's a mix of relative sources
-					// only sensibly fixable with "album" recognition via tags?
-					// possible dissection of the absolute file path to establish where it could fit might work
+						// only sensibly fixable with "album" recognition via tags?
+						// possible dissection of the absolute file path to establish where it could fit might work
 					return {
 						"a": cp.map( pp => encodeURIComponent( pp ) ).join( "/" ),
 						"f": cp.pop(),
-						"d": cp.slice( sp.length ).join( " | " )
+						"d": cp.slice( sp.length ).join( " | " ),
+						"i": ++track_id
 					};
 				} );
 			if ( paths.length ) {
@@ -1138,7 +1158,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 Would you like to store the information as a text file to be saved in your audio library?` ) ) {
 								giveFile( "store", json );
 								// TODO and then what?
-								// file to be placed in library and loaded on init
+									// file to be placed in library and loaded on init
 							}
 						}
 					}
@@ -1151,6 +1171,9 @@ Would you like to store the information as a text file to be saved in your audio
 	},
 
 	clickPlaylist = evt => {
+
+		// TODO all playlist click actions in list_editor too?
+
 		debugMsg( "clickPlaylist:", evt );
 		let trg = ( evt.trg || liFromEvtPath( evt ) ); // TODO if ctrlChckd( "collapsed" ) clicking a folder expands it
 		if ( trg ) {
@@ -1238,13 +1261,11 @@ Would you like to store the information as a text file to be saved in your audio
 
 	storeSettings = () => {
 		chrome.storage.local.set( {
-			"played": played.map( li => absPath( li ) ), // TODO check if there's enough space; if not?
-			"queue": queue.map( li => absPath( li ) ),
+			"played": played.map( li => trackID( li ) ),
+			"queue": queue.map( li => trackID( li ) ),
 			"settings": {
 				scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
 				fadestop: controls.fade_stop.valueAsNumber,
-				combifilter: fltrChckd( "combifilter" ),
-				casensitive: fltrChckd( "casensitive" ),
 				volume: controls.volume.valueAsNumber,
 				collapsed: ctrlChckd( "collapsed" ),
 				skiplayed: ctrlChckd( "skiplayed" ),
@@ -1260,8 +1281,6 @@ Would you like to store the information as a text file to be saved in your audio
 		return new Promise( resolve => {
 			let sttngs = Object.assign( {
 				scrolltoplaying: true,
-				combifilter: false,
-				casensitive: false,
 				shuffleby: "track",
 				collapsed: true,
 				skiplayed: true,
@@ -1276,8 +1295,6 @@ Would you like to store the information as a text file to be saved in your audio
 			playlist.classList.toggle( "collapsed", controls.collapsed.checked = sttngs.collapsed );
 			controls.dataset.endof = controls.endof.value = sttngs.endof;
 			controls.scrolltoplaying.checked = sttngs.scrolltoplaying;
-			playlist_filter.combifilter.checked = sttngs.combifilter;
-			playlist_filter.casensitive.checked = sttngs.casensitive;
 			controls.skiplayed.checked = sttngs.skiplayed;
 			controls.shuffle_by.value = sttngs.shuffleby;
 			controls.shuffle.checked = sttngs.shuffle;

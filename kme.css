@@ -147,10 +147,6 @@ h1 {
 	margin: 0;
 }
 
-#sources {
-	margin-bottom: 1rem;
-}
-
 #sources select,
 #sources input {
 	width: -webkit-fill-available;
@@ -513,10 +509,15 @@ select {
 
 #playlist ol li span[data-queue]:not([data-queue=""]):before,
 fieldset.orange input[type="button"],
-input[type="button"].orange {
+input[type="button"].orange,
+#spp input {
 	background-color: var( --orange );
 	color: var( --darkest-grey );
 	padding-bottom: .1rem;
+}
+
+#spp input {
+	background-color: var( --turq );
 }
 
 #playlist ol li span[data-queue]:not([data-queue=""]):before {
@@ -538,7 +539,8 @@ input[type="button"].orange {
 #list_editor div.dropzone li,
 #controls span.skip_tracks,
 input[name="fixBreakages"],
-fieldset[name="folder"] {
+fieldset[name="folder"],
+#spp:not(.show) {
 	display: none;
 }
 
