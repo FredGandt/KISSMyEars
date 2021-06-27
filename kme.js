@@ -995,7 +995,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					// TODO fcs = the nearest folder
 				}
 				if ( fcs ) {
-					addFocussed( fcs ); // the order of these operations matters
+					/* the order of these operations matters */
+					addFocussed( fcs );
 					showFocussed( fcs, suchWaw( !folderPath( fcs ) ) );
 				}
 			} else {
@@ -1020,8 +1021,9 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 					}
 				}
 				if ( fcs ) {
+					/* the order of these operations matters */
 					showFocussed( fcs, waw );
-					addFocussed( fcs ); // the order of these operations matters
+					addFocussed( fcs );
 				}
 			}
 		} else if ( !/^(input|select)$/i.test( evt.target.tagName ) ) { // document.activeElement
