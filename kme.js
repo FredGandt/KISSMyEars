@@ -5,6 +5,9 @@
 	// repeat queue or played
 	// use virtual DOM for playlist
 	// indexedDB instead of localStorage
+	// skip silent sections in tracks e.g. leading to hidden tracks.
+		// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
+		// https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode
 
 // TODO start shuffle play again after e.g. finishing a folder etc.
 
@@ -14,11 +17,12 @@
 	// CONTROLS.fixBreakages()
 
 // TODO save queue as playlist
-		// giveFile()
+	// giveFile()
 
 // TODO mark tracks to be played together in groups in specific orders e.g. Hendrix, Bowie etc.
 	// track must always be preceded by
 	// track must always be followed by
+	// not when queued
 	// temporary override option
 
 // TODO tags
@@ -29,13 +33,9 @@
 	// https://emscripten.org/docs/getting_started/Tutorial.html
 		// shuffle by tag
 		// replaygain
-		// images :(
-		// scrobbling :(
+		// images
+		// scrobbling
 			// https://www.last.fm/api/scrobbling
-
-// TODO skip silent sections in tracks e.g. leading to hidden tracks.
-// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
-// https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode
 
 "use strict";
 
@@ -105,7 +105,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	trackID = li => li.dataset.id,
+	cloneOf = arr => [].concat( arr ),
 
 	absPath = li => li.dataset.abs_path,
 
@@ -123,7 +123,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	untilEndOf = cont => isCtrlVlu( "endof", cont ),
 
+	trackIDs = lst => lst.map( li => li.dataset.id ),
+
 	isShuffleBy = sb => isCtrlVlu( "shuffle_by", sb ),
+
+	arrayExistsAndHasLength = arr => arr && arr.length, // TODO deploy at all array.length checks?
 
 	folderPath = li => li ? li.dataset.path : undefined,
 
@@ -135,9 +139,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	isBtn = trg => trg && trg.type && trg.type === "button",
 
-	listEditorShowing = () => list_editor.classList.contains( "show" ),
-
 	defaultEndOf = () => controls.endof.value = controls.dataset.endof,
+
+	playingPlayed = () => spp.classList.toggle( "show", played_index ),
+
+	listEditorShowing = () => list_editor.classList.contains( "show" ),
 
 	suchWaw = param => playpen.scrollTop + ( param ? halfPlaypen() : 0 ),
 
@@ -156,8 +162,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	idsToTracks = ids => ids.map( id => playlist.querySelector( `li[data-id="${id}"]` ) ),
 
 	folder = li => ( folderPath( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
-
-	playingPlayed = () => spp.classList.toggle( "show", played_index && played_index !== null ),
 
 	showFocussed = ( li, val ) => playpen.scrollBy( 0, li.offsetTop - playpen.offsetTop - val ),
 
@@ -202,8 +206,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		},
 
 		// TODO "previous" handling is a mess
-			// played needs to be all tracks that have been played for at least around 2 seconds
-			// an overide is needed so rather than previously played, it selects the previous track in the playlist
+			// played needs to be all tracks that have been played for at least around 2 seconds?
+			// an overide is needed when suffle is off, so rather than previously played, it selects the previous track in the playlist
 
 		prevTrack: () => {
 			let pl = played.length;
@@ -234,7 +238,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			}
 		},
 
-		// TODO previous folder
+		prevFolder: () => {
+			currently_playing_folder = folderOfTrack( cloneOf( played ).reverse().find( trck => folderOfTrack( trck ) !== currently_playing_folder ) );
+			TRANSPORT.nextTrack();
+		},
 
 		backFolder: () => {
 			currently_playing_track = null;
@@ -251,9 +258,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		fixBreakages: () => debugMsg( "fixBreakages:", fromPlaylist.tracks.broken(), "warn" ),
 
 		stopPlayingPlayed: () => {
-			// TODO if ( confirm( "Let this track finish first?" ) ) {}
 			played_index = null;
-			TRANSPORT.nextTrack();
+			if ( confirm( "After this track?" ) ) {
+				currently_playing_track = null;
+			} else {
+				TRANSPORT.nextTrack();
+			}
 		},
 
 		clearPlayedTracks: () => {
@@ -300,18 +310,28 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 		clearPlaylist: () => {
 			if ( fromPlaylist.tracks.all().length && confirm( "Clear the playlist?" ) ) {
-				let tds = controls.times.dataset;
 				TRANSPORT.stopTrack( true );
 				setTitle( "KISS My Ears" );
 				playlist.innerHTML = "";
 				updatePlaylistLength();
+				let tds = controls.times.dataset;
 				tds.dura = tds.rema = secondsToStr( 0 );
 			}
 			chrome.storage.local.get( store => {
-				if ( store.paths && store.paths.length && confirm( "Clear the automatically included tracks?" ) ) {
+				if ( arrayExistsAndHasLength( store.paths ) && confirm( "Clear the automatically included tracks?" ) ) {
+					queue = [];
+					played = [];
+					updateQueuetness();
+					updatePlayedness();
 					chrome.storage.local.remove( "paths" );
+					if ( arrayExistsAndHasLength( store.played ) ) {
+						chrome.storage.local.remove( "played" );
+					}
+					if ( arrayExistsAndHasLength( store.queue ) ) {
+						chrome.storage.local.remove( "queue" );
+					}
 				}
-				if ( store.libraries && store.libraries.length && confirm( "Clear the stored libraries?" ) ) {
+				if ( arrayExistsAndHasLength( store.libraries ) && confirm( "Clear the stored libraries?" ) ) {
 					chrome.storage.local.remove( "libraries" );
 				}
 			} );
@@ -349,6 +369,14 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			}
 			fcs.classList.add( "focussed" );
 		}
+	},
+
+	storageBytesAvailable = () => {
+		return new Promise( resolve => {
+			chrome.storage.local.getBytesInUse( bytes => {
+				resolve( chrome.storage.local.QUOTA_BYTES - bytes ); // TODO sophisticate
+			} );
+		} );
 	},
 
 	removeFocussed = () => {
@@ -414,7 +442,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	tracksOfFolder = ( fldr, trck ) => {
 		if ( fldr ) {
 			let trcks = arrayFrom( fldr.querySelectorAll( "li" ) );
-			if ( trcks && trcks.length ) {
+			if ( arrayExistsAndHasLength( trcks ) ) {
 				if ( typeof trck === "number" ) {
 					return trcks[ trck ];
 				}
@@ -479,16 +507,16 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		URL.revokeObjectURL( ourl );
 	},
 
-	applyStoredArrays = store => {
+	mindYourPsAndQs = store => {
 		return new Promise( resolve => {
 			if ( store ) {
 				let p = store.played,
 					q = store.queue;
-				if ( p && p.length ) {
+				if ( arrayExistsAndHasLength( p ) ) {
 					played = played.concat( idsToTracks( p ) );
 					updatePlayedness();
 				}
-				if ( q && q.length ) {
+				if ( arrayExistsAndHasLength( q ) ) {
 					queue = queue.concat( idsToTracks( q ) );
 					updateQueuetness();
 				}
@@ -535,7 +563,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	collectionToHTML = ( folder, end ) => { // TODO use tags to determine fields to create
-		if ( folder && folder.tracks && folder.tracks.length ) {
+		if ( folder && arrayExistsAndHasLength( folder.tracks ) ) {
 			let ol = document.createElement( "ol" ),
 				oli = document.createElement( "li" ),
 				li, spn;
@@ -570,22 +598,22 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	pathsToPlaylist = ( paths, stored ) => {
 		stored = stored || [];
 		return new Promise( resolve => {
-			if ( paths && paths.length ) {
+			if ( arrayExistsAndHasLength( paths ) ) {
 				let folder = { "tracks": [], "path": "" },
 					mtch, pastpath;
 				playlist_fragment = document.createDocumentFragment();
 				resolve( stored.concat( paths.filter( path => {
-					if ( stored.some( sp => sp.a === path.a ) ) { // TODO also check if any stored paths no longer exist
+					if ( stored.some( sp => sp.a === path.a ) ) { // TODO reduce paths object size
 						return false;
 					}
-					if ( pastpath !== path.d ) {
+					if ( pastpath !== path.d ) { // TODO reduce paths object size
 						pastpath = path.d;
 						collectionToHTML( folder );
 						folder = { "tracks": [], "path": "" };
 					}
-					folder.path = path.d;
+					folder.path = path.d; // TODO reduce paths object size
 					track_id = Math.max( track_id, path.i );
-					if ( mtch = path.f.match( /^([0-9]+)?[ \-_]*(.+)\.([a-z0-9]+)$/ ) ) {
+					if ( mtch = path.f.match( /^([0-9]+)?[ \-_]*(.+)\.([a-z0-9]+)$/ ) ) { // TODO reduce paths object size
 						folder.tracks.push( {
 							"title": mtch[ 2 ].replace( /_+/g, " " ),
 							"abspath": path.a,
@@ -843,7 +871,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		audio.removeAttribute( "src" );
 		if ( queuend && !queue.length && untilEndOf( "queue" ) ) {
 			cont = queuend = false;
-		} else if ( untilEndOf( "track" ) || ( untilEndOf( "folder" ) && currently_playing_track.dataset.last_track ) ) {
+		} else if ( untilEndOf( "track" ) || ( untilEndOf( "folder" ) && currently_playing_track && currently_playing_track.dataset.last_track ) ) {
 			cont = false;
 		}
 		if ( cont ) {
@@ -1002,7 +1030,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			} else {
 				let all = fromPlaylist[ arrw ? "tracks" : "folders" ].all(),
 				waw = suchWaw( arrw );
-				fcs = fcs || [].concat( all ).sort( ( a, b ) => ( a.offsetTop - waw ) + ( b.offsetTop - waw ) )[ 0 ];
+				fcs = fcs || cloneOf( all ).sort( ( a, b ) => ( a.offsetTop - waw ) + ( b.offsetTop - waw ) )[ 0 ];
 				if ( fcs ) {
 					if ( arrw && folderPath( fcs ) ) {
 						if ( up ) {
@@ -1033,7 +1061,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				evt.preventDefault();
 				if ( isShuffleBy( "folder" ) && evt.ctrlKey ) {
 					if ( left ) {
-						TRANSPORT.backFolder(); // TODO previous folder
+						if ( evt.altKey ) {
+							TRANSPORT.backFolder();
+						} else {
+							TRANSPORT.prevFolder();
+						}
 					} else if ( right ) {
 						TRANSPORT.nextFolder();
 					}
@@ -1131,7 +1163,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						// only sensibly fixable with "album" recognition via tags?
 						// possible dissection of the absolute file path to establish where it could fit might work
 					return {
-						"a": cp.map( pp => encodeURIComponent( pp ) ).join( "/" ),
+						"a": cp.map( pp => encodeURIComponent( pp ) ).join( "/" ), // TODO reduce paths object size
 						"f": cp.pop(),
 						"d": cp.slice( sp.length ).join( " | " ),
 						"i": ++track_id
@@ -1146,22 +1178,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 						TRANSPORT.playTrack();
 						if ( confirm( "Remember these files for automatic inclusion in future?" ) ) {
 							let nl = { "lib_path": slv, "lib_name": libnme },
-							libraries = ( store.libraries || [] ).filter( l => l.lib_path !== nl.lib_path ).concat( [ nl ] ),
-							json = JSON.stringify( paths );
+								libraries = ( store.libraries || [] ).filter( l => l.lib_path !== nl.lib_path ).concat( [ nl ] );
 							setLibraries( libraries );
-							if ( ( json.length + JSON.stringify( Object.assign( {}, {
-								"settings": store.settings,
-								"libraries": libraries,
-								"played": store.played,
-								"queue": store.queue
-							} ) ).length ) <= chrome.storage.local.QUOTA_BYTES ) {
-								chrome.storage.local.set( { "libraries": libraries, "paths": paths } );
-							} else if ( confirm( `There are too many files to remember in local storage, but an alternative exists;
-Would you like to store the information as a text file to be saved in your audio library?` ) ) {
-								giveFile( "store", json );
-								// TODO and then what?
-									// file to be placed in library and loaded on init
-							}
+							chrome.storage.local.set( { "libraries": libraries, "paths": paths } );
+							// TODO storageBytesAvailable() || giveFile()
+								// JSON.stringify etc.
 						}
 					}
 				} );
@@ -1214,7 +1235,7 @@ Would you like to store the information as a text file to be saved in your audio
 					if ( confirm( "Do not automatically include in future?" ) ) {
 						chrome.storage.local.get( store => {
 							chrome.storage.local.set( { "paths": store.paths.filter( sp => {
-								return ( tia ? !trg.tracks.some( li => sp.a === absPath( li ) ) : sp.a !== absPath( trg ) );
+								return ( tia ? !trg.tracks.some( li => sp.a === absPath( li ) ) : sp.a !== absPath( trg ) ); // TODO reduce paths object size
 							} ) } );
 						} );
 					}
@@ -1263,8 +1284,8 @@ Would you like to store the information as a text file to be saved in your audio
 
 	storeSettings = () => {
 		chrome.storage.local.set( {
-			"played": played.map( li => trackID( li ) ),
-			"queue": queue.map( li => trackID( li ) ),
+			"played": trackIDs( played ),
+			"queue": trackIDs( queue ),
 			"settings": {
 				scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
 				fadestop: controls.fade_stop.valueAsNumber,
@@ -1339,7 +1360,7 @@ chrome.storage.local.get( store => {
 	setLibraries( store.libraries );
 	applySettings( store.settings ).then( t => {
 		pathsToPlaylist( store.paths ).then( t => {
-			applyStoredArrays( store ).then( t => {
+			mindYourPsAndQs( store ).then( t => {
 				TRANSPORT.playTrack();
 			} );
 		} );

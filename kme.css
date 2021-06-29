@@ -398,6 +398,7 @@ fieldset[name="transport"] input:hover {
 	background-color: var( --dark-turq );
 }
 
+input[name="prevFolder"],
 input[name="prevTrack"] {
 	background-image: url( "prev.png" );
 }
@@ -560,7 +561,7 @@ fieldset[name="folder"] {
 }
 
 fieldset[name="folder"] span {
-	width: calc( ( 3.5rem * 4 ) + .5rem );
+	width: calc( ( 3.5rem * 3 ) + .5rem );
 	color: var( --dark-turq );
 	display: inline-block;
 	vertical-align: top;
