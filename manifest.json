@@ -3,7 +3,7 @@
 	"name": "KISS My Ears",
 	"homepage_url": "https://github.com/FredGandt/KISSMyEars",
 	"description": "Keep It Stupid Simple local audio file player",
-	"version": "0.5.0",
+	"version": "0.6.9",
 	"offline_enabled": true,
 	"permissions": [
 		"file:///*",

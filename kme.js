@@ -703,7 +703,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			if ( !audio.src ) {
 				let listing;
 				if ( track_sequence.length ) {
-					listing = track_sequence.shift();
+					listing = track_sequence.shift(); // TODO what if a queue has multiple members of the same sequence?
 				} else {
 					let pl = played.length, si;
 					if ( pl && playingPlayed() ) {
