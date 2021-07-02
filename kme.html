@@ -64,7 +64,7 @@
 				--><fieldset><!--
 					--><output name="playlist_length" data-tracks="0 TRACKS" data-folders="0 FOLDERS" data-broken=""></output><!--
 					--><input name="clearPlaylist" type="button" value="CLEAR"><!--
-					--><label><input class="m" name="playlistFilter" type="button" value="FILTER"><kbd class="m">CTRL + F</kbd></label><!--
+					--><label><input class="left_marg" name="playlistFilter" type="button" value="FILTER"><kbd class="left_marg">CTRL + F</kbd></label><!--
 					--><input name="fixBreakages" type="button" value="BREAKAGES"><!--
 				--></fieldset><!--
 
@@ -87,6 +87,7 @@
 					--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end"><kbd>+ CTRL + ALT</kbd></label><!--
 					--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"><kbd>+ CTRL + META</kbd></label><!--
 					--><label>DELIST IT<input class="orange split" name="clicky" type="radio" value="delist"><kbd>+ META + ALT</kbd></label><!--
+					--><label>SEQUENCE<input class="pink" name="clicky" type="radio" value="sequence"><kbd>+ CTRL + META + ALT</kbd></label><!--
 				--></fieldset><!--
 
 				--><fieldset class="legend wrap"><!--
@@ -100,18 +101,23 @@
 
 				--><fieldset><!--
 					--><output name="played_length" data-pl="0 TRACKS"></output><!--
-					--><label><input class="m" name="listEditor" data-list="played" type="button" value="EDIT"><kbd class="m">P</kbd></label><!--
-					--><label id="spp"><input class="m" name="stopPlayingPlayed" type="button" value="STOP PLAYING PLAYED"><kbd class="m">ALT + P</kbd></label><!--
+					--><label><input class="left_marg" name="listEditor" data-list="played" type="button" value="EDIT"><kbd class="left_marg">P</kbd></label><!--
+					--><label id="spp"><input class="left_marg" name="stopPlayingPlayed" type="button" value="STOP PLAYING PLAYED"><kbd class="left_marg">ALT + P</kbd></label><!--
 				--></fieldset><!--
 
 				--><fieldset><!--
 					--><output name="queue_length" data-ql="0 TRACKS"></output><!--
-					--><label><input class="orange m" name="listEditor" data-list="queue" type="button" value="EDIT"><kbd class="m">Q</kbd></label><!--
+					--><label><input class="orange left_marg" name="listEditor" data-list="queue" type="button" value="EDIT"><kbd class="left_marg">Q</kbd></label><!--
+				--></fieldset><!--
+
+				--><fieldset name="sequencing"><!--
+					--><output name="sequence_length" data-sl="0 TRACKS"></output><!--
+					--><label><input class="pink left_marg" name="sequencify" type="button" value="SEQUENCIFY"><kbd class="left_marg">ALT + S</kbd></label><!--
 				--></fieldset><!--
 
 				--><fieldset><!--
-					--><label class="range" data-op="" data-q="">FADE TO STOP<input class="m" name="fade_stop" type="range" min="0" step="500" max="10000"></label><!--
-					--><label class="range" data-op="" data-q="">VOLUME<input class="m" name="volume" type="range" min="0" step="0.01" max="1"></label><!--
+					--><label class="range" data-op="" data-q="">FADE TO STOP<input class="left_marg" name="fade_stop" type="range" min="0" step="500" max="10000"></label><!--
+					--><label class="range" data-op="" data-q="">VOLUME<input class="left_marg" name="volume" type="range" min="0" step="0.01" max="1"></label><!--
 				--></fieldset><!--
 
 				--><button name="blur_oasis">USE <kbd>ARROW/PAGE-UP/DOWN</kbd> TO NAVIGATE PLAYLIST TRACKS AND FOLDERS, <kbd>ENTER</kbd> (+MODIFIER) ON A FOCUSSED TRACK/FOLDER TO PERFORM THE RELATED CLICK ACTION, AND <kbd>ESC</kbd> TO RETURN TO CONTROLS NAVIGATION</button><!--

@@ -15,7 +15,7 @@
 	--dark-turq-border: 1px solid var( --dark-turq );
 
 	--orange: #a86d14;
-
+	--pink: #a9587f;
 	--red: #c72d2d;
 }
 
@@ -61,7 +61,7 @@
 	float: left;
 }
 
-.m {
+.left_marg {
 	margin-left: .5rem !important;
 }
 
@@ -238,23 +238,27 @@ fieldset:not(.pf).child {
 	border-top: 0;
 }
 
-output[name="played_length"]:after {
+output[name="played_length"]::after {
 	content: attr( data-pl ) "\0000a0PLAYED";
 }
 
-output[name="queue_length"]:after {
+output[name="queue_length"]::after {
 	content: attr( data-ql ) "\0000a0QUEUED";
 }
 
-output[name="times"]:before {
+output[name="sequence_length"]::after {
+	content: attr( data-sl ) "\0000a0TO";
+}
+
+output[name="times"]::before {
 	content: attr( data-dura ) "\0000a0\002212\0000a0" attr( data-curt ) "\0000a0\00224A\0000a0" attr( data-rema );
 }
 
-output[name="playlist_length"]:before {
+output[name="playlist_length"]::before {
 	content: attr( data-tracks ) "\0000a0IN\0000a0" attr( data-folders );
 }
 
-output[name="playlist_length"]:after {
+output[name="playlist_length"]::after {
 	content: attr( data-broken );
 	color: var( --red );
 }
@@ -268,7 +272,7 @@ input[name="fixBreakages"].show {
 	display: inline-block;
 }
 
-ol li span:after {
+ol li span::after {
 	content: attr( data-display );
 }
 
@@ -346,7 +350,7 @@ input[type="file"] {
 	display: block;
 }
 
-input[type="file"]:before {
+input[type="file"]::before {
 	background-color: var( --darkest-grey );
 	padding: .2rem .4rem .1rem;
 	color: var( --lighter-grey );
@@ -371,7 +375,7 @@ label.range + label.range {
 	display: block;
 }
 
-label.range:after {
+label.range::after {
 	color: var( --lighter-grey );
 	vertical-align: text-top;
 	content: attr( data-op );
@@ -433,6 +437,10 @@ input.orange:checked {
 	background-color: var( --orange );
 }
 
+input.pink:checked {
+	background-color: var( --pink );
+}
+
 input.orange.split:checked {
 	background-image: linear-gradient( to right, var( --turq ) 50%, var( --orange ) 50% );
 }
@@ -463,7 +471,7 @@ select {
 	cursor: pointer;
 }
 
-#playlist > li:before {
+#playlist > li::before {
 	content: attr( data-path );
 	font-weight: bold;
 }
@@ -508,8 +516,8 @@ select {
 	padding-top: .5rem;
 }
 
-#playlist ol li span[data-queue]:not([data-queue=""]):before,
 fieldset.orange input[type="button"],
+fieldset[name="sequencing"] input,
 input[type="button"].orange,
 #spp input {
 	background-color: var( --orange );
@@ -521,11 +529,31 @@ input[type="button"].orange,
 	background-color: var( --turq );
 }
 
-#playlist ol li span[data-queue]:not([data-queue=""]):before {
-	content: attr( data-queue );
+fieldset[name="sequencing"] input {
+	background-color: var( --pink );
+}
+
+#playlist ol li span[data-sequence]:not([data-sequence=""])::before,
+#playlist ol li span[data-queue]:not([data-queue=""])::before {
+	color: var( --darkest-grey );
 	border-radius: .2rem;
 	margin-right: .5rem;
 	padding: 0 .5rem;
+}
+
+#playlist ol li span[data-queue]:not([data-queue=""])::before {
+	background-color: var( --orange );
+	content: attr( data-queue );
+}
+
+#playlist ol li span[data-sequence]:not([data-sequence=""])::before {
+	background-color: var( --pink );
+	content: attr( data-sequence );
+}
+
+#playlist ol li span[data-queue]:not([data-queue=""])[data-sequence]:not([data-sequence=""])::before {
+	background-image: linear-gradient( to right, var( --pink ), var( --orange ) );
+	content: attr( data-sequence ) "\0000a0|\0000a0" attr( data-queue );
 }
 
 #playlist.collapsed:not(.filtered) > li:not(.playing):not(.focussed):not(.focussed_folder) ol,
@@ -536,6 +564,7 @@ input[type="button"].orange,
 #list_editor ol li span:not(:nth-child(2)),
 #sources fieldset[name="new_lib"]:disabled,
 #sources input[name="include"]:disabled,
+fieldset[name="sequencing"]:not(.show),
 #playlist.filtered li:not(.filtered),
 #list_editor div.dropzone li,
 #controls span.skip_tracks,
@@ -587,10 +616,10 @@ label kbd {
 	font-size: 90%;
 }
 
-label kbd:before {
+label kbd::before {
 	content: "(";
 }
 
-label kbd:after {
+label kbd::after {
 	content: ")";
 }
