@@ -16,7 +16,8 @@ Having tried many local music players, on Windoze and Linux, I have frequently b
 
 With this premise in mind, I am working to build a Chrome web browser extension that provides **only** the features I **need** and presents them in a one stop control panel. It currently looks like this:
 
-![kiss-my-ears](https://user-images.githubusercontent.com/3055947/115823580-754e0480-a3fe-11eb-9091-9106faf50151.png)
+![kme-screenshot](https://user-images.githubusercontent.com/3055947/124341320-654b6180-dbb3-11eb-927f-1da0fdf302b8.png)
+
 
 ## Development
 I haven't even finished building it yet and it's already, by far, the most satisfying music player I have used, but there is still a lot of coding to do. This is my primary music player, and there's no better way to assess the usability than by actually using it, so every day I tinker with ideas and bugs. Speaking as an alpha user, it's coming along nicely :)
