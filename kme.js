@@ -124,7 +124,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	trackIDs = lst => lst.map( li => trackID( li ) ),
 
-	isShuffleBy = sb => isCtrlVlu( "shuffle_by", sb ),
+	isShuffleBy = sb => isCtrlVlu( "shuffleby", sb ),
 
 	arrayExistsAndHasLength = arr => arr && arr.length, // TODO deploy at all array.length checks?
 
@@ -264,18 +264,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				chrome.storage.local.set( { "sequences": sequences } );
 				clear( "sequence" );
 			}
-
-			 // TODO what happens if a track is part of more than one sequence?
-
-			// TODO options to respect sequences if a sequenced track pops up when:
-				// shuffled by:
-					// track
-					// folder
-				// not suffled i.e. sequential
-				// queued
-			// should these options be set for each sequence, or globally?
-
-			// TODO sequence editor
 		},
 
 		stopPlayingPlayed: () => {
@@ -309,7 +297,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			closePlaylistFilter();
 		},
 
-		listEditor: list => { // TODO switch from "queue" to "played" and back
+		listEditor: list => {
+
+			// TODO switch from "queue" to "played" and back
+			// TODO sequence editing
+
 			if ( listEditorShowing() ) {
 				clickListEditor();
 			} else if ( list.length ) {
@@ -496,7 +488,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	updateSequences = () => {
 		let sl = sequence.length;
 		if ( sl ) {
-			sequence.forEach( li => sequenced( li, "NEW" ) ); // TODO editing woopsies
+			sequence.forEach( li => sequenced( li, "NEW" ) );
 			if ( controls.sequencing.classList.toggle( "show", sl > 1 ) ) {
 				controls.sequence_length.dataset.sl = multiTrack( sl );
 			}
@@ -702,10 +694,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 		return new Promise( resolve => {
 			if ( !audio.src ) {
 				let listing;
-				if ( track_sequence.length ) {
-					listing = track_sequence.shift(); // TODO what if a queue has multiple members of the same sequence?
+				if ( !ctrlChckd( "ignoresequences" ) && track_sequence.length ) {
+					listing = track_sequence.shift();
 				} else {
 					let pl = played.length, si;
+					track_sequence = [];
 					if ( pl && playingPlayed() ) {
 						listing = played[ pl + played_index ];
 					} else {
@@ -769,7 +762,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 							}
 						}
 					}
-					if ( listing && ( si = sequenced( listing ) ) ) { // TODO when playing played?
+					if ( listing && !ctrlChckd( "ignoresequences" ) && ( si = sequenced( listing ) ) ) { // TODO when playing played?
 						track_sequence = tracksFromIDs( sequences[ parseInt( si ) - 1 ] );
 						listing = track_sequence.shift();
 					}
@@ -1158,6 +1151,12 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 				}
 			}
 
+			// TODO immediate editing of woopsies i.e. undo
+
+			// TODO what happens if a track is part of more than one sequence?
+
+			// TODO only allow queuing of one track from a sequence unless ctrlChckd( "ignoresequences" )
+
 			// TODO when a sequenced track is removed from the playlist, the respective sequence needs to be adjusted or deleted
 
 			// TODO if ( controls.shuffle etc ) offer to shuffle before adding folders to the queue?
@@ -1371,12 +1370,13 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			"played": trackIDs( played ),
 			"queue": trackIDs( queue ),
 			"settings": {
+				ignoresequences: ctrlChckd( "ignoresequences" ),
 				scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
 				fadestop: controls.fade_stop.valueAsNumber,
 				volume: controls.volume.valueAsNumber,
 				collapsed: ctrlChckd( "collapsed" ),
 				skiplayed: ctrlChckd( "skiplayed" ),
-				shuffleby: ctrlVlu( "shuffle_by" ),
+				shuffleby: ctrlVlu( "shuffleby" ),
 				shuffle: ctrlChckd( "shuffle" ),
 				endof: controls.dataset.endof,
 				clicky: ctrlVlu( "clicky" )
@@ -1387,6 +1387,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	applySettings = settings => {
 		return new Promise( resolve => {
 			let sttngs = Object.assign( {
+				ignoresequences: false,
 				scrolltoplaying: true,
 				shuffleby: "track",
 				collapsed: true,
@@ -1401,9 +1402,10 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			audio.volume = controls.volume.value = controls.volume.parentElement.dataset.op = sttngs.volume;
 			playlist.classList.toggle( "collapsed", controls.collapsed.checked = sttngs.collapsed );
 			controls.dataset.endof = controls.endof.value = sttngs.endof;
+			controls.ignoresequences.checked = sttngs.ignoresequences;
 			controls.scrolltoplaying.checked = sttngs.scrolltoplaying;
 			controls.skiplayed.checked = sttngs.skiplayed;
-			controls.shuffle_by.value = sttngs.shuffleby;
+			controls.shuffleby.value = sttngs.shuffleby;
 			controls.shuffle.checked = sttngs.shuffle;
 			controls.clicky.value = sttngs.clicky;
 			toggleOptionVisibility();
