@@ -539,10 +539,15 @@ fieldset[name="sequencing"] input {
 	content: attr( data-sequence ) "\0000a0|\0000a0" attr( data-queue );
 }
 
+label.skip_played {
+	margin: 0 0 .5rem .5rem;
+}
+
 #playlist.collapsed:not(.filtered) > li:not(.playing):not(.focussed):not(.focussed_folder) ol,
 #controls.hide_shuffle_by fieldset.shuffle_by,
 #controls.hide_cont_folder span.skip_folders,
 #controls.hide_cont_folder label.cont_folder,
+#controls.hide_shuffle_by label.skip_played,
 #controls.hide_shuffle_by span.skip_folders,
 #list_editor ol li span:not(:nth-child(2)),
 #sources fieldset[name="new_lib"]:disabled,
@@ -554,12 +559,12 @@ fieldset[name="sequencing"]:not(.show),
 input[name="fixBreakages"],
 fieldset[name="folder"],
 #spp:not(.show) {
-	display: none;
+	display: none !important;
 }
 
 #controls.hide_cont_folder span.skip_tracks,
 #controls.hide_shuffle_by span.skip_tracks {
-	display: inline;
+	display: inline !important;
 }
 
 fieldset[name="folder"] {
@@ -569,7 +574,7 @@ fieldset[name="folder"] {
 }
 
 #controls:not(.hide_cont_folder):not(.hide_shuffle_by) fieldset[name="folder"] {
-	display: block;
+	display: block !important;
 }
 
 fieldset[name="folder"] span {

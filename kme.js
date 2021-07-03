@@ -1,13 +1,5 @@
 
-// https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
-
-// TODO maybe
-	// repeat queue or played
-	// use virtual DOM for playlist
-	// indexedDB instead of localStorage
-	// skip silent sections in tracks e.g. leading to hidden tracks.
-		// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
-		// https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode
+// TODO use virtual DOM for playlist
 
 // TODO start shuffle play again after e.g. finishing a folder etc.
 
@@ -30,6 +22,13 @@
 		// images
 		// scrobbling
 			// https://www.last.fm/api/scrobbling
+
+// TODO maybe
+	// repeat queue or played
+	// indexedDB instead of localStorage
+	// skip silent sections in tracks e.g. leading to hidden tracks.
+		// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
+		// https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode
 
 "use strict";
 
@@ -249,9 +248,11 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			TRANSPORT.nextTrack();
 		},
 
+		// TODO allow next and back folder when not shuffle playing
+
 		nextFolder: () => {
 			currently_playing_folder = null;
-			TRANSPORT.nextTrack()
+			TRANSPORT.nextTrack();
 		}
 	},
 
@@ -509,7 +510,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 
 	updatePlayedness = () => {
 		fromPlaylist.played().forEach( li => li.classList.remove( "played" ) );
-		controls.played_length.dataset.pl = multiTrack( played.length );
+		controls.played_length.dataset.pl = multiTrack( played.length ); // TODO indicate duplications?
 		let fldr;
 		played.forEach( li => {
 			li.classList.add( "played" );
@@ -695,7 +696,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			if ( !audio.src ) {
 				let listing;
 				if ( !ctrlChckd( "ignoresequences" ) && track_sequence.length ) {
-					listing = track_sequence.shift();
+					listing = track_sequence.shift(); // TODO a mix of sequenced and queued tracks can be bad
 				} else {
 					let pl = played.length, si;
 					track_sequence = [];
@@ -756,6 +757,8 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 										listing = list[ randNum( list.length ) ];
 									}
 								} else {
+									// TODO allow next and back folder when not shuffle playing
+									// TODO allow skipping played tracks when not shuffle playing?
 									let lstndx = list.indexOf( currently_playing_track || notPop( played ) );
 									listing = list[ ~lstndx ? lstndx + ( prev ? -1 : 1 ) : 0 ];
 								}
@@ -781,8 +784,6 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 	},
 
 	/* event functions */
-
-	focusButton = evt => evt.target.blur(),
 
 	dragEnd = () => dragee.classList.remove( "dragee" ),
 
@@ -858,7 +859,7 @@ const playlist_filter = document.getElementById( "playlist_filter" ),
 			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
 				TRANSPORT[ fnc ]();
 			}
-		} else if ( trg && /^(range|checkbox|radio)$/.test( trg.type ) ) {
+		} else if ( trg && /^(range|checkbox)$/.test( trg.type ) ) {
 			trg.dataset.clicked = true;
 		} else if ( ~evt.composedPath().indexOf( controls.blur_oasis ) ) {
 			evt.preventDefault();
@@ -1434,7 +1435,7 @@ playlist.addEventListener( "click", clickPlaylist, { passive: true } );
 playlist_filter.addEventListener( "input", inputPlaylistFilter, { passive: true } );
 playlist_filter.addEventListener( "click", clickPlaylistFilter, { passive: true } );
 
-list_editor.addEventListener( "click", clickListEditor, { passive: true } );
+list_editor.addEventListener( "click", clickListEditor, { passive: true } ); // TODO selected multiple tracks
 list_editor.addEventListener( "dragstart", dragStart, { passive: true } );
 list_editor.addEventListener( "dragend", dragEnd, { passive: true } );
 list_editor.querySelectorAll( ".dropzone" ).forEach( dz => {
