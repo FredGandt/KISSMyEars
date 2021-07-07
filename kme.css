@@ -86,7 +86,7 @@ div.section {
 div.secleft {
 	height: calc( 100vh - 6.3rem );
 	width: calc( 75vw - 2rem );
-	scroll-behavior: smooth;
+	scroll-behavior: smooth; /* TODO toggle smooth scrolling */
 	margin: 1rem 0 0;
 }
 
@@ -459,7 +459,7 @@ select {
 	font-weight: bold;
 }
 
-#playlist:not(.collapsed) > li:not(:first-of-type) {
+#playlist > li:not(:first-of-type) {
 	border-top: var( --dark-turq-border );
 	padding-top: .5rem;
 }
@@ -469,13 +469,8 @@ select {
 	margin-top: .5rem;
 }
 
-#playlist.collapsed:not(.filtered) > li:nth-child( odd ),
 #playlist:not(.filtered) ol li:nth-child( odd ) {
 	background-color: var( --darkerer-grey );
-}
-
-#playlist.collapsed > li.playing {
-	padding-top: .5rem;
 }
 
 #playlist.filtered li.filtered li.filtered {
@@ -493,10 +488,6 @@ select {
 
 #playlist li.focussed {
 	color: var( --bright-turq ) !important;
-}
-
-#playlist.collapsed > li.focussed {
-	padding-top: .5rem;
 }
 
 fieldset.orange input[type="button"],
@@ -543,7 +534,6 @@ label.skip_played {
 	margin: 0 0 .5rem .5rem;
 }
 
-#playlist.collapsed:not(.filtered) > li:not(.playing):not(.focussed):not(.focussed_folder) ol,
 #controls.hide_shuffle_by fieldset.shuffle_by,
 #controls.hide_cont_folder span.skip_folders,
 #controls.hide_cont_folder label.cont_folder,
