@@ -86,8 +86,11 @@ div.section {
 div.secleft {
 	height: calc( 100vh - 6.3rem );
 	width: calc( 75vw - 2rem );
-	scroll-behavior: smooth; /* TODO toggle smooth scrolling */
 	margin: 1rem 0 0;
+}
+
+div.secleft.smooth_scrolling {
+	scroll-behavior: smooth;
 }
 
 div.secright {
@@ -424,10 +427,6 @@ input.pink:checked {
 	background-color: var( --pink );
 }
 
-input.orange.split:checked {
-	background-image: linear-gradient( to right, var( --turq ) 50%, var( --orange ) 50% );
-}
-
 output:not([name="playlist_length"]) + input,
 input + input:not([type="file"]) {
 	margin-left: .5rem;
@@ -460,7 +459,6 @@ select {
 }
 
 #playlist > li:not(:first-of-type) {
-	border-top: var( --dark-turq-border );
 	padding-top: .5rem;
 }
 
@@ -474,6 +472,7 @@ select {
 }
 
 #playlist.filtered li.filtered li.filtered {
+	border-bottom: var( --dark-turq-border );
 	background-color: var( --darkest-turq );
 	color: var( --lighter-grey );
 }
@@ -530,10 +529,13 @@ fieldset[name="sequencing"] input {
 	content: attr( data-sequence ) "\0000a0|\0000a0" attr( data-queue );
 }
 
-label.skip_played {
-	margin: 0 0 .5rem .5rem;
+label.child {
+	text-indent: 1ch;
 }
 
+body:not(.scroll_to_playing) #controls label.smooth_scrolling,
+#controls:not(.show_cont_sequence) label.cont_sequence,
+#controls:not(.show_cont_queue) label.cont_queue,
 #controls.hide_shuffle_by fieldset.shuffle_by,
 #controls.hide_cont_folder span.skip_folders,
 #controls.hide_cont_folder label.cont_folder,

@@ -68,6 +68,7 @@ let global__current_playing_folder,
 	global__track_id = 0,
 	global__played = [],
 	global__queue = [],
+	user_reset = false,
 	global__dragee,
 	global__dropee,
 
@@ -85,6 +86,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	DOM_LIST_EDITOR_LIST = DOM_LIST_EDITOR.querySelector( "ol" ),
 	DOM_AUDIO = document.querySelector( "audio" ),
 	DOM_PLAYPEN = DOM_PLAYLIST.parentElement,
+	DOM_BODY = document.body,
 
 	fromPlaylist = new FromPlaylist(),
 
@@ -341,22 +343,25 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				setTitle( "KISS My Ears" );
 				updatePlaylistLength();
 				let tds = DOM_CONTROLS.times.dataset;
-				tds.dura = tds.rema = secondsToStr( 0 );
+				tds.dura = tds.rema = secondsToStr();
 			}
 			chrome.storage.local.get( store => {
-				if ( arrayExistsAndHasLength( store.paths ) && confirm( "Clear the automatically included tracks?" ) ) {
+				if ( arrayExistsAndHasLength( store.paths ) && confirm( "Clear the automatically included tracks? Queued, played or sequenced tracks will also be cleared." ) ) {
 					clear( "global__queue" );
 					clear( "global__played" );
+					clear( "global__sequences" );
 					chrome.storage.local.remove( "paths" );
-					if ( arrayExistsAndHasLength( store.played ) ) {
-						chrome.storage.local.remove( "played" );
-					}
-					if ( arrayExistsAndHasLength( store.queue ) ) {
-						chrome.storage.local.remove( "queue" );
-					}
+					chrome.storage.local.remove( "queue" );
+					chrome.storage.local.remove( "played" );
+					chrome.storage.local.remove( "sequences" );
 				}
 				if ( arrayExistsAndHasLength( store.libraries ) && confirm( "Clear the stored libraries?" ) ) {
 					chrome.storage.local.remove( "libraries" );
+				}
+				if ( store.settings && confirm( "Clear the settings and reload the player?" ) ) {
+					chrome.storage.local.remove( "settings" );
+					user_reset = true;
+					location.reload();
 				}
 			} );
 		}
@@ -376,6 +381,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			}
 			case "global__sequence": {
 				global__sequence = [];
+				updateSequences();
+				break;
+			}
+			case "global__sequences": {
+				global__sequences = [];
 				updateSequences();
 				break;
 			}
@@ -488,26 +498,32 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	updateSequences = () => {
 		let sl = global__sequence.length;
 		if ( sl ) {
-			global__sequence.forEach( li => sequenced( li, "NEW" ) );
+			global__sequence.forEach( ( li, i ) => sequenced( li, `NEW:${i + 1}` ) );
 			if ( DOM_CONTROLS.sequencing.classList.toggle( "show", sl > 1 ) ) {
 				DOM_CONTROLS.sequence_length.dataset.sl = multiTrack( sl );
 			}
 		} else {
 			DOM_CONTROLS.sequencing.classList.remove( "show" );
-			global__sequences.forEach( ( squnc, ndx ) => tracksFromIDs( squnc ).forEach( li => sequenced( li, ndx + 1 ) ) );
+			global__sequences.forEach( ( squnc, ndx ) => tracksFromIDs( squnc ).forEach( ( li, i ) => sequenced( li, `${ndx + 1}:${i + 1}` ) ) );
+
+			// TODO removal of dead sequences
+
 		}
 	},
 
 	updateQueuetness = () => {
 		let ql = global__queue.length;
 		fromPlaylist.tracks.queued().forEach( xq => xq.dataset.queue = "" );
-		if ( ql ) {
+		if ( DOM_CONTROLS.classList.toggle( "show_cont_queue", ql ) ) {
 			global__queue.forEach( ( q, i ) => trackTitleDataset( q ).queue = ( i + 1 === ql ? ( ql === 1 ? "ONLY" : "LAST" ) : ( !i ? "NEXT" : i + 1 ) ) );
 		}
 		DOM_CONTROLS.queue_length.dataset.ql = multiTrack( ql );
 	},
 
 	updatePlayedness = () => {
+
+		// TODO toggle visibility of option to stop at the end of played?
+
 		fromPlaylist.played().forEach( li => li.classList.remove( "played" ) );
 		DOM_CONTROLS.played_length.dataset.pl = multiTrack( global__played.length ); // TODO indicate duplications?
 		let fldr;
@@ -530,16 +546,19 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	},
 
 	secondsToStr = f => {
-		f = parseFloat( f );
-		let seconds = f % 60,
-			m = ( f - seconds ) / 60,
-			minutes = m % 60,
-			hours = ( m - minutes ) / 60;
-		return [
-			( hours ? `${hours}`.padStart( 2, "0" ) : "" ),
-			`${minutes}`.padStart( 2, "0" ),
-			`${Math.floor( seconds )}`.padStart( 2, "0" )
-		].filter( a => a ).join( ":" );
+		if ( f ) {
+			f = parseFloat( f );
+			let seconds = f % 60,
+				m = ( f - seconds ) / 60,
+				minutes = m % 60,
+				hours = ( m - minutes ) / 60;
+			return [
+				( hours ? `${hours}`.padStart( 2, "0" ) : "" ),
+				`${minutes}`.padStart( 2, "0" ),
+				`${Math.floor( seconds )}`.padStart( 2, "0" )
+			].filter( a => a ).join( ":" );
+		}
+		return "00:00";
 	},
 
 	giveFile = ( name, cntnt ) => {
@@ -548,7 +567,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			a = document.createElement( "a" );
 		a.href = ourl;
 		a.download = name;
-		document.body.append( a );
+		DOM_BODY.append( a );
 		a.click();
 		a.remove();
 		URL.revokeObjectURL( ourl );
@@ -576,20 +595,16 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		} );
 	},
 
-	toggleOptionVisibility = () => {
-		if ( ctrlChckd( "shuffle" ) ) {
-			DOM_CONTROLS.classList.remove( "hide_shuffle_by" );
-			if ( isShuffleBy( "folder" ) ) {
-				DOM_CONTROLS.classList.remove( "hide_cont_folder" );
-			} else {
-				DOM_CONTROLS.classList.add( "hide_cont_folder" );
+	toggleOptionsVisibility = () => {
+		let dccl = DOM_CONTROLS.classList;
+		if ( !dccl.toggle( "hide_shuffle_by", !ctrlChckd( "shuffle" ) ) ) {
+			if ( dccl.toggle( "hide_cont_folder", !isShuffleBy( "folder" ) ) ) {
 				if ( untilEndOf( "folder" ) ) {
 					defaultEndOf();
 				}
 			}
 		} else {
-			DOM_CONTROLS.classList.add( "hide_shuffle_by" );
-			DOM_CONTROLS.classList.remove( "hide_cont_folder" );
+			dccl.remove( "hide_cont_folder" );
 		}
 	},
 
@@ -704,7 +719,10 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			if ( !DOM_AUDIO.src ) {
 				let listing;
 				if ( !ctrlChckd( "ignoresequences" ) && global__track_sequence.length ) {
-					listing = global__track_sequence.shift(); // TODO a mix of sequenced and queued tracks can be bad
+					listing = global__track_sequence.shift();
+
+					// TODO a mix of sequenced and queued tracks can be bad
+
 				} else {
 					let pl = global__played.length, si;
 					global__track_sequence = [];
@@ -775,10 +793,16 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 							}
 						}
 					}
-					if ( listing && !ctrlChckd( "ignoresequences" ) && ( si = sequenced( listing ) ) ) { // TODO when playing played?
+					if ( listing && !ctrlChckd( "ignoresequences" ) && ( si = sequenced( listing ) ) ) {
+
+						// TODO when playing played?
+
+						// TODO if ( untilEndOf( "queue" ) && the last track of the queue is sequenced and not the last track of that sequence ) { stop at the end of the sequence }
+
 						global__track_sequence = tracksFromIDs( global__sequences[ parseInt( si ) - 1 ] );
 						listing = global__track_sequence.shift();
 					}
+					DOM_CONTROLS.classList.toggle( "show_cont_sequence", global__track_sequence.length );
 				}
 				if ( listing ) {
 					DOM_AUDIO.src = `file:///${absPath( listing )}`;
@@ -932,7 +956,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	trackEnded = () => {
 		let cont = true;
-		DOM_CONTROLS.times.dataset.dura = secondsToStr( 0 );
+		DOM_CONTROLS.times.dataset.dura = secondsToStr();
 		if ( global__current_playing_track ) {
 			if ( playingPlayed() ) {
 				++global__played_index;
@@ -945,6 +969,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			}
 		}
 		DOM_AUDIO.removeAttribute( "src" );
+
+		// TODO untilEndOf( "sequence" )
+
 		if ( global__queue_end && !global__queue.length && untilEndOf( "queue" ) ) {
 			cont = global__queue_end = false;
 		} else if ( untilEndOf( "track" ) || ( untilEndOf( "folder" ) && global__current_playing_track && global__current_playing_track.dataset.last_track ) ) {
@@ -953,6 +980,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		if ( cont ) {
 			TRANSPORT.playTrack();
 		} else {
+
+			// TODO this might be a good place to start addressing stopping at the end of clearing the next track from whatever list
+
 			selectNext().then( t => {
 				setTitle( "[STOPPED]", true );
 				defaultEndOf();
@@ -1006,15 +1036,18 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			} else {
 				if ( typ === "checkbox" ) {
 					if ( nme === "scrolltoplaying" ) {
+						DOM_BODY.classList.toggle( "scroll_to_playing", trg.checked );
 						removeFocussed();
 						showPlaying();
+					} else if ( nme === "smoothscrolling" ) {
+						DOM_PLAYPEN.classList.toggle( "smooth_scrolling", trg.checked );
 					}
 				} else if ( typ === "radio" ) {
 					if ( nme === "endof" && ( vlu === "world" || vlu === "list" ) ) {
 						DOM_CONTROLS.dataset.endof = vlu;
 					}
 				}
-				toggleOptionVisibility();
+				toggleOptionsVisibility();
 			}
 			if ( trg.dataset.clicked ) {
 				trg.dataset.clicked = "";
@@ -1052,16 +1085,10 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					}
 				}
 				if ( !fltrd.length ) return;
-				if ( isCtrlVlu( "clicky", "delist" ) ) {
-
-					// TODO delisting which?
-
+				if ( isCtrlVlu( "clicky", "end" ) ) {
+					global__queue = global__queue.concat( fltrd );
 				} else {
-					if ( isCtrlVlu( "clicky", "end" ) ) {
-						global__queue = global__queue.concat( fltrd );
-					} else {
-						global__queue = fltrd.concat( global__queue );
-					}
+					global__queue = fltrd.concat( global__queue );
 				}
 				if ( shuffle ) {
 					shuffleArray( global__queue );
@@ -1154,44 +1181,44 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 			if ( ctrl ) {
 				if ( meta ) {
-					if ( alt ) {
-						cv = "sequence";
-					} else {
-						cv = "next";
-					}
+					cv = "next";
 				} else if ( alt ) {
 					cv = "end";
 				} else {
 					cv = "now";
 				}
 			} else if ( meta && alt ) {
-				cv = "delist";
+				cv = "sequence";
 			}
 
 			if ( tia ) {
 				global__queue = global__queue.filter( li => !~trg.tracks.indexOf( li ) );
 			} else {
-
-				// TODO why not whole folders?
-
 				if ( cv === "sequence" ) {
+
+					// TODO why not whole folders?
+
 					if ( !sequenced( trg ) ) {
 						global__sequence.push( trg );
 						updateSequences();
-					} // TODO else editor?
+					}
+
+					// TODO else editor?
+
 					return;
 				}
+
 				let qp = global__queue.indexOf( trg );
 				if ( ~qp ) {
 					global__queue.splice( qp, 1 );
 				}
 			}
 
-			// TODO immediate editing of woopsies i.e. undo
+			// TODO immediate editing of woopsies i.e. undo ctrl+z
 
 			// TODO what happens if a track is part of more than one sequence?
 
-			// TODO only allow queuing of one track from a sequence unless ctrlChckd( "ignoresequences" )
+			// TODO only allow queuing of one track from a sequence [unless ctrlChckd( "ignoresequences" )]?
 
 			// TODO when a sequenced track is removed from the DOM_PLAYLIST, the respective sequence needs to be adjusted or deleted
 
@@ -1199,9 +1226,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 			// TODO if ( a queued track has been delisted ) make sure the further options are clearly indicated as not required
 
-			// TODO I don't like delist...
-
-			if ( cv === "delist" ) {
+			/* if ( cv === "delist" ) {
 				if ( confirm( `Remove this ${tia ? "folder" : "track"} from the playlist?` ) ) {
 					if ( confirm( "Do not automatically include in future?" ) ) { // TODO reduce paths object size
 						chrome.storage.local.get( store => chrome.storage.local.set( { "paths": store.paths.filter( sp => ( tia ? !trg.tracks.some( li => sp.a === absPath( li ) ) : sp.a !== absPath( trg ) ) ) } ) );
@@ -1219,7 +1244,12 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					updatePlaylistLength();
 					updatePlayedness();
 				}
-			} else if ( cv === "now" ) {
+			} */
+
+			if ( cv === "now" ) {
+
+				// TODO play immediately doesn't if the player is stopped; should it?
+
 				if ( !tia && trg === global__current_playing_track ) {
 					TRANSPORT.backTrack();
 					return;
@@ -1229,20 +1259,18 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				} else {
 					global__queue.unshift( trg );
 				}
-				TRANSPORT.nextTrack(); // TODO play immediately doesn't if the player is stopped; should it?
-			} else {
-				if ( cv === "next" ) {
-					if ( tia ) {
-						global__queue = trg.tracks.concat( global__queue );
-					} else {
-						global__queue.unshift( trg );
-					}
-				} else if ( cv === "end" ) {
-					if ( tia ) {
-						global__queue = global__queue.concat( trg.tracks );
-					} else {
-						global__queue.push( trg );
-					}
+				TRANSPORT.nextTrack();
+			} else if ( cv === "next" ) {
+				if ( tia ) {
+					global__queue = trg.tracks.concat( global__queue );
+				} else {
+					global__queue.unshift( trg );
+				}
+			} else if ( cv === "end" ) {
+				if ( tia ) {
+					global__queue = global__queue.concat( trg.tracks );
+				} else {
+					global__queue.push( trg );
 				}
 			}
 			updateQueuetness();
@@ -1320,9 +1348,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 						break;
 					}
 					case "s": {
-						if ( evt.altKey && arrayExistsAndHasLength( global__sequence ) ) {
-							evt.preventDefault();
-							CONTROLS.sequencify();
+						if ( evt.altKey ) {
+							if ( arrayExistsAndHasLength( global__sequence ) ) {
+								evt.preventDefault();
+								CONTROLS.sequencify();
+							}
 						} else {
 							TRANSPORT.stopTrack();
 						}
@@ -1333,9 +1363,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 						break;
 					}
 					case "p": {
-						if ( evt.altKey && playingPlayed() ) {
-							evt.preventDefault();
-							CONTROLS.stopPlayingPlayed();
+						if ( evt.altKey ) {
+							if ( playingPlayed() ) {
+								evt.preventDefault();
+								CONTROLS.stopPlayingPlayed();
+							}
 						} else {
 							CONTROLS.listEditor( global__played );
 						}
@@ -1367,21 +1399,24 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	},
 
 	storeSettings = () => {
-		chrome.storage.local.set( {
-			"played": trackIDs( global__played ),
-			"queue": trackIDs( global__queue ),
-			"settings": {
-				ignoresequences: ctrlChckd( "ignoresequences" ),
-				scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
-				fadestop: DOM_CONTROLS.fade_stop.valueAsNumber,
-				volume: DOM_CONTROLS.volume.valueAsNumber,
-				skiplayed: ctrlChckd( "skiplayed" ),
-				shuffleby: ctrlVlu( "shuffleby" ),
-				endof: DOM_CONTROLS.dataset.endof,
-				shuffle: ctrlChckd( "shuffle" ),
-				clicky: ctrlVlu( "clicky" )
-			}
-		} );
+		if ( !user_reset ) {
+			chrome.storage.local.set( {
+				"played": trackIDs( global__played ),
+				"queue": trackIDs( global__queue ),
+				"settings": {
+					ignoresequences: ctrlChckd( "ignoresequences" ),
+					scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
+					smoothscrolling: ctrlChckd( "smoothscrolling" ),
+					fadestop: DOM_CONTROLS.fade_stop.valueAsNumber,
+					volume: DOM_CONTROLS.volume.valueAsNumber,
+					skiplayed: ctrlChckd( "skiplayed" ),
+					shuffleby: ctrlVlu( "shuffleby" ),
+					endof: DOM_CONTROLS.dataset.endof,
+					shuffle: ctrlChckd( "shuffle" ),
+					clicky: ctrlVlu( "clicky" )
+				}
+			} );
+		}
 	},
 
 	applySettings = settings => {
@@ -1389,6 +1424,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			let sttngs = Object.assign( {
 				ignoresequences: false,
 				scrolltoplaying: true,
+				smoothscrolling: true,
 				shuffleby: "track",
 				skiplayed: true,
 				endof: "world",
@@ -1397,16 +1433,17 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				fadestop: 0,
 				volume: 0.5
 			}, settings || {} );
+			DOM_CONTROLS.smoothscrolling.checked = DOM_PLAYPEN.classList.toggle( "smooth_scrolling", sttngs.smoothscrolling );
+			DOM_CONTROLS.scrolltoplaying.checked = DOM_BODY.classList.toggle( "scroll_to_playing", sttngs.scrolltoplaying );
 			DOM_CONTROLS.fade_stop.parentElement.dataset.op = ( DOM_CONTROLS.fade_stop.value = sttngs.fadestop ) / 1000;
 			DOM_AUDIO.volume = DOM_CONTROLS.volume.value = DOM_CONTROLS.volume.parentElement.dataset.op = sttngs.volume;
 			DOM_CONTROLS.dataset.endof = DOM_CONTROLS.endof.value = sttngs.endof;
 			DOM_CONTROLS.ignoresequences.checked = sttngs.ignoresequences;
-			DOM_CONTROLS.scrolltoplaying.checked = sttngs.scrolltoplaying;
 			DOM_CONTROLS.skiplayed.checked = sttngs.skiplayed;
 			DOM_CONTROLS.shuffleby.value = sttngs.shuffleby;
 			DOM_CONTROLS.shuffle.checked = sttngs.shuffle;
 			DOM_CONTROLS.clicky.value = sttngs.clicky;
-			toggleOptionVisibility();
+			toggleOptionsVisibility();
 			resolve( true );
 		} );
 	};
