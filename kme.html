@@ -41,14 +41,14 @@
 			--></fieldset><!--
 		--></form><!--
 
-		--><div class="section ib secleft"><!--
+		--><div class="section ib playlistsection"><!--
 			--><ul id="playlist"></ul><!--
 			--><form id="seek"><!--
 				--><input name="control" type="range" min="0" step="0.1" max="0" value="0"><!--
 			--></form><!--
 		--></div><!--
 
-		--><div class="section ib secright"><!--
+		--><div class="section ib controlssection"><!--
 
 			--><form id="sources"><!--
 				--><select name="libraries"><option value="">ADD NEW LIBRARY</option></select><!--
@@ -68,6 +68,10 @@
 					--><input name="fixBreakages" type="button" value="BREAKAGES"><!--
 				--></fieldset><!--
 
+				--><fieldset><!--
+					--><label>DISPLAY CONTROLS ON <input name="switchControls" type="button" value="LEFT"></label><!--
+				--></fieldset><!--
+
 				--><fieldset class="legend"><!--
 					--><legend>TURN OFF-AND-ON-ABLE</legend><!--
 					--><label class="ib">SHUFFLE<input name="shuffle" type="checkbox"></label><!--
@@ -76,7 +80,7 @@
 						--><label>TRACK<input name="shuffleby" type="radio" value="track"></label><!--
 						--><label>FOLDER<input name="shuffleby" type="radio" value="folder"></label><!--
 					--></fieldset><!--
-					--><label class="child skip_played">SKIP PLAYED<span class="skip_tracks"> TRACKS</span><span class="skip_folders"> FOLDERS</span><input name="skiplayed" type="checkbox"></label><!--
+					--><label class="child skip_played">SKIP PLAYED <span class="skip_tracks">TRACKS</span><span class="skip_folders">FOLDERS</span><input name="skiplayed" type="checkbox"></label><!--
 					--><label>IGNORE SEQUENCES<input name="ignoresequences" type="checkbox"></label><!--
 					--><label title="Automatically scroll to show the currently playing track. Turn off and on again to jump">SCROLL TO PLAYING<input name="scrolltoplaying" type="checkbox"></label><!--
 					--><label class="child smooth_scrolling">SMOOTH SCROLLING<input name="smoothscrolling" type="checkbox"></label><!--
@@ -84,26 +88,11 @@
 
 				--><fieldset class="legend"><!--
 					--><legend>CLICK A TRACK OR FOLDER TO</legend><!--
-
-					TODO right click for delist etc
-
 					--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"><kbd>+ CTRL</kbd></label><!--
 					--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end"><kbd>+ CTRL + ALT</kbd></label><!--
 					--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"><kbd>+ CTRL + META</kbd></label><!--
 					--><label>SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"><kbd>+ META + ALT</kbd></label><!--
-				--></fieldset><!--
-
-				--><fieldset class="legend wrap"><!--
-					--><legend>PLAY UNTIL THE END OF THE</legend><!--
-					--><label>WORLD<input name="endof" type="radio" value="world"></label><!--
-					--><label>LIST<input name="endof" type="radio" value="list"></label><!--
-					--><label class="cont_queue">QUEUE<input class="orange" name="endof" type="radio" value="queue"></label><!--
-					--><label class="cont_folder">FOLDER<input name="endof" type="radio" value="folder"></label><!--
-					--><label class="cont_sequence">SEQUENCE<input class="pink" name="endof" type="radio" value="sequence"></label><!--
-
-					TODO stop at the end of "played"?
-
-					--><label>TRACK<input name="endof" type="radio" value="track"></label><!--
+					--><label>DELIST<input name="clicky" type="radio" value="delist"><kbd>+ CTRL + META + ALT</kbd></label><!--
 				--></fieldset><!--
 
 				--><fieldset><!--
@@ -128,6 +117,19 @@
 				--></fieldset><!--
 
 				--><button name="blur_oasis">USE <kbd>ARROW/PAGE-UP/DOWN</kbd> TO NAVIGATE PLAYLIST TRACKS AND FOLDERS, <kbd>ENTER</kbd> (+MODIFIER) ON A FOCUSSED TRACK/FOLDER TO PERFORM THE RELATED CLICK ACTION, AND <kbd>ESC</kbd> TO RETURN TO CONTROLS NAVIGATION</button><!--
+
+				--><fieldset class="legend wrap"><!--
+					--><legend>PLAY UNTIL THE END OF THE</legend><!--
+					--><label>WORLD<input name="endof" type="radio" value="world"></label><!--
+					--><label>LIST<input name="endof" type="radio" value="list"></label><!--
+					--><label class="cont_queue">QUEUE<input class="orange" name="endof" type="radio" value="queue"></label><!--
+					--><label class="cont_folder">FOLDER<input name="endof" type="radio" value="folder"></label><!--
+					--><label class="cont_sequence">SEQUENCE<input class="pink" name="endof" type="radio" value="sequence"></label><!--
+
+					TODO stop at the end of "played"?
+
+					--><label>TRACK<input name="endof" type="radio" value="track"></label><!--
+				--></fieldset><!--
 
 				--><fieldset name="transport"><!--
 					--><fieldset name="folder"><!--

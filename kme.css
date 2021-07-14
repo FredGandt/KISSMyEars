@@ -19,6 +19,8 @@
 	--red: #c72d2d;
 }
 
+/* TODO nothing should be important */
+
 ::-webkit-scrollbar {
 	height: 1rem;
 	width: 1rem;
@@ -83,28 +85,42 @@ div.section {
 	padding: 1rem;
 }
 
-div.secleft {
+div.playlistsection {
 	height: calc( 100vh - 6.3rem );
 	width: calc( 75vw - 2rem );
 	margin: 1rem 0 0;
 }
 
-div.secleft.smooth_scrolling {
+div.playlistsection.smooth_scrolling {
 	scroll-behavior: smooth;
 }
 
-div.secright {
+body.display_controls_left div.playlistsection {
+	float: right;
+}
+
+div.controlssection {
 	width: calc( 25vw - 2rem );
 	height: 100vh;
 }
 
+body.display_controls_left div.controlssection {
+	border-right: var( --dark-turq-border );
+	width: calc( 25vw - 2rem - 1px );
+}
+
 #seek {
-	width: calc( 75vw - 2rem );
+	width: calc( 75vw - 3rem );
 	padding: 0 1rem 1rem;
 	position: absolute;
 	margin: 0;
 	bottom: 0;
 	left: 0;
+}
+
+body.display_controls_left #seek {
+	left: unset;
+	right: 0;
 }
 
 #seek input {
@@ -164,6 +180,10 @@ h1 {
 	padding-bottom: 0;
 }
 
+body.display_controls_left #list_editor {
+	right: 0;
+}
+
 #list_editor > fieldset:not(.pf) {
 	background-color: inherit;
 	padding: 0 0 1rem;
@@ -184,6 +204,11 @@ h1 {
 #playlist_filter {
 	right: 2rem;
 	top: 2rem;
+}
+
+body.display_controls_left #playlist_filter {
+	right: unset;
+	left: 2rem;
 }
 
 #playlist_filter input[type="text"] {
