@@ -14,8 +14,8 @@
 
 	--dark-turq-border: 1px solid var( --dark-turq );
 
-	--orange: #a86d14;
-	--pink: #a9587f;
+	--orange: #a97e3e;
+	--pink: #925572;
 	--red: #c72d2d;
 }
 
@@ -87,7 +87,7 @@ div.section {
 
 div.playlistsection {
 	height: calc( 100vh - 6.3rem );
-	width: calc( 75vw - 2rem );
+	width: calc( 100vw - 30rem );
 	margin: 1rem 0 0;
 }
 
@@ -100,17 +100,17 @@ body.display_controls_left div.playlistsection {
 }
 
 div.controlssection {
-	width: calc( 25vw - 2rem );
 	height: 100vh;
+	width: 26rem;
 }
 
 body.display_controls_left div.controlssection {
 	border-right: var( --dark-turq-border );
-	width: calc( 25vw - 2rem - 1px );
+	width: calc( 26rem - 1px );
 }
 
 #seek {
-	width: calc( 75vw - 3rem );
+	width: calc( 100vw - 31rem );
 	padding: 0 1rem 1rem;
 	position: absolute;
 	margin: 0;
@@ -119,8 +119,8 @@ body.display_controls_left div.controlssection {
 }
 
 body.display_controls_left #seek {
+	right: 1rem;
 	left: unset;
-	right: 0;
 }
 
 #seek input {
@@ -130,8 +130,8 @@ body.display_controls_left #seek {
 fieldset[name="transport"],
 fieldset[name="folder"],
 output[name="times"] {
-	width: calc( 25vw - 2rem );
 	text-align: center;
+	width: 26rem;
 }
 
 form.overlay {
@@ -176,7 +176,7 @@ h1 {
 
 #list_editor {
 	height: calc( 100vh - 4.3rem );
-	width: calc( 75vw - 2rem );
+	width: calc( 100vw - 29rem );
 	padding-bottom: 0;
 }
 
@@ -221,6 +221,11 @@ body.display_controls_left #playlist_filter {
 
 #playlist_filter input[name="ends"] {
 	width: 9ch;
+}
+
+#playlist_filter legend {
+	text-transform: uppercase;
+	margin-bottom: 0.25rem;
 }
 
 fieldset {
@@ -320,11 +325,7 @@ ol li span:nth-child(1) {
 }
 
 ol li span:nth-child(2) {
-	width: calc( 100% - 10ch );
-}
-
-ol li span:nth-child(3) {
-	width: 4ch;
+	width: calc( 100% - 5ch );
 }
 
 ul, ol {
@@ -444,14 +445,6 @@ input:checked {
 	background-color: var( --turq );
 }
 
-input.orange:checked {
-	background-color: var( --orange );
-}
-
-input.pink:checked {
-	background-color: var( --pink );
-}
-
 output:not([name="playlist_length"]) + input,
 input + input:not([type="file"]) {
 	margin-left: .5rem;
@@ -479,7 +472,7 @@ select {
 }
 
 #playlist > li::before {
-	content: attr( data-path );
+	content: attr( data-folder_struct );
 	font-weight: bold;
 }
 
@@ -515,7 +508,7 @@ select {
 }
 
 fieldset.orange input[type="button"],
-fieldset[name="sequencing"] input,
+fieldset[name="sequence_fs"] input,
 input[type="button"].orange,
 #spp input {
 	background-color: var( --orange );
@@ -523,12 +516,17 @@ input[type="button"].orange,
 	padding-bottom: .1rem;
 }
 
-#spp input {
-	background-color: var( --turq );
+input.orange:checked {
+	background-color: var( --orange );
 }
 
-fieldset[name="sequencing"] input {
+input[type="button"].pink,
+input.pink:checked {
 	background-color: var( --pink );
+}
+
+#spp input {
+	background-color: var( --turq );
 }
 
 #playlist ol li span[data-sequence]:not([data-sequence=""])::before,
@@ -558,6 +556,7 @@ label.child {
 	text-indent: 1ch;
 }
 
+#controls:not(.show_cont_queue) fieldset[name="queue_length_fs"],
 body:not(.scroll_to_playing) #controls label.smooth_scrolling,
 #controls:not(.show_cont_sequence) label.cont_sequence,
 #controls:not(.show_cont_queue) label.cont_queue,
@@ -569,7 +568,7 @@ body:not(.scroll_to_playing) #controls label.smooth_scrolling,
 #list_editor ol li span:not(:nth-child(2)),
 #sources fieldset[name="new_lib"]:disabled,
 #sources input[name="include"]:disabled,
-fieldset[name="sequencing"]:not(.show),
+fieldset[name="sequence_fs"]:not(.show),
 #playlist.filtered li:not(.filtered),
 #list_editor div.dropzone li,
 #controls span.skip_tracks,
