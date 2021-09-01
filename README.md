@@ -20,7 +20,7 @@ With this premise in mind, I am working to build a Chrome web browser extension 
 
 
 ## Development
-I haven't even finished building it yet and it's already, by far, the most satisfying music player I have used, but there is still a lot of coding to do. This is my primary music player, and there's no better way to assess the usability than by actually using it, so every day I tinker with ideas and bugs. Speaking as an alpha user, it's coming along nicely :)
+I haven't even finished building it yet and it's already, by far, the most satisfying music player I have used, but there is still a lot of coding to do. This is my primary, nay, only music player, and there's no better way to assess the usability than by actually using it, so every day I tinker with ideas and bugs. Speaking as an alpha user, it's coming along nicely :)
 
 Feel free to try it out as an unpackaged extension while I work on it, and I will publish it on the Chrome Web Store when it's in a fit state for simpler installation.
 

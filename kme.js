@@ -151,6 +151,13 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ), // TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
 
+	clearFilters = done => {
+		if ( done ) {
+			DOM_PLAYLIST.classList.remove( "filtered" );
+		}
+		fromPlaylist.filtered().forEach( li => li.classList.remove( "filtered" ) );
+	},
+
 	/* tracks and folders */
 
 	// TODO reduce paths object size
@@ -172,8 +179,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	tracksFromIDs = ids => ids.map( id => DOM_PLAYLIST.querySelector( `li[data-id="${id}"]` ) ),
 
 	folder = li => ( folderStruct( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
-
-	clearFilters = () => fromPlaylist.filtered().forEach( li => li.classList.remove( "filtered" ) ),
 
 	listMatch = ( d, q ) => ( q ? global__queue : global__played ).findIndex( li => trackAbsPath( li ) === trackAbsPath( d ) ),
 
@@ -235,8 +240,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		stopTrack: async rs => {
 			if ( DOM_AUDIO.src ) {
 				let fade;
-				if ( !rs && DOM_AUDIO.volume && ( fade = DOM_CONTROLS.fade_stop.valueAsNumber ) ) {
-					await fadeStop( Math.round( 0.02 * fade ) );
+				if ( !rs && DOM_AUDIO.volume && ( fade = DOM_CONTROLS.soft_stop.valueAsNumber ) ) {
+					await softStop( Math.round( 0.02 * fade ) );
 				}
 				DOM_AUDIO.pause();
 				DOM_AUDIO.volume = DOM_CONTROLS.volume.valueAsNumber;
@@ -307,7 +312,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					if ( listEditorShowing() ) {
 						clickListEditor();
 					}
-					DOM_PLAYLIST.classList.add( "filtered" );
 					return;
 				}
 			}
@@ -363,6 +367,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				}
 				if ( arrayExistsAndHasLength( store.libraries ) && confirm( "Clear the stored libraries?" ) ) {
 					chrome.storage.local.remove( "libraries" );
+
+					// TODO clear the GUI too
 				}
 				if ( store.settings && confirm( "Clear the settings and reload the player?" ) ) {
 					chrome.storage.local.remove( "settings" );
@@ -385,7 +391,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				updatePlayedness();
 				break;
 			}
-			case "global__sequence": {
+			case "global__sequence": { // TODO desequence tracks ... whoops
 				global__sequence = [];
 				updateSequences();
 				break;
@@ -445,7 +451,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	fadeStop = ms => {
+	softStop = ms => {
 		return new Promise( resolve => {
 			let fadeout = setInterval( () => {
 				if ( ( DOM_AUDIO.volume -= ( DOM_AUDIO.volume * 0.1 ) ) < 0.002 ) {
@@ -459,11 +465,10 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	closePlaylistFilter = () => {
 		DOM_PLAYLIST_FILTER.classList.remove( "show" );
-		DOM_PLAYLIST.classList.remove( "filtered" );
 		DOM_PLAYLIST_FILTER.pff.disabled = true;
 		document.activeElement.blur();
 		DOM_PLAYLIST_FILTER.reset();
-		clearFilters();
+		clearFilters( true );
 		showPlaying();
 	},
 
@@ -972,6 +977,22 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	setFilters = ( to_fltr, fresh ) => { // TODO not actually an event function
+		clearFilters();
+
+		// TODO for efficiency; only clear what isn't about to be filtered?
+
+		DOM_PLAYLIST.classList.add( "filtered" );
+		to_fltr.forEach( li => {
+			li.classList.add( "filtered" );
+			if ( !folderStruct( li ) ) {
+				folderOfTrack( li ).classList.add( "filtered" );
+			} else {
+				li.querySelectorAll( `li${fresh || ""}` ).forEach( li => li.classList.add( "filtered" ) );
+			}
+		} );
+	},
+
 	inputPlaylistFilter = evt => {
 
 		// TODO multi filters e.g. path contains "kings" & "wild" etc.
@@ -989,15 +1010,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 			debugMsg( "inputPlaylistFilter - fltr:", fltr ); // TODO combifilter won't work like this for more fields/tags
 
-			clearFilters();
-			DOM_PLAYLIST.querySelectorAll( fltr ).forEach( li => {
-				li.classList.add( "filtered" );
-				if ( !folderStruct( li ) ) {
-					folderOfTrack( li ).classList.add( "filtered" );
-				} else {
-					li.querySelectorAll( `li${fresh}` ).forEach( li => li.classList.add( "filtered" ) );
-				}
-			} );
+			setFilters( DOM_PLAYLIST.querySelectorAll( fltr ), fresh );
 		} else {
 			clearFilters();
 		}
@@ -1136,6 +1149,12 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 							// TODO sophisticate
 								// new Promise( resolve => chrome.storage.local.getBytesInUse( bytes => resolve( chrome.storage.local.QUOTA_BYTES - bytes ) ) )
+/*
+chrome.storage.local.getBytesInUse( bytes => {
+	let quota = chrome.storage.local.QUOTA_BYTES;
+	console.log( `Quota: ${quota}, Bytes in use: ${bytes}, Difference: ${quota - bytes}` );
+} );
+*/
 								// giveFile()
 								// JSON.stringify etc.
 						}
@@ -1210,6 +1229,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				// TODO if ( DOM_CONTROLS.shuffle etc ) offer to shuffle before adding folders to the queue?
 
 				// TODO when a sequenced track is removed from the DOM_PLAYLIST, the respective sequence needs to be adjusted or deleted
+
+				// TODO delisting a playing folder (possibly track too) results in the continuing play of removed tracks
 
 				if ( cv === "delist" ) {
 
@@ -1409,7 +1430,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					ignoresequences: ctrlChckd( "ignoresequences" ),
 					scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
 					smoothscrolling: ctrlChckd( "smoothscrolling" ),
-					fadestop: DOM_CONTROLS.fade_stop.valueAsNumber,
+					softstop: DOM_CONTROLS.soft_stop.valueAsNumber,
 					volume: DOM_CONTROLS.volume.valueAsNumber,
 					skiplayed: ctrlChckd( "skiplayed" ),
 					shuffleby: ctrlVlu( "shuffleby" ),
@@ -1433,7 +1454,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				endof: "world",
 				shuffle: true,
 				clicky: "end",
-				fadestop: 0,
+				softstop: 0,
 				volume: 0.5
 			}, settings || {} );
 
@@ -1442,7 +1463,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			DOM_BODY.classList.toggle( "display_controls_left", ( DOM_CONTROLS.switchControls.value = sttngs.displaycontrols ) === "RIGHT" );
 			DOM_CONTROLS.smoothscrolling.checked = DOM_PLAYPEN.classList.toggle( "smooth_scrolling", sttngs.smoothscrolling );
 			DOM_CONTROLS.scrolltoplaying.checked = DOM_BODY.classList.toggle( "scroll_to_playing", sttngs.scrolltoplaying );
-			DOM_CONTROLS.fade_stop.parentElement.dataset.op = ( DOM_CONTROLS.fade_stop.value = sttngs.fadestop ) * 0.001;
+			DOM_CONTROLS.soft_stop.parentElement.dataset.op = ( DOM_CONTROLS.soft_stop.value = sttngs.softstop ) * 0.001;
 			DOM_AUDIO.volume = DOM_CONTROLS.volume.value = DOM_CONTROLS.volume.parentElement.dataset.op = sttngs.volume;
 			DOM_CONTROLS.dataset.endof = DOM_CONTROLS.endof.value = sttngs.endof;
 			DOM_CONTROLS.ignoresequences.checked = sttngs.ignoresequences;

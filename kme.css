@@ -12,7 +12,9 @@
 	--mid-turq: #2c7b7b;
 	--turq: #339999;
 
-	--dark-turq-border: 1px solid var( --dark-turq );
+	--pixel-border: 1px solid;
+
+	--dark-turq-border: var( --pixel-border ) var( --dark-turq );
 
 	--orange: #a97e3e;
 	--pink: #925572;
@@ -87,7 +89,7 @@ div.section {
 
 div.playlistsection {
 	height: calc( 100vh - 6.3rem );
-	width: calc( 100vw - 30rem );
+	width: calc( 100vw - 26rem );
 	margin: 1rem 0 0;
 }
 
@@ -101,16 +103,16 @@ body.display_controls_left div.playlistsection {
 
 div.controlssection {
 	height: 100vh;
-	width: 26rem;
+	width: 22rem;
 }
 
 body.display_controls_left div.controlssection {
 	border-right: var( --dark-turq-border );
-	width: calc( 26rem - 1px );
+	width: calc( 22rem - 1px );
 }
 
 #seek {
-	width: calc( 100vw - 31rem );
+	width: calc( 100vw - 27rem );
 	padding: 0 1rem 1rem;
 	position: absolute;
 	margin: 0;
@@ -131,7 +133,7 @@ fieldset[name="transport"],
 fieldset[name="folder"],
 output[name="times"] {
 	text-align: center;
-	width: 26rem;
+	width: 22rem;
 }
 
 form.overlay {
@@ -176,7 +178,7 @@ h1 {
 
 #list_editor {
 	height: calc( 100vh - 4.3rem );
-	width: calc( 100vw - 29rem );
+	width: calc( 100vw - 25rem );
 	padding-bottom: 0;
 }
 
@@ -202,8 +204,8 @@ body.display_controls_left #list_editor {
 }
 
 #playlist_filter {
-	right: 2rem;
-	top: 2rem;
+	right: 26rem;
+	top: 3rem;
 }
 
 body.display_controls_left #playlist_filter {
@@ -243,7 +245,7 @@ legend:not(.pf) {
 }
 
 fieldset:not(.pf).legend {
-	border: 1px solid var( --dark-turq );
+	border: var( pixel-border ) var( --dark-turq );
 	border-radius: .2rem;
 }
 
@@ -490,9 +492,7 @@ select {
 }
 
 #playlist.filtered li.filtered li.filtered {
-	border-bottom: var( --dark-turq-border );
-	background-color: var( --darkest-turq );
-	color: var( --lighter-grey );
+	border-bottom: var( --pixel-border ) var( --rude-grey );
 }
 
 #playlist ol li.playing:not(.broken) {
@@ -627,10 +627,18 @@ label kbd::after {
 	content: ")";
 }
 
-fieldset:not(.pf).legend.wrap label,
+fieldset:not(.pf).legend.wrap:not(.shuffle_by) label,
 input[name="fixBreakages"].show,
 div.dropzone,
 ol li span,
 .ib {
 	display: inline-block !important;
+}
+
+#list_editor li:after {
+	content: attr( data-track_abs_path );
+	color: var( --lighter-grey );
+	margin-left: 1rem;
+	font-size: 85%;
+	display: block;
 }
