@@ -491,7 +491,8 @@ select {
 	background-color: var( --darkerer-grey );
 }
 
-#playlist.filtered li.filtered li.filtered {
+#playlist.filtered li.filtered li.filtered,
+#list_editor li {
 	border-bottom: var( --pixel-border ) var( --rude-grey );
 }
 
@@ -578,6 +579,21 @@ fieldset[name="folder"],
 	display: none !important;
 }
 
+#list_editor li:after {
+	content: attr( data-title );
+	margin-left: 1rem;
+	display: block;
+}
+
+#list_editor li:before {
+	content: attr( data-folder );
+	color: var( --lighter-grey );
+}
+
+#list_editor li {
+	padding: .2rem 0 .3rem;
+}
+
 #controls.hide_cont_folder span.skip_tracks,
 #controls.hide_shuffle_by span.skip_tracks {
 	display: inline !important;
@@ -633,12 +649,4 @@ div.dropzone,
 ol li span,
 .ib {
 	display: inline-block !important;
-}
-
-#list_editor li:after {
-	content: attr( data-track_abs_path );
-	color: var( --lighter-grey );
-	margin-left: 1rem;
-	font-size: 85%;
-	display: block;
 }

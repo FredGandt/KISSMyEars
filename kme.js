@@ -133,13 +133,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	fltrChckd = ctrl => DOM_PLAYLIST_FILTER[ ctrl ].checked,
 
-	listEditorShowing = () => DOM_LIST_EDITOR.classList.contains( "show" ),
-
 	defaultEndOf = () => DOM_CONTROLS.endof.value = DOM_CONTROLS.dataset.endof,
 
 	multiTrack = ( n, tof ) => `${n} ${tof ? tof : "TRACK"}${n !== 1 ? "S" : ""}`,
 
-	listEditingQueue = trg => ( trg || DOM_LIST_EDITOR ).dataset.list === "queue",
+	listEditingQueue = trg => ( trg || DOM_LIST_EDITOR ).dataset.list === "queue", // TODO this is a bit rubbish
 
 	halfPlaypen = () => DOM_PLAYPEN.scrollTop + ( DOM_PLAYPEN.offsetHeight * 0.5 ),
 
@@ -156,6 +154,19 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			DOM_PLAYLIST.classList.remove( "filtered" );
 		}
 		fromPlaylist.filtered().forEach( li => li.classList.remove( "filtered" ) );
+	},
+
+	listEditorShowing = lst => {
+		if ( DOM_LIST_EDITOR.classList.contains( "show" ) ) {
+			if ( lst ) {
+				if ( DOM_LIST_EDITOR.dataset.list === lst ) {
+					return true;
+				}
+				return false;
+			}
+			return true;
+		}
+		return false;
 	},
 
 	/* tracks and folders */
@@ -328,10 +339,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				clickListEditor();
 			} else if ( list.length ) {
 				let clone;
-				list.forEach( q => {
-					clone = q.cloneNode( true );
+				list.forEach( li => {
+					clone = li.cloneNode();
 					clone.draggable = true;
-					DOM_LIST_EDITOR_LIST.append( clone ); // TODO include folder info for display or scrap cloning in favour of filtering?
+					clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
+					DOM_LIST_EDITOR_LIST.append( clone );
 				} );
 				if ( playlistFilterShowing() ) {
 					closePlaylistFilter();
@@ -744,7 +756,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 									// address the crappy issue of not being able to stop at the end of the queue when the last track of the queue is playing
 
 							global__queue_end = !global__queue.length;
-							if ( listEditorShowing() && listEditingQueue() ) {
+							if ( listEditorShowing( "queue" ) ) {
 								if ( global__queue_end ) {
 									clickListEditor();
 								} else {
@@ -911,7 +923,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	drop = evt => {
 		debugMsg( "drop:", evt );
 
-		// TODO why can't I edit the order of global__played?
+		// TODO why shouldn't I be able to edit the order of global__played?
 
 		let q = listEditingQueue();
 		if ( global__dragee.parentElement ) {
@@ -948,7 +960,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			} else {
 				global__played.push( global__current_playing_track );
 				updatePlayedness();
-				if ( listEditorShowing() && DOM_LIST_EDITOR.dataset.list === "played" ) {
+				if ( listEditorShowing( "played" ) ) {
 					let clone = global__current_playing_track.cloneNode( true );
 					clone.draggable = true;
 					DOM_LIST_EDITOR_LIST.append( clone );
@@ -977,22 +989,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	setFilters = ( to_fltr, fresh ) => { // TODO not actually an event function
-		clearFilters();
-
-		// TODO for efficiency; only clear what isn't about to be filtered?
-
-		DOM_PLAYLIST.classList.add( "filtered" );
-		to_fltr.forEach( li => {
-			li.classList.add( "filtered" );
-			if ( !folderStruct( li ) ) {
-				folderOfTrack( li ).classList.add( "filtered" );
-			} else {
-				li.querySelectorAll( `li${fresh || ""}` ).forEach( li => li.classList.add( "filtered" ) );
-			}
-		} );
-	},
-
 	inputPlaylistFilter = evt => {
 
 		// TODO multi filters e.g. path contains "kings" & "wild" etc.
@@ -1010,7 +1006,19 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 			debugMsg( "inputPlaylistFilter - fltr:", fltr ); // TODO combifilter won't work like this for more fields/tags
 
-			setFilters( DOM_PLAYLIST.querySelectorAll( fltr ), fresh );
+			clearFilters();
+
+			// TODO for efficiency; only clear what isn't about to be filtered?
+
+			DOM_PLAYLIST.classList.add( "filtered" );
+			DOM_PLAYLIST.querySelectorAll( fltr ).forEach( li => {
+				li.classList.add( "filtered" );
+				if ( !folderStruct( li ) ) {
+					folderOfTrack( li ).classList.add( "filtered" );
+				} else {
+					li.querySelectorAll( `li${fresh}` ).forEach( li => li.classList.add( "filtered" ) );
+				}
+			} );
 		} else {
 			clearFilters();
 		}
