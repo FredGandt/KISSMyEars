@@ -156,6 +156,13 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		fromPlaylist.filtered().forEach( li => li.classList.remove( "filtered" ) );
 	},
 
+	appendClone2ListEditor = li => {
+		let clone = li.cloneNode();
+		clone.draggable = true;
+		clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
+		DOM_LIST_EDITOR_LIST.append( clone );
+	},
+
 	listEditorShowing = lst => {
 		if ( DOM_LIST_EDITOR.classList.contains( "show" ) ) {
 			if ( lst ) {
@@ -338,13 +345,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			if ( listEditorShowing() ) {
 				clickListEditor();
 			} else if ( list.length ) {
-				let clone;
-				list.forEach( li => {
-					clone = li.cloneNode();
-					clone.draggable = true;
-					clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
-					DOM_LIST_EDITOR_LIST.append( clone );
-				} );
+				list.forEach( li => appendClone2ListEditor( li ) );
 				if ( playlistFilterShowing() ) {
 					closePlaylistFilter();
 				}
@@ -961,9 +962,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				global__played.push( global__current_playing_track );
 				updatePlayedness();
 				if ( listEditorShowing( "played" ) ) {
-					let clone = global__current_playing_track.cloneNode( true );
-					clone.draggable = true;
-					DOM_LIST_EDITOR_LIST.append( clone );
+					appendClone2ListEditor( global__current_playing_track );
 				}
 			}
 		}
