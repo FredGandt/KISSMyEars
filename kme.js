@@ -242,6 +242,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		// TODO "previous" handling is a mess
 			// global__played needs to be all tracks that have been played for at least around 2 seconds?
 			// an overide is needed when suffle is off, so rather than previously played, it selects the previous track in the DOM_PLAYLIST
+			// going to a previous track during a queue should requeue the track you've just ignored i.e. maintain the queue
 
 		prevTrack: () => {
 			let pl = global__played.length;
@@ -658,7 +659,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				li = document.createElement( "li" );
 				li.dataset.track_abs_path = track.abspath; // TODO reduce paths object size
 				li.dataset.title = track.title;
-				li.dataset.id =  track.id;
+				li.dataset.id = track.id;
 				[ ( parseInt( track.num ) || 0 ), track.title ].forEach( ( disp, i ) => {
 					spn = document.createElement( "span" );
 					spn.dataset.display = disp;
@@ -989,33 +990,38 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	},
 
 	inputPlaylistFilter = evt => {
-
-		// TODO multi filters e.g. path contains "kings" & "wild" etc.
-
 		debugMsg( "inputPlaylistFilter:", evt );
-		let fltrs = arrayFrom( DOM_PLAYLIST_FILTER.querySelectorAll( 'input[type="text"]' ) ).filter( f => f.value );
-		if ( fltrs.length ) {
-			let fresh = ( fltrChckd( "onlyunplayed" ) ? ":not(.played)" : "" ), // TODO skiplayed?
-				insens = ( fltrChckd( "casensitive" ) ? "" : " i" ), tag, mth,
-				fltr = fltrs.map( npt => {
+
+		let frsh = fltrChckd( "onlyunplayed" ) ? ":not(.played)" : "",
+			cs = fltrChckd( "casensitive" ) ? "" : " i",
+			vlu, tag, mth,
+
+			fltrs = arrayFrom( DOM_PLAYLIST_FILTER.querySelectorAll( 'input[type="text"]' ) ).map( npt => {
+				vlu = npt.value.trim();
+				if ( vlu ) {
 					tag = npt.parentElement.querySelector( "legend" ).dataset.data;
-					mth = { "starts": "^", "contains": "*", "ends": "$" }[ npt.name ];
-					return `li[data-${tag}${mth}="${npt.value}"${insens}]:not(.broken)${fresh}`;
-				} ).join( fltrChckd( "combifilter" ) ? " " : "," );
+					if ( npt.name === "contains" ) {
+						vlu = vlu.split( " " ).map( str => `[data-${tag}*="${str}"${cs}]` ).join( "" );
+						return `li${vlu}:not(.broken)${frsh}`;
+					}
+					return `li[data-${tag}${npt.name === "starts" ? "^" : "$"}="${vlu}"${cs}]:not(.broken)${frsh}`;
+				}
+			} ).filter( v => v ).join( fltrChckd( "combifilter" ) ? " " : "," ); // TODO combifilter won't work like this for more fields/tags;
 
-			debugMsg( "inputPlaylistFilter - fltr:", fltr ); // TODO combifilter won't work like this for more fields/tags
-
-			clearFilters();
+		if ( fltrs.length ) {
+			debugMsg( "inputPlaylistFilter - fltrs:", fltrs );
 
 			// TODO for efficiency; only clear what isn't about to be filtered?
 
+			clearFilters();
+
 			DOM_PLAYLIST.classList.add( "filtered" );
-			DOM_PLAYLIST.querySelectorAll( fltr ).forEach( li => {
+			DOM_PLAYLIST.querySelectorAll( fltrs ).forEach( li => {
 				li.classList.add( "filtered" );
 				if ( !folderStruct( li ) ) {
 					folderOfTrack( li ).classList.add( "filtered" );
 				} else {
-					li.querySelectorAll( `li${fresh}` ).forEach( li => li.classList.add( "filtered" ) );
+					li.querySelectorAll( `li${frsh}` ).forEach( li => li.classList.add( "filtered" ) );
 				}
 			} );
 		} else {
