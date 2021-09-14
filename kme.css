@@ -245,7 +245,7 @@ legend:not(.pf) {
 }
 
 fieldset:not(.pf).legend {
-	border: var( pixel-border ) var( --dark-turq );
+	border: var( --pixel-border ) var( --dark-turq );
 	border-radius: .2rem;
 }
 

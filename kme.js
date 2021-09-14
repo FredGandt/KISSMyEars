@@ -991,11 +991,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	inputPlaylistFilter = evt => {
 		debugMsg( "inputPlaylistFilter:", evt );
-
 		let frsh = fltrChckd( "onlyunplayed" ) ? ":not(.played)" : "",
 			cs = fltrChckd( "casensitive" ) ? "" : " i",
 			vlu, tag, mth,
-
 			fltrs = arrayFrom( DOM_PLAYLIST_FILTER.querySelectorAll( 'input[type="text"]' ) ).map( npt => {
 				vlu = npt.value.trim();
 				if ( vlu ) {
