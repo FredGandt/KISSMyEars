@@ -1,4 +1,6 @@
 
+// TODO prioritise UX for visually impaired
+
 // TODO use virtual DOM for DOM_PLAYLIST
 
 // TODO start shuffle play again after e.g. finishing a folder etc.
@@ -117,6 +119,20 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	arrayExistsAndHasLength = arr => arr && arr.length, // TODO deploy at all array.length checks?
 
+	clearFilters = done => {
+		if ( done ) {
+			DOM_PLAYLIST.classList.remove( "filtered" );
+		}
+		fromPlaylist.filtered().forEach( li => li.classList.remove( "filtered" ) );
+	},
+
+	appendClone2ListEditor = li => {
+		let clone = li.cloneNode();
+		clone.draggable = true;
+		clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
+		DOM_LIST_EDITOR_LIST.append( clone );
+	},
+
 	/* controls and UI */
 
 	ctrlVlu = ctrl => DOM_CONTROLS[ ctrl ].value,
@@ -149,20 +165,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ), // TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
 
-	clearFilters = done => {
-		if ( done ) {
-			DOM_PLAYLIST.classList.remove( "filtered" );
-		}
-		fromPlaylist.filtered().forEach( li => li.classList.remove( "filtered" ) );
-	},
-
-	appendClone2ListEditor = li => {
-		let clone = li.cloneNode();
-		clone.draggable = true;
-		clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
-		DOM_LIST_EDITOR_LIST.append( clone );
-	},
-
 	listEditorShowing = lst => {
 		if ( DOM_LIST_EDITOR.classList.contains( "show" ) ) {
 			if ( lst ) {
@@ -193,6 +195,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
 
 	trackTitleDataset = li => li.querySelector( "span[data-title]" ).dataset,
+
+	clearQueueOf = arr => global__queue = global__queue.filter( li => !~arr.indexOf( li ) ),
 
 	tracksFromIDs = ids => ids.map( id => DOM_PLAYLIST.querySelector( `li[data-id="${id}"]` ) ),
 
@@ -739,10 +743,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				if ( !ctrlChckd( "ignoresequences" ) && global__track_sequence.length ) {
 					listing = global__track_sequence.shift();
 
-					// TODO a mix of sequenced and queued tracks can be bad
+					// TODO if ( untilEndOf( "queue" ) && the last track of the queue is sequenced and not the last track of that sequence ) { stop at the end of the sequence }
 
 				} else {
-					let pl = global__played.length, si;
+					let pl = global__played.length,
+						si;
 					global__track_sequence = [];
 					if ( pl && playingPlayed() ) {
 						listing = global__played[ pl + global__played_index ];
@@ -754,7 +759,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 							// TODO if stop at the end of track lands here and the player is refreshed, the queue starts again at its next entry
 								// a) was_queued = listing? a kind of honorary queue track to be cleared only when the track is ended or skipped
 								// b) don't shift the queue here, but do it at track end? sounds complicated
-								// at the same time;
+								// while solving that;
 									// address the crappy issue of not being able to stop at the end of the queue when the last track of the queue is playing
 
 							global__queue_end = !global__queue.length;
@@ -815,9 +820,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 						// TODO when playing played?
 
-						// TODO if ( untilEndOf( "queue" ) && the last track of the queue is sequenced and not the last track of that sequence ) { stop at the end of the sequence }
-
 						global__track_sequence = tracksFromIDs( global__sequences[ parseInt( si ) - 1 ] );
+						clearQueueOf( global__track_sequence );
+						updateQueuetness();
 						listing = global__track_sequence.shift();
 					}
 					DOM_CONTROLS.classList.toggle( "show_cont_sequence", global__track_sequence.length );
@@ -1211,7 +1216,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 				}
 
 				if ( tia ) {
-					global__queue = global__queue.filter( li => !~tia.indexOf( li ) );
+					clearQueueOf( tia );
 				} else {
 					if ( cv === "sequence" ) {
 
