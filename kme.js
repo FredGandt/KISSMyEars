@@ -1492,6 +1492,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 				scrolltoplaying: true,
 				smoothscrolling: true,
 				shuffleby: "track",
+				playedafter: "21", // TODO hard coding this number/string is rubbish
 				skiplayed: true,
 				endof: "world",
 				shuffle: true,
