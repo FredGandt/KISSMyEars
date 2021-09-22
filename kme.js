@@ -1,8 +1,6 @@
 
 // TODO prioritise UX for visually impaired
 
-// TODO use virtual DOM for DOM_PLAYLIST
-
 // TODO start shuffle play again after e.g. finishing a folder etc.
 
 // TODO gapless playback (surprisingly shitty)
@@ -26,8 +24,9 @@
 			// https://www.last.fm/api/scrobbling
 
 // TODO maybe
-	// repeat global__queue or global__played
+	// use virtual DOM for DOM_PLAYLIST
 	// indexedDB instead of localStorage
+	// repeat global__queue or global__played
 	// skip silent sections in tracks e.g. leading to hidden tracks.
 		// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
 		// https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode
@@ -44,6 +43,7 @@ function FromPlaylist() {
 	};
 	this.tracks = {
 		queued: ndx => this.get( 'span[data-queue]:not([data-queue=""])', ndx ),
+		sequencifyable: ndx => this.get( 'span[data-sequence^="NEW"]', ndx ),
 		notPlayed: ndx => this.get( "ol li:not(.played)", ndx ),
 		notBroken: ndx => this.get( "ol li:not(.broken)", ndx ),
 		filtered: ndx => this.get( "ol li.filtered", ndx ),
@@ -87,6 +87,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	DOM_LIST_EDITOR_TRASH = DOM_LIST_EDITOR.querySelector( "div" ),
 	DOM_LIST_EDITOR_LIST = DOM_LIST_EDITOR.querySelector( "ol" ),
 	DOM_AUDIO = document.querySelector( "audio" ),
+	DOM_PLAYED_AFTER = DOM_CONTROLS.played_after,
 	DOM_PLAYPEN = DOM_PLAYLIST.parentElement,
 	DOM_BODY = document.body,
 
@@ -409,7 +410,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				updatePlayedness();
 				break;
 			}
-			case "global__sequence": { // TODO desequence tracks ... whoops
+			case "global__sequence": {
 				global__sequence = [];
 				updateSequences();
 				break;
@@ -534,9 +535,16 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		DOM_CONTROLS.queue_length.dataset.ql = multiTrack( ql );
 	},
 
-	updatePlayedness = () => {
+	updatePlayedness = cpt => {
 
 		// TODO stop at the end of played?
+
+		if ( cpt && DOM_PLAYED_AFTER.valueAsNumber && cpt !== notPop( global__played ) ) { // TODO this condition is a bit cheeky really
+			global__played.push( cpt );
+			if ( listEditorShowing( "played" ) ) {
+				appendClone2ListEditor( cpt );
+			}
+		}
 
 		fromPlaylist.played().forEach( li => li.classList.remove( "played" ) ); // TODO alter instead of clear and reapply
 		DOM_CONTROLS.played_length.dataset.pl = multiTrack( global__played.length ); // TODO indicate duplications?
@@ -552,6 +560,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	updateSequences = () => {
 		let sl = global__sequence.length;
+		fromPlaylist.tracks.sequencifyable().forEach( xs => xs.dataset.sequence = "" ); // TODO alter instead of clear and reapply
 		if ( sl ) {
 			global__sequence.forEach( ( li, i ) => sequenced( li, `NEW:${i + 1}` ) );
 			if ( DOM_CONTROLS.sequence_fs.classList.toggle( "show", sl > 1 ) ) {
@@ -561,7 +570,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			DOM_CONTROLS.sequence_fs.classList.remove( "show" );
 			global__sequences.forEach( ( squnc, ndx ) => tracksFromIDs( squnc ).forEach( ( li, i ) => sequenced( li, `${ndx + 1}:${i + 1}` ) ) );
 
-			// TODO removal of dead sequences
+			// TODO removal of dead sequences; "dead"? please leave clearer notes  >.<
 
 			// TODO sequence editor
 		}
@@ -883,7 +892,14 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	trackTimeUpdate = () => {
 		let curt = DOM_AUDIO.currentTime,
-			tds = DOM_CONTROLS.times.dataset;
+			tds = DOM_CONTROLS.times.dataset,
+			pav = DOM_PLAYED_AFTER.valueAsNumber;
+		if ( pav && curt >= pav && pav < parseInt( DOM_PLAYED_AFTER.max ) ) {
+
+			// TODO no need to carry on checking
+
+			updatePlayedness( global__current_playing_track );
+		}
 		tds.curt = secondsToStr( DOM_SEEK.control.value = curt );
 		tds.rema = secondsToStr( ( DOM_AUDIO.duration - curt ) || 0 );
 	},
@@ -965,11 +981,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			if ( playingPlayed() ) {
 				++global__played_index;
 			} else {
-				global__played.push( global__current_playing_track );
-				updatePlayedness();
-				if ( listEditorShowing( "played" ) ) {
-					appendClone2ListEditor( global__current_playing_track );
-				}
+				updatePlayedness( global__current_playing_track );
 			}
 		}
 		DOM_AUDIO.removeAttribute( "src" );
@@ -1032,6 +1044,16 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	changedPlayedAfter = evt => {
+		debugMsg( "changedPlayedAfter:", evt );
+
+		// TODO something is very wrong; the change sometimes fires before the change
+
+		let pa = evt.target,
+			pav = pa.value;
+		pa.parentElement.dataset.op = ( pav === pa.max ? "AT END" : ( parseInt( pav ) ? pav : "NEVER" ) ); // TODO repeated more or less
+	},
+
 	inputControls = evt => {
 		debugMsg( "inputControls:", evt );
 		let trg = evt.target,
@@ -1040,13 +1062,15 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			let vlu = trg.value,
 				nme = trg.name;
 			if ( typ === "range" ) {
-				vlu = parseFloat( vlu );
-				if ( trg.name === "volume" ) {
-					DOM_AUDIO.volume = vlu;
-				} else {
-					vlu *= 0.001;
+				if ( trg !== DOM_PLAYED_AFTER ) {
+					vlu = parseFloat( vlu );
+					if ( nme === "volume" ) {
+						DOM_AUDIO.volume = vlu;
+					} else if ( nme === "soft_stop" ) {
+						vlu *= 0.001;
+					}
+					trg.parentElement.dataset.op = vlu;
 				}
-				trg.parentElement.dataset.op = vlu;
 			} else {
 				if ( typ === "checkbox" ) {
 					if ( nme === "scrolltoplaying" ) {
@@ -1224,10 +1248,13 @@ chrome.storage.local.getBytesInUse( bytes => {
 
 						// TODO what happens if a track is part of more than one sequence?
 
-						if ( !sequenced( trg ) ) {
+						let si = sequenced( trg );
+						if ( !si ) {
 							global__sequence.push( trg );
-							updateSequences();
+						} else if ( /^NEW/.test( si ) ) { // TODO lazy and inconsistent but needed functionality; make more better
+							global__sequence.pop();
 						}
+						updateSequences();
 
 						// TODO sequence editor
 
@@ -1239,8 +1266,6 @@ chrome.storage.local.getBytesInUse( bytes => {
 						global__queue.splice( qp, 1 );
 					}
 				}
-
-				// TODO only allow queuing of one track from a sequence [unless ctrlChckd( "ignoresequences" )]?
 
 				// TODO if ( DOM_CONTROLS.shuffle etc ) offer to shuffle before adding folders to the queue?
 
@@ -1448,6 +1473,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 					smoothscrolling: ctrlChckd( "smoothscrolling" ),
 					softstop: DOM_CONTROLS.soft_stop.valueAsNumber,
 					volume: DOM_CONTROLS.volume.valueAsNumber,
+					playedafter: DOM_PLAYED_AFTER.value,
 					skiplayed: ctrlChckd( "skiplayed" ),
 					shuffleby: ctrlVlu( "shuffleby" ),
 					endof: DOM_CONTROLS.dataset.endof,
@@ -1472,10 +1498,12 @@ chrome.storage.local.getBytesInUse( bytes => {
 				clicky: "end",
 				softstop: 0,
 				volume: 0.5
-			}, settings || {} );
+			}, settings || {} ),
+			pav = sttngs.playedafter;
 
 			// TODO reduce repeated code
 
+			DOM_PLAYED_AFTER.parentElement.dataset.op = ( ( DOM_PLAYED_AFTER.value = pav ) === DOM_PLAYED_AFTER.max ? "AT END" : ( parseInt( pav ) ? pav : "NEVER" ) ); // TODO repeated more or less
 			DOM_BODY.classList.toggle( "display_controls_left", ( DOM_CONTROLS.switchControls.value = sttngs.displaycontrols ) === "RIGHT" );
 			DOM_CONTROLS.smoothscrolling.checked = DOM_PLAYPEN.classList.toggle( "smooth_scrolling", sttngs.smoothscrolling );
 			DOM_CONTROLS.scrolltoplaying.checked = DOM_BODY.classList.toggle( "scroll_to_playing", sttngs.scrolltoplaying );
@@ -1504,6 +1532,8 @@ DOM_SOURCES.addEventListener( "input", importFiles, { passive: true } );
 
 DOM_CONTROLS.addEventListener( "input", inputControls, { passive: true } );
 DOM_CONTROLS.addEventListener( "click", clickControls );
+
+DOM_PLAYED_AFTER.addEventListener( "change", changedPlayedAfter, { passive: true } ); // TODO something is very wrong; the change sometimes fires before the change
 
 DOM_SEEK.addEventListener( "input", seekTrack, { passive: true } );
 

@@ -89,7 +89,7 @@ div.section {
 
 div.playlistsection {
 	height: calc( 100vh - 6.3rem );
-	width: calc( 100vw - 26rem );
+	width: calc( 100vw - 28rem ); /* TODO this is going to keep happening */
 	margin: 1rem 0 0;
 }
 
@@ -103,16 +103,16 @@ body.display_controls_left div.playlistsection {
 
 div.controlssection {
 	height: 100vh;
-	width: 22rem;
+	width: 24rem; /* TODO this is going to keep happening */
 }
 
 body.display_controls_left div.controlssection {
 	border-right: var( --dark-turq-border );
-	width: calc( 22rem - 1px );
+	width: calc( 24rem - 1px ); /* TODO this is going to keep happening */
 }
 
 #seek {
-	width: calc( 100vw - 27rem );
+	width: calc( 100vw - 29rem ); /* TODO this is going to keep happening */
 	padding: 0 1rem 1rem;
 	position: absolute;
 	margin: 0;
@@ -133,7 +133,7 @@ fieldset[name="transport"],
 fieldset[name="folder"],
 output[name="times"] {
 	text-align: center;
-	width: 22rem;
+	width: 24rem; /* TODO this is going to keep happening */
 }
 
 form.overlay {
@@ -178,7 +178,7 @@ h1 {
 
 #list_editor {
 	height: calc( 100vh - 4.3rem );
-	width: calc( 100vw - 25rem );
+	width: calc( 100vw - 27rem ); /* TODO this is going to keep happening */
 	padding-bottom: 0;
 }
 
@@ -204,7 +204,7 @@ body.display_controls_left #list_editor {
 }
 
 #playlist_filter {
-	right: 26rem;
+	right: 28rem; /* TODO this is going to keep happening */
 	top: 3rem;
 }
 
