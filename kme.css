@@ -244,21 +244,21 @@ legend:not(.pf) {
 	color: var( --turq );
 }
 
-fieldset:not(.pf).legend {
+fieldset.legend:not(.pf) {
 	border: var( --pixel-border ) var( --dark-turq );
 	border-radius: .2rem;
 }
 
-fieldset:not(.pf).legend label {
+fieldset.legend:not(.pf) label {
 	display: block;
 }
 
-fieldset:not(.pf):not(.legend) {
-	padding: 0;
+fieldset.child:not(.pf) {
+	margin: 0;
 }
 
-fieldset:not(.pf).child {
-	margin: 0;
+fieldset:not(.pf, .legend) {
+	padding: 0;
 }
 
 output[name="played_length"]::after {
@@ -301,11 +301,11 @@ ol li {
 	white-space: nowrap;
 }
 
-#playlist ol li.played {
+#playlist ol li.played:not(.focussed) {
 	color: var( --dark-turq ) !important;
 }
 
-#playlist li.played {
+#playlist li.played:not(.focussed) {
 	color: var( --rude-grey ) !important;
 }
 
@@ -500,7 +500,7 @@ select {
 	background-color: var( --dark-turq ) !important;
 }
 
-#playlist ol li.playing:not(.broken):not(.focussed) {
+#playlist ol li.playing:not(.broken, .focussed) {
 	color: var( --darkest-grey ) !important;
 }
 
@@ -605,7 +605,7 @@ fieldset[name="folder"] {
 	padding-top: .5rem !important;
 }
 
-#controls:not(.hide_cont_folder):not(.hide_shuffle_by) fieldset[name="folder"] {
+#controls:not(.hide_cont_folder, .hide_shuffle_by) fieldset[name="folder"] {
 	display: block !important;
 }
 
@@ -643,7 +643,7 @@ label kbd::after {
 	content: ")";
 }
 
-fieldset:not(.pf).legend.wrap:not(.shuffle_by) label,
+fieldset.legend.wrap:not(.pf, .shuffle_by) label,
 input[name="fixBreakages"].show,
 div.dropzone,
 ol li span,

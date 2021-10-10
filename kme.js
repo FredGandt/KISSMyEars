@@ -1277,22 +1277,24 @@ chrome.storage.local.getBytesInUse( bytes => {
 
 					// TODO do something about this; it sucks
 
+					global__played = global__played.filter( li => ( tia ? !~tia.indexOf( li ) : li !== trg ) );
+					updatePlayedness();
+
 					if ( confirm( `Remove this ${tia ? "folder" : "track"} from the playlist?` ) ) {
 						if ( confirm( "Do not automatically include in future?" ) ) { // TODO reduce paths object size
-							chrome.storage.local.get( store => chrome.storage.local.set( { "paths": store.paths.filter( sp => ( tia ? !tia.some( li => sp.a === trackAbsPath( li ) ) : sp.a !== trackAbsPath( trg ) ) ) } ) );
+							chrome.storage.local.get( store => {
+								chrome.storage.local.set( { "paths": store.paths.filter( sp => ( tia ? !tia.some( li => sp.a === trackAbsPath( li ) ) : sp.a !== trackAbsPath( trg ) ) ) } );
+							} );
+						}
+						if ( tia ) {
+							trg.folder.remove();
+						} else {
+							trg.remove();
 						}
 						if ( ( tia && ~tia.indexOf( global__current_playing_track ) ) || trg === global__current_playing_track ) {
 							TRANSPORT.nextTrack();
 						}
-						if ( tia ) {
-							global__played = global__played.filter( li => !~tia.indexOf( li ) );
-							trg.folder.remove();
-						} else {
-							global__played = global__played.filter( li => li !== trg );
-							trg.remove();
-						}
 						updatePlaylistLength();
-						updatePlayedness();
 					}
 				} else if ( cv === "now" ) {
 
@@ -1487,20 +1489,20 @@ chrome.storage.local.getBytesInUse( bytes => {
 	applySettings = settings => {
 		return new Promise( resolve => {
 			let sttngs = Object.assign( {
-				displaycontrols: "LEFT", // flipped by logic
-				ignoresequences: false,
-				scrolltoplaying: true,
-				smoothscrolling: true,
-				shuffleby: "track",
-				playedafter: "21", // TODO hard coding this number/string is rubbish
-				skiplayed: true,
-				endof: "world",
-				shuffle: true,
-				clicky: "end",
-				softstop: 0,
-				volume: 0.5
-			}, settings || {} ),
-			pav = sttngs.playedafter;
+					displaycontrols: "LEFT", // flipped by logic; RIGHT is the real default
+					ignoresequences: false,
+					scrolltoplaying: true,
+					smoothscrolling: true,
+					shuffleby: "track",
+					playedafter: "21", // TODO hard coding this number/string is rubbish
+					skiplayed: true,
+					endof: "world",
+					shuffle: true,
+					clicky: "end",
+					softstop: 0,
+					volume: 0.5
+				}, settings || {} ),
+				pav = sttngs.playedafter;
 
 			// TODO reduce repeated code
 
