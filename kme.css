@@ -115,6 +115,7 @@ body.display_controls_left div.controlssection {
 	width: calc( 100vw - 29rem ); /* TODO this is going to keep happening */
 	padding: 0 1rem 1rem;
 	position: absolute;
+	font-size: 1rem;
 	margin: 0;
 	bottom: 0;
 	left: 0;

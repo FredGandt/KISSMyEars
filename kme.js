@@ -120,6 +120,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	arrayExistsAndHasLength = arr => arr && arr.length, // TODO deploy at all array.length checks?
 
+	tagIs = ( tag, nme, typ ) => tag.tagName && tag.tagName.toLowerCase() === nme && ( typ ? tag.type && tag.type === typ : true ),
+
 	clearFilters = done => {
 		if ( done ) {
 			DOM_PLAYLIST.classList.remove( "filtered" );
@@ -263,9 +265,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 		stopTrack: async rs => {
 			if ( DOM_AUDIO.src ) {
-				let fade;
-				if ( !rs && DOM_AUDIO.volume && ( fade = DOM_CONTROLS.soft_stop.valueAsNumber ) ) {
-					await softStop( Math.round( 0.02 * fade ) );
+				let fade = DOM_CONTROLS.soft_stop.valueAsNumber;
+				if ( !rs && DOM_AUDIO.volume && fade ) {
+					await softStop( fade );
 				}
 				DOM_AUDIO.pause();
 				DOM_AUDIO.volume = DOM_CONTROLS.volume.valueAsNumber;
@@ -470,15 +472,16 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	softStop = ms => {
+	softStop = fs => {
 		return new Promise( resolve => {
-			let fadeout = setInterval( () => {
-				if ( ( DOM_AUDIO.volume -= ( DOM_AUDIO.volume * 0.1 ) ) < 0.002 ) {
-					clearInterval( fadeout );
-					DOM_AUDIO.volume = 0;
-					resolve( true );
-				}
-			}, ms );
+			let sov = DOM_AUDIO.volume / ( fs * 100 ),
+				fadeout = setInterval( () => {
+					if ( ( DOM_AUDIO.volume -= sov ) <= sov ) {
+						clearInterval( fadeout );
+						DOM_AUDIO.volume = 0;
+						resolve( true );
+					}
+				}, 10 );
 		} );
 	},
 
@@ -855,7 +858,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	seekTrack = evt => DOM_AUDIO.currentTime = evt.target.value,
 
-	liFromEvtPath = evt => folder( evt.composedPath().find( e => e.tagName && e.tagName.toLowerCase() === "li" ) ),
+	liFromEvtPath = evt => folder( evt.composedPath().find( e => tagIs( e, "li" ) ) ),
 
 	setTrackDuration = () => DOM_CONTROLS.times.dataset.dura = secondsToStr( DOM_SEEK.control.max = Math.ceil( DOM_AUDIO.duration ) ),
 
@@ -863,6 +866,20 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		debugMsg( "dragStart:", evt );
 		evt.dataTransfer.effectAllowed = "move";
 		global__dragee = evt.target;
+	},
+
+	mouseWheel = evt => {
+		let dlty = evt.deltaY,
+			trg = evt.target;
+		if ( tagIs( trg, "input", "range" ) ) {
+
+			// TODO use wheel to adjust range values
+
+		} else if ( evt.ctrlKey ) { // TODO temporary kludge in place of nicely responsive default zooming // playlistsize
+			evt.preventDefault();
+			let pps = DOM_PLAYPEN.style;
+			pps.fontSize = `${parseInt( pps.fontSize ) - ( dlty / 5 )}%`;
+		}
 	},
 
 	trackError = evt => {
@@ -1063,11 +1080,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				nme = trg.name;
 			if ( typ === "range" ) {
 				if ( trg !== DOM_PLAYED_AFTER ) {
-					vlu = parseFloat( vlu );
 					if ( nme === "volume" ) {
-						DOM_AUDIO.volume = vlu;
-					} else if ( nme === "soft_stop" ) {
-						vlu *= 0.001;
+						DOM_AUDIO.volume = parseFloat( vlu );
 					}
 					trg.parentElement.dataset.op = vlu;
 				}
@@ -1469,6 +1483,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 				"played": trackIDs( global__played ),
 				"queue": trackIDs( global__queue ),
 				"settings": {
+					playlistsize: parseInt( DOM_PLAYPEN.style.fontSize ),
 					displaycontrols: DOM_CONTROLS.switchControls.value,
 					ignoresequences: ctrlChckd( "ignoresequences" ),
 					scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
@@ -1495,6 +1510,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 					smoothscrolling: true,
 					shuffleby: "track",
 					playedafter: "21", // TODO hard coding this number/string is rubbish
+					playlistsize: 100,
 					skiplayed: true,
 					endof: "world",
 					shuffle: true,
@@ -1510,10 +1526,11 @@ chrome.storage.local.getBytesInUse( bytes => {
 			DOM_BODY.classList.toggle( "display_controls_left", ( DOM_CONTROLS.switchControls.value = sttngs.displaycontrols ) === "RIGHT" );
 			DOM_CONTROLS.smoothscrolling.checked = DOM_PLAYPEN.classList.toggle( "smooth_scrolling", sttngs.smoothscrolling );
 			DOM_CONTROLS.scrolltoplaying.checked = DOM_BODY.classList.toggle( "scroll_to_playing", sttngs.scrolltoplaying );
-			DOM_CONTROLS.soft_stop.parentElement.dataset.op = ( DOM_CONTROLS.soft_stop.value = sttngs.softstop ) * 0.001;
 			DOM_AUDIO.volume = DOM_CONTROLS.volume.value = DOM_CONTROLS.volume.parentElement.dataset.op = sttngs.volume;
+			DOM_CONTROLS.soft_stop.parentElement.dataset.op = DOM_CONTROLS.soft_stop.value = sttngs.softstop;
 			DOM_CONTROLS.dataset.endof = DOM_CONTROLS.endof.value = sttngs.endof;
 			DOM_CONTROLS.ignoresequences.checked = sttngs.ignoresequences;
+			DOM_PLAYPEN.style.fontSize = `${sttngs.playlistsize}%`;
 			DOM_CONTROLS.skiplayed.checked = sttngs.skiplayed;
 			DOM_CONTROLS.shuffleby.value = sttngs.shuffleby;
 			DOM_CONTROLS.shuffle.checked = sttngs.shuffle;
@@ -1524,6 +1541,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 	};
 
 window.addEventListener( "keydown", keyDown );
+window.addEventListener( "mousewheel", mouseWheel, { passive: false } );
 window.addEventListener( "beforeunload", storeSettings, { passive: true } );
 
 DOM_AUDIO.addEventListener( "error", trackError, { passive: true } );
