@@ -341,7 +341,7 @@ select,
 input {
 	background-color: var( --darkest-grey );
 	font-family: monospace, monospace;
-	border-radius: .2rem;
+	border-radius: .2em;
 	font-size: inherit;
 	color: inherit;
 	padding: 0;
@@ -352,7 +352,7 @@ input[type="checkbox"],
 input[type="radio"] {
 	appearance: none;
 	margin: 0 .4rem;
-	padding: .4rem;
+	padding: .4em;
 }
 
 input[type="radio"] {
@@ -556,6 +556,7 @@ input.pink:checked {
 
 label.child {
 	text-indent: 1ch;
+	font-size: 80%;
 }
 
 #controls:not(.show_cont_queue) fieldset[name="queue_length_fs"],

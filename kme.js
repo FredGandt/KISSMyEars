@@ -1,35 +1,48 @@
 
-// TODO prioritise UX for visually impaired
+/* TODO
 
-// TODO start shuffle play again after e.g. finishing a folder etc.
+prioritise UX for visually impaired
 
-// TODO gapless playback (surprisingly shitty)
+gapless playback (surprisingly shitty)
 
-// TODO merge new imports into related folders
-	// CONTROLS.fixBreakages()
+merge new imports into related folders
+	CONTROLS.fixBreakages()
 
-// TODO save queue as playlist
-	// giveFile()
+save queue as playlist
+	giveFile()
 
-// TODO tags
-	// https://taglib.org/api/
-	// https://pypi.org/project/pytaglib/
-	// https://en.wikipedia.org/wiki/TagLib
-	// https://developer.mozilla.org/en-US/docs/WebAssembly
-	// https://emscripten.org/docs/getting_started/Tutorial.html
-		// shuffle by tag
-		// replaygain
-		// images
-		// scrobbling
-			// https://www.last.fm/api/scrobbling
+tags
+	https://taglib.org/api/
+	https://pypi.org/project/pytaglib/
+	https://en.wikipedia.org/wiki/TagLib
+	https://developer.mozilla.org/en-US/docs/WebAssembly
+	https://emscripten.org/docs/getting_started/Tutorial.html
+		organise playback by tag
+		sorting and searching
+		merging uploads
+		tag embedded images
+		replaygain
+			https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
+			https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode
+		scrobbling
+			https://www.last.fm/api/scrobbling
 
-// TODO maybe
-	// use virtual DOM for DOM_PLAYLIST
-	// indexedDB instead of localStorage
-	// repeat global__queue or global__played
-	// skip silent sections in tracks e.g. leading to hidden tracks.
-		// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
-		// https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode
+possible settings/options
+	include cover art image files in uploads and display
+	start shuffle play again after e.g. finishing a folder etc.
+	disable marking queued tracks as played during otherwise shuffled play
+	unmark tracks as played when the whole containing folder is played
+		this is an odd one, but for some reason it makes sense to me
+	repeat track, folder, sequence, queue (or playlist when implemented)
+
+maybe
+	use virtual DOM for DOM_PLAYLIST
+	indexedDB instead of localStorage
+	skip silent sections in tracks e.g. leading to hidden tracks.
+		https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
+		https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode
+
+*/
 
 "use strict";
 
@@ -48,15 +61,16 @@ function FromPlaylist() {
 		notBroken: ndx => this.get( "ol li:not(.broken)", ndx ),
 		filtered: ndx => this.get( "ol li.filtered", ndx ),
 		broken: ndx => this.get( "ol li.broken", ndx ),
+		played: ndx => this.get( "ol li.played", ndx ),
 		all: ndx => this.get( "ol li", ndx )
 	};
 	this.folders = {
 		notPlayed: ndx => this.get( "li[data-folder_struct]:not(.played)", ndx ),
+		played: ndx => this.get( "li[data-folder_struct].played", ndx ),
 		all: ndx => this.get( "li[data-folder_struct]", ndx )
 	};
 	this.filtered = ndx => this.get( "li.filtered", ndx );
 	this.focussed = () => this.get( "li.focussed", 0 );
-	this.played = ndx => this.get( "li.played", ndx );
 };
 
 let global__current_playing_folder,
@@ -91,6 +105,12 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	DOM_PLAYPEN = DOM_PLAYLIST.parentElement,
 	DOM_BODY = document.body,
 
+	debugMsg = ( where, what, how ) => {
+		if ( debugging || how ) {
+			console[ how || "log" ]( where, what );
+		}
+	},
+
 	fromPlaylist = new FromPlaylist(),
 
 	collator = new Intl.Collator( undefined, {
@@ -100,13 +120,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		numeric: true
 	} ),
 
-	debugMsg = ( where, what, how ) => {
-		if ( debugging || how ) {
-			console[ how || "log" ]( where, what );
-		}
-	},
-
-	/* utility */
+	trackID = li => li.dataset.id, // TODO reduce paths object size
 
 	cloneOf = arr => [].concat( arr ),
 
@@ -114,31 +128,13 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	arrayFrom = lst => Array.from( lst ),
 
+	ctrlVlu = ctrl => DOM_CONTROLS[ ctrl ].value,
+
 	underspace = str => str.replace( /_+/g, " " ),
 
+	trackAbsPath = li => li.dataset.track_abs_path,
+
 	randNum = n => Math.floor( Math.random() * n ),
-
-	arrayExistsAndHasLength = arr => arr && arr.length, // TODO deploy at all array.length checks?
-
-	tagIs = ( tag, nme, typ ) => tag.tagName && tag.tagName.toLowerCase() === nme && ( typ ? tag.type && tag.type === typ : true ),
-
-	clearFilters = done => {
-		if ( done ) {
-			DOM_PLAYLIST.classList.remove( "filtered" );
-		}
-		fromPlaylist.filtered().forEach( li => li.classList.remove( "filtered" ) );
-	},
-
-	appendClone2ListEditor = li => {
-		let clone = li.cloneNode();
-		clone.draggable = true;
-		clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
-		DOM_LIST_EDITOR_LIST.append( clone );
-	},
-
-	/* controls and UI */
-
-	ctrlVlu = ctrl => DOM_CONTROLS[ ctrl ].value,
 
 	untilEndOf = cont => isCtrlVlu( "endof", cont ),
 
@@ -146,11 +142,23 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	isShuffleBy = sb => isCtrlVlu( "shuffleby", sb ),
 
+	trackIDs = lst => lst.map( li => trackID( li ) ),
+
+	arrayExistsAndHasLength = arr => arr && arr.length, // TODO deploy at all array.length checks?
+
+	folderOfTrack = li => li.parentElement.parentElement,
+
 	isCtrlVlu = ( ctrl, vlu ) => ctrlVlu( ctrl ) === vlu,
 
 	isBtn = trg => trg && trg.type && trg.type === "button",
 
 	fltrChckd = ctrl => DOM_PLAYLIST_FILTER[ ctrl ].checked,
+
+	folderStruct = li => li ? li.dataset.folder_struct : undefined,
+
+	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
+
+	trackTitleDataset = li => li.querySelector( "span[data-title]" ).dataset,
 
 	defaultEndOf = () => DOM_CONTROLS.endof.value = DOM_CONTROLS.dataset.endof,
 
@@ -166,46 +174,17 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	cleanTitle = () => document.title.replace( /^(?:\[(?:PAUS|STOPP)ED\] )+/, "" ),
 
-	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ), // TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
-
-	listEditorShowing = lst => {
-		if ( DOM_LIST_EDITOR.classList.contains( "show" ) ) {
-			if ( lst ) {
-				if ( DOM_LIST_EDITOR.dataset.list === lst ) {
-					return true;
-				}
-				return false;
-			}
-			return true;
-		}
-		return false;
-	},
-
-	/* tracks and folders */
-
-	// TODO reduce paths object size
-
-	trackID = li => li.dataset.id,
-
-	trackAbsPath = li => li.dataset.track_abs_path,
-
-	trackIDs = lst => lst.map( li => trackID( li ) ),
-
-	folderOfTrack = li => li.parentElement.parentElement,
-
-	folderStruct = li => li ? li.dataset.folder_struct : undefined,
-
-	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
-
-	trackTitleDataset = li => li.querySelector( "span[data-title]" ).dataset,
-
 	clearQueueOf = arr => global__queue = global__queue.filter( li => !~arr.indexOf( li ) ),
 
 	tracksFromIDs = ids => ids.map( id => DOM_PLAYLIST.querySelector( `li[data-id="${id}"]` ) ),
 
 	folder = li => ( folderStruct( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
 
+	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ), // TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
+
 	listMatch = ( d, q ) => ( q ? global__queue : global__played ).findIndex( li => trackAbsPath( li ) === trackAbsPath( d ) ),
+
+	tagIs = ( tag, nme, typ ) => tag.tagName && tag.tagName.toLowerCase() === nme && ( typ ? tag.type && tag.type === typ : true ),
 
 	sortPlaylist = () => fromPlaylist.folders.all().sort( ( a, b ) => collator.compare( folderStruct( a ), folderStruct( b ) ) ).forEach( li => DOM_PLAYLIST.append( li ) ),
 
@@ -325,8 +304,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 		clearPlayedTracks: () => {
 			if ( global__played.length && confirm( "Clear the play history?" ) ) {
-				global__played = [];
-				updatePlayedness();
+				clear( "global__played" );
 			}
 		},
 
@@ -400,31 +378,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	clear = arr => {
-		switch ( arr ) {
-			case "global__queue": {
-				global__queue = [];
-				updateQueuetness();
-				break;
-			}
-			case "global__played": {
-				global__played = [];
-				updatePlayedness();
-				break;
-			}
-			case "global__sequence": {
-				global__sequence = [];
-				updateSequences();
-				break;
-			}
-			case "global__sequences": {
-				global__sequences = [];
-				updateSequences();
-				break;
-			}
-		}
-	},
-
 	shuffleArray = arr => {
 		arr.forEach( ( r, i ) => {
 			r = randNum( i + 1 );
@@ -440,25 +393,45 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		return dss.sequence;
 	},
 
-	setLibraries = libs => {
-		if ( libs ) {
-			DOM_SOURCES.libraries.innerHTML = `<option value="" selected>ADD NEW LIBRARY</option>` +
-				libs.map( ( l, i ) => `<option value="${l.lib_path}" title="${l.lib_path}">${l.lib_name}</option>` ).join( "" );
+	clearFilters = done => {
+		if ( done ) {
+			DOM_PLAYLIST.classList.remove( "filtered" );
 		}
+		fromPlaylist.filtered().forEach( li => li.classList.remove( "filtered" ) );
 	},
 
-	showPlaying = () => {
+	scrollToPlaying = () => {
 
 		// TODO goes wonky sometimes after being brought to the foreground
 
 		// TODO isShuffleBy( "folder" )??
 
-		// TODO adjust offset if global__current_playing_track is not visible i.e. long folders
-
-		let fcs = fromPlaylist.focussed();
-		if ( fcs || ( global__current_playing_track && ctrlChckd( "scrolltoplaying" ) ) ) {
-			requestIdleCallback( () => DOM_PLAYPEN.scrollBy( 0, ( fcs || global__current_playing_track ).offsetTop - DOM_PLAYPEN.offsetTop - halfPlaypen() ) );
+		if ( !playlistFilterShowing() ) {
+			let fcs = fromPlaylist.focussed();
+			if ( fcs || ( global__current_playing_track && ctrlChckd( "scrolltoplaying" ) ) ) {
+				requestIdleCallback( () => DOM_PLAYPEN.scrollBy( 0, ( fcs || global__current_playing_track ).offsetTop - DOM_PLAYPEN.offsetTop - halfPlaypen() ) );
+			}
 		}
+	},
+
+	appendClone2ListEditor = li => {
+		let clone = li.cloneNode();
+		clone.draggable = true;
+		clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
+		DOM_LIST_EDITOR_LIST.append( clone );
+	},
+
+	listEditorShowing = lst => {
+		if ( DOM_LIST_EDITOR.classList.contains( "show" ) ) {
+			if ( lst ) {
+				if ( DOM_LIST_EDITOR.dataset.list === lst ) {
+					return true;
+				}
+				return false;
+			}
+			return true;
+		}
+		return false;
 	},
 
 	removeFocussed = () => {
@@ -473,6 +446,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	},
 
 	softStop = fs => {
+
+		// TODO subtle as having your brains smashed out with a slice of lemon wrapped round a large gold brick
+
 		return new Promise( resolve => {
 			let sov = DOM_AUDIO.volume / ( fs * 100 ),
 				fadeout = setInterval( () => {
@@ -491,7 +467,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		document.activeElement.blur();
 		DOM_PLAYLIST_FILTER.reset();
 		clearFilters( true );
-		showPlaying();
+		scrollToPlaying();
 	},
 
 	tracksOfFolder = ( fldr, trck ) => {
@@ -520,6 +496,31 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	clear = arr => {
+		switch ( arr ) {
+			case "global__queue": {
+				global__queue = [];
+				updateQueuetness();
+				break;
+			}
+			case "global__played": {
+				global__played = [];
+				updatePlayedness();
+				break;
+			}
+			case "global__sequence": {
+				global__sequence = [];
+				updateSequences();
+				break;
+			}
+			case "global__sequences": {
+				global__sequences = [];
+				updateSequences();
+				break;
+			}
+		}
+	},
+
 	updatePlaylistLength = () => {
 		let btl = fromPlaylist.tracks.broken().length,
 			pllds = DOM_CONTROLS.playlist_length.dataset;
@@ -531,11 +532,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	updateQueuetness = () => {
 		let ql = global__queue.length;
-		fromPlaylist.tracks.queued().forEach( xq => xq.dataset.queue = "" ); // TODO alter instead of clear and reapply
+		fromPlaylist.tracks.queued().forEach( xq => xq.dataset.queue = "" ); // TODO update instead of clear and reapply?
 		if ( DOM_CONTROLS.classList.toggle( "show_cont_queue", ql ) ) {
+			DOM_CONTROLS.queue_length.dataset.ql = multiTrack( ql );
 			global__queue.forEach( ( q, i ) => trackTitleDataset( q ).queue = ( i + 1 === ql ? ( ql === 1 ? "ONLY" : "LAST" ) : ( !i ? "NEXT" : i + 1 ) ) );
 		}
-		DOM_CONTROLS.queue_length.dataset.ql = multiTrack( ql );
 	},
 
 	updatePlayedness = cpt => {
@@ -549,13 +550,23 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			}
 		}
 
-		fromPlaylist.played().forEach( li => li.classList.remove( "played" ) ); // TODO alter instead of clear and reapply
-		DOM_CONTROLS.played_length.dataset.pl = multiTrack( global__played.length ); // TODO indicate duplications?
+		// TODO duplications?
+			// global__played could have a length of 10 but contain only 1 track
+
+		DOM_CONTROLS.played_length.dataset.pl = multiTrack( global__played.length );
+
+		// TODO this is just horrible
+
+		fromPlaylist.tracks.played().filter( li => !~global__played.indexOf( li ) )
+			.concat( fromPlaylist.folders.played().filter( li => li.querySelector( "li:not(.played)" ) ) )
+			.forEach( li => li.classList.remove( "played" ) );
+
 		let fldr;
-		global__played.forEach( li => {
+
+		global__played.filter( li => !li.classList.contains( "played" ) ).forEach( li => {
 			li.classList.add( "played" );
 			fldr = folderOfTrack( li );
-			if ( !tracksOfFolder( fldr ).filter( trck => !trck.classList.contains( "played" ) ).length ) {
+			if ( !fldr.querySelector( "li:not(.played)" ) ) {
 				fldr.classList.add( "played" );
 			}
 		} );
@@ -563,7 +574,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	updateSequences = () => {
 		let sl = global__sequence.length;
-		fromPlaylist.tracks.sequencifyable().forEach( xs => xs.dataset.sequence = "" ); // TODO alter instead of clear and reapply
+		fromPlaylist.tracks.sequencifyable().forEach( xs => xs.dataset.sequence = "" ); // TODO update instead of clear and reapply?
 		if ( sl ) {
 			global__sequence.forEach( ( li, i ) => sequenced( li, `NEW:${i + 1}` ) );
 			if ( DOM_CONTROLS.sequence_fs.classList.toggle( "show", sl > 1 ) ) {
@@ -620,28 +631,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		return "00:00";
 	},
 
-	mindTheStore = store => {
-		return new Promise( resolve => {
-			if ( store ) {
-				let p = store.played,
-					q = store.queue;
-				if ( arrayExistsAndHasLength( p ) ) {
-					global__played = global__played.concat( tracksFromIDs( p ) );
-					updatePlayedness();
-				}
-				if ( arrayExistsAndHasLength( q ) ) {
-					global__queue = global__queue.concat( tracksFromIDs( q ) );
-					updateQueuetness();
-				}
-				if ( store.sequences ) {
-					global__sequences = global__sequences.concat( store.sequences ); // TODO tracksFromIDs?
-					updateSequences();
-				}
-			}
-			resolve( true );
-		} );
-	},
-
 	displayTrackData = listing => {
 		if ( global__current_playing_track ) {
 			global__current_playing_track.classList.remove( "playing" );
@@ -654,7 +643,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			global__current_playing_folder.classList.add( "playing" );
 			listing.classList.add( "playing" );
 			setTitle( listing.dataset.title );
-			showPlaying();
+			scrollToPlaying();
 		} else {
 			global__current_playing_folder = global__current_playing_track = null;
 			CONTROLS.clearPlayedTracks();
@@ -693,7 +682,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				DOM_PLAYLIST.append( global__playlist_fragment );
 				updatePlaylistLength();
 				sortPlaylist();
-				showPlaying();
+				scrollToPlaying();
 			}
 		}
 	},
@@ -910,12 +899,14 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	trackTimeUpdate = () => {
 		let curt = DOM_AUDIO.currentTime,
 			tds = DOM_CONTROLS.times.dataset,
-			pav = DOM_PLAYED_AFTER.valueAsNumber;
-		if ( pav && curt >= pav && pav < parseInt( DOM_PLAYED_AFTER.max ) ) {
+			pav = DOM_PLAYED_AFTER.valueAsNumber,
+			cpt = global__current_playing_track;
+		if ( pav && ( curt >= pav ) && pav < parseInt( DOM_PLAYED_AFTER.max ) && ( !cpt.classList.contains( "played" ) || cpt !== notPop( global__played ) ) ) {
 
-			// TODO no need to carry on checking
+			// TODO this is bullshit
+				// cpt !== notPop( global__played ) <-- looks familiar -_-
 
-			updatePlayedness( global__current_playing_track );
+			updatePlayedness( cpt );
 		}
 		tds.curt = secondsToStr( DOM_SEEK.control.value = curt );
 		tds.rema = secondsToStr( ( DOM_AUDIO.duration - curt ) || 0 );
@@ -992,34 +983,31 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	},
 
 	trackEnded = () => {
-		let cont = true;
-		DOM_CONTROLS.times.dataset.dura = secondsToStr();
-		if ( global__current_playing_track ) {
-			if ( playingPlayed() ) {
-				++global__played_index;
-			} else {
-				updatePlayedness( global__current_playing_track );
-			}
+		let cpt = global__current_playing_track,
+			cont = true;
+		if ( cpt && playingPlayed() ) {
+			++global__played_index;
 		}
 		DOM_AUDIO.removeAttribute( "src" );
 
-		// TODO untilEndOf( "sequence" )
+		// TODO untilEndOf( "sequence" )?
 
 		if ( global__queue_end && !global__queue.length && untilEndOf( "queue" ) ) {
 			cont = global__queue_end = false;
-		} else if ( untilEndOf( "track" ) || ( untilEndOf( "folder" ) && global__current_playing_track && global__current_playing_track.dataset.last_track ) ) {
+		} else if ( untilEndOf( "track" ) || ( untilEndOf( "folder" ) && cpt && cpt.dataset.last_track ) ) {
 			cont = false;
 		}
 		if ( cont ) {
 			TRANSPORT.playTrack();
 		} else {
-
-			// TODO this might be a good place to start addressing stopping at the end of clearing the next track from whatever list
-
+			DOM_CONTROLS.times.dataset.dura = secondsToStr();
 			selectNext().then( t => {
 				setTitle( "[STOPPED]", true );
 				defaultEndOf();
 			} );
+		}
+		if ( cpt ) {
+			updatePlayedness( cpt );
 		}
 	},
 
@@ -1090,7 +1078,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					if ( nme === "scrolltoplaying" ) {
 						DOM_BODY.classList.toggle( "scroll_to_playing", trg.checked );
 						removeFocussed();
-						showPlaying();
+						scrollToPlaying();
 					} else if ( nme === "smoothscrolling" ) {
 						DOM_PLAYPEN.classList.toggle( "smooth_scrolling", trg.checked );
 					}
@@ -1388,7 +1376,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 					folderOfTrack( fcs ).classList.add( "focussed_folder" );
 				}
 				fcs.classList.add( "focussed" );
-				showPlaying();
+				scrollToPlaying();
 			}
 		} else if ( !/^(input|select)$/i.test( evt.target.tagName ) ) { // document.activeElement
 			if ( arrw ) {
@@ -1469,12 +1457,43 @@ chrome.storage.local.getBytesInUse( bytes => {
 					case "Escape": {
 						evt.preventDefault();
 						removeFocussed();
-						showPlaying();
+						scrollToPlaying();
 						break;
 					}
 				}
 			}
 		}
+	},
+
+	/* init 'n' exit */
+
+	setLibraries = libs => {
+		if ( libs ) {
+			DOM_SOURCES.libraries.innerHTML = `<option value="" selected>ADD NEW LIBRARY</option>` +
+				libs.map( ( l, i ) => `<option value="${l.lib_path}" title="${l.lib_path}">${l.lib_name}</option>` ).join( "" );
+		}
+	},
+
+	mindTheStore = store => {
+		return new Promise( resolve => {
+			if ( store ) {
+				let p = store.played,
+					q = store.queue;
+				if ( arrayExistsAndHasLength( p ) ) {
+					global__played = global__played.concat( tracksFromIDs( p ) );
+					updatePlayedness();
+				}
+				if ( arrayExistsAndHasLength( q ) ) {
+					global__queue = global__queue.concat( tracksFromIDs( q ) );
+					updateQueuetness();
+				}
+				if ( store.sequences ) {
+					global__sequences = global__sequences.concat( store.sequences ); // TODO tracksFromIDs?
+					updateSequences();
+				}
+			}
+			resolve( true );
+		} );
 	},
 
 	storeSettings = () => {
