@@ -6,7 +6,7 @@
 		<meta name="viewport" content="width=device-width,initial-scale=1">
 		<link rel="stylesheet" type="text/css" href="kme.css">
 	</head>
-	<body><!--
+	<body style="opacity:1"><!--
 
 		--><template><!--
 			--><fieldset><!--
@@ -25,6 +25,9 @@
 				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
 				--><input name="clear" type="button" value="CLEAR"><!--
 				--><input class="orange" name="done" type="button" value="DONE"><!--
+
+				TODO shuffle button
+
 			--></fieldset><!--
 			--><ol class="dropzone"></ol><!--
 		--></form><!--
@@ -86,22 +89,22 @@
 
 				--><fieldset class="legend"><!--
 					--><legend>TURN OFF-AND-ON-ABLE</legend><!--
-					--><label class="ib">SHUFFLE<input name="shuffle" type="checkbox"></label><!--
+					--><label class="ib">SHUFFLE<input name="shuffle" type="checkbox" checked></label><!--
 					--><fieldset class="child legend wrap flight shuffle_by"><!--
 						--><legend>SHUFFLE BY</legend><!--
-						--><label>TRACK<input name="shuffleby" type="radio" value="track"></label><!--
+						--><label>TRACK<input name="shuffleby" type="radio" value="track" checked></label><!--
 						--><label>FOLDER<input name="shuffleby" type="radio" value="folder"></label><!--
 					--></fieldset><!--
-					--><label class="child skip_played">SKIP PLAYED <span class="skip_tracks">TRACKS</span><span class="skip_folders">FOLDERS</span><input name="skiplayed" type="checkbox"></label><!--
+					--><label class="child skip_played">SKIP PLAYED <span class="skip_tracks">TRACKS</span><span class="skip_folders">FOLDERS</span><input name="skiplayed" type="checkbox" checked></label><!--
 					--><label>IGNORE SEQUENCES<input name="ignoresequences" type="checkbox"></label><!--
-					--><label title="automatically scroll to show the currently playing track; turn off and on again to jump">SCROLL TO PLAYING<input name="scrolltoplaying" type="checkbox"></label><!--
-					--><label class="child smooth_scrolling">SMOOTH SCROLLING<input name="smoothscrolling" type="checkbox"></label><!--
+					--><label title="automatically scroll to show the currently playing track; turn off and on again to jump">SCROLL TO PLAYING<input name="scrolltoplaying" type="checkbox" checked></label><!--
+					--><label class="child smooth_scrolling">SMOOTH SCROLLING<input name="smoothscrolling" type="checkbox" checked></label><!--
 				--></fieldset><!--
 
 				--><fieldset class="legend"><!--
 					--><legend>CLICK A TRACK OR FOLDER TO</legend><!--
 					--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"><kbd>+ CTRL</kbd></label><!--
-					--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end"><kbd>+ CTRL + ALT</kbd></label><!--
+					--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end" checked><kbd>+ CTRL + ALT</kbd></label><!--
 					--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"><kbd>+ CTRL + META</kbd></label><!--
 					--><label>SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"><kbd>+ META + ALT</kbd></label><!--
 					--><label>DELIST<input name="clicky" type="radio" value="delist"><kbd>+ CTRL + META + ALT</kbd></label><!--
@@ -109,13 +112,15 @@
 
 				--><fieldset class="legend wrap"><!--
 					--><legend>PLAY UNTIL THE END OF THE</legend><!--
-					--><label>WORLD<input name="endof" type="radio" value="world"></label><!--
+					--><label>WORLD<input name="endof" type="radio" value="world" checked></label><!--
 					--><label>LIST<input name="endof" type="radio" value="list"></label><!--
 					--><label class="cont_queue">QUEUE<input class="orange" name="endof" type="radio" value="queue"></label><!--
 					--><label class="cont_folder">FOLDER<input name="endof" type="radio" value="folder"></label><!--
 					--><label class="cont_sequence">SEQUENCE<input class="pink" name="endof" type="radio" value="sequence"></label><!--
 
 					TODO stop at the end of "played"?
+
+					TODO endof sequence
 
 					--><label>TRACK<input name="endof" type="radio" value="track"></label><!--
 				--></fieldset><!--
@@ -124,12 +129,16 @@
 
 				--><fieldset><!--
 					--><label>DISPLAY CONTROLS ON <input name="switchControls" type="button" value="LEFT"></label><!--
+
+					TODO user selectable colors
+
 				--></fieldset><!--
 
 				--><fieldset><!--
-				--><label class="range" data-op="" title="add a track to the played list NEVER, after 1&ndash;20 seconds of playing, or AT END">MARK AS PLAYED<input class="left_marg" name="played_after" type="range" min="0" step="1" max="21"></label><!--
-					--><label class="range" data-op="">SOFT STOP<input class="left_marg" name="soft_stop" type="range" min="0" step="0.1" max="10"></label><!--
-					--><label class="range" data-op="">VOLUME<input class="left_marg" name="volume" type="range" min="0" step="0.01" max="1"></label><!--
+					--><label class="range" data-op="1">DISPLAY BRIGHTNESS <input name="display_brightness" type="range" min="0.1" step="0.1" max="1" value="1"></label><!--
+					--><label class="range" data-op="AT END" title="add a track to the played list NEVER, after 1&ndash;20 seconds of playing, or AT END">MARK AS PLAYED<input class="left_marg" name="played_after" type="range" min="0" step="1" max="21" value="21"></label><!--
+					--><label class="range" data-op="0">SOFT STOP<input class="left_marg" name="soft_stop" type="range" min="0" step="0.1" max="10" value="0"></label><!--
+					--><label class="range" data-op="0.5">VOLUME<input class="left_marg" name="volume" type="range" min="0" step="0.1" max="1" value="0.5"></label><!--
 				--></fieldset><!--
 
 				--><fieldset name="transport"><!--

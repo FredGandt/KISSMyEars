@@ -1,6 +1,8 @@
 
 /* TODO
 
+dataset.op needs a function
+
 prioritise UX for visually impaired
 
 gapless playback (surprisingly shitty)
@@ -149,6 +151,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	folderOfTrack = li => li.parentElement.parentElement,
 
 	isCtrlVlu = ( ctrl, vlu ) => ctrlVlu( ctrl ) === vlu,
+
+	displayBrightness = bn => DOM_BODY.style.opacity = bn,
 
 	isBtn = trg => trg && trg.type && trg.type === "button",
 
@@ -943,6 +947,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				clear( "global__played" );
 			}
 		}
+
+		// TODO shuffle queued tracks
+
 		if ( evt && evt.target && !evt.target.type ) {
 			return;
 		}
@@ -1070,6 +1077,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				if ( trg !== DOM_PLAYED_AFTER ) {
 					if ( nme === "volume" ) {
 						DOM_AUDIO.volume = parseFloat( vlu );
+					} else if ( nme === "display_brightness" ) {
+						displayBrightness( vlu );
 					}
 					trg.parentElement.dataset.op = vlu;
 				}
@@ -1451,6 +1460,10 @@ chrome.storage.local.getBytesInUse( bytes => {
 						let fcs = fromPlaylist.focussed();
 						if ( fcs ) {
 							mousedownPlaylist( { "button": 0, "trg": folder( fcs ), "ctrlKey": evt.ctrlKey, "metaKey": evt.metaKey, "altKey": evt.altKey } );
+
+							// TODO metaKey + ctrlKey + Enter = Windows Narrator *facepalm*
+								// keyboard access sucks anyway...
+
 						}
 						break;
 					}
@@ -1502,6 +1515,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 				"played": trackIDs( global__played ),
 				"queue": trackIDs( global__queue ),
 				"settings": {
+					displaybrightness: DOM_CONTROLS.display_brightness.value,
 					playlistsize: parseInt( DOM_PLAYPEN.style.fontSize ),
 					displaycontrols: DOM_CONTROLS.switchControls.value,
 					ignoresequences: ctrlChckd( "ignoresequences" ),
@@ -1524,6 +1538,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 		return new Promise( resolve => {
 			let sttngs = Object.assign( {
 					displaycontrols: "LEFT", // flipped by logic; RIGHT is the real default
+					displaybrightness: "1",
 					ignoresequences: false,
 					scrolltoplaying: true,
 					smoothscrolling: true,
@@ -1542,6 +1557,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 			// TODO reduce repeated code
 
 			DOM_PLAYED_AFTER.parentElement.dataset.op = ( ( DOM_PLAYED_AFTER.value = pav ) === DOM_PLAYED_AFTER.max ? "AT END" : ( parseInt( pav ) ? pav : "NEVER" ) ); // TODO repeated more or less
+			displayBrightness( DOM_CONTROLS.display_brightness.dataset.op = DOM_CONTROLS.display_brightness.value = sttngs.displaybrightness );
 			DOM_BODY.classList.toggle( "display_controls_left", ( DOM_CONTROLS.switchControls.value = sttngs.displaycontrols ) === "RIGHT" );
 			DOM_CONTROLS.smoothscrolling.checked = DOM_PLAYPEN.classList.toggle( "smooth_scrolling", sttngs.smoothscrolling );
 			DOM_CONTROLS.scrolltoplaying.checked = DOM_BODY.classList.toggle( "scroll_to_playing", sttngs.scrolltoplaying );
@@ -1560,7 +1576,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 	};
 
 window.addEventListener( "keydown", keyDown );
-window.addEventListener( "mousewheel", mouseWheel, { passive: false } );
+window.addEventListener( "wheel", mouseWheel, { passive: false } );
 window.addEventListener( "beforeunload", storeSettings, { passive: true } );
 
 DOM_AUDIO.addEventListener( "error", trackError, { passive: true } );

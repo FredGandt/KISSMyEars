@@ -23,6 +23,8 @@
 
 /* TODO nothing should be important */
 
+/* TODO user selectable colors */
+
 ::-webkit-scrollbar {
 	height: 1rem;
 	width: 1rem;
@@ -67,6 +69,10 @@
 
 .left_marg {
 	margin-left: .5rem !important;
+}
+
+html {
+	background-color: black;
 }
 
 body, div, form {
