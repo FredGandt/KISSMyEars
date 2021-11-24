@@ -1557,7 +1557,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 			// TODO reduce repeated code
 
 			DOM_PLAYED_AFTER.parentElement.dataset.op = ( ( DOM_PLAYED_AFTER.value = pav ) === DOM_PLAYED_AFTER.max ? "AT END" : ( parseInt( pav ) ? pav : "NEVER" ) ); // TODO repeated more or less
-			displayBrightness( DOM_CONTROLS.display_brightness.dataset.op = DOM_CONTROLS.display_brightness.value = sttngs.displaybrightness );
+			displayBrightness( DOM_CONTROLS.display_brightness.parentElement.dataset.op = DOM_CONTROLS.display_brightness.value = sttngs.displaybrightness );
 			DOM_BODY.classList.toggle( "display_controls_left", ( DOM_CONTROLS.switchControls.value = sttngs.displaycontrols ) === "RIGHT" );
 			DOM_CONTROLS.smoothscrolling.checked = DOM_PLAYPEN.classList.toggle( "smooth_scrolling", sttngs.smoothscrolling );
 			DOM_CONTROLS.scrolltoplaying.checked = DOM_BODY.classList.toggle( "scroll_to_playing", sttngs.scrolltoplaying );
