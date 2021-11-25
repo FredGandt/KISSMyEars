@@ -117,6 +117,13 @@ body.display_controls_left div.controlssection {
 	width: calc( 24rem - 1px ); /* TODO this is going to keep happening */
 }
 
+div.controlssection > span {
+	text-align: center;
+	font-size: 80%;
+	padding: .5rem;
+	display: block;
+}
+
 #seek {
 	width: calc( 100vw - 29rem ); /* TODO this is going to keep happening */
 	padding: 0 1rem 1rem;
@@ -242,8 +249,7 @@ fieldset {
 	border: 0;
 }
 
-fieldset:not(.pf),
-button {
+fieldset:not(.pf) {
 	margin-top: .5rem;
 }
 
@@ -622,16 +628,6 @@ fieldset[name="folder"] span {
 	color: var( --dark-turq );
 	vertical-align: top;
 	font-size: 200%;
-}
-
-button {
-	background-color: var( --darker-grey );
-	border: var( --dark-turq-border );
-	color: var( --light-grey );
-	border-radius: .3rem;
-	font-family: inherit;
-	font-size: .8rem;
-	padding: .5rem;
 }
 
 kbd {

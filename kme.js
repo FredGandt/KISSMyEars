@@ -928,8 +928,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			}
 		} else if ( trg && /^(range|checkbox)$/.test( trg.type ) ) {
 			trg.dataset.clicked = true;
-		} else if ( ~evt.composedPath().indexOf( DOM_CONTROLS.blur_oasis ) ) {
-			evt.preventDefault();
 		}
 	},
 
@@ -1230,12 +1228,12 @@ chrome.storage.local.getBytesInUse( bytes => {
 			if ( trg ) {
 				let cv = ctrlVlu( "clicky" ),
 					ctrl = evt.ctrlKey,
-					meta = evt.metaKey,
+					shft = evt.shiftKey,
 					alt = evt.altKey,
 					tia = trg.tracks;
 
 				if ( ctrl ) {
-					if ( meta ) {
+					if ( shft ) {
 						if ( alt ) {
 							cv = "delist";
 						} else {
@@ -1246,7 +1244,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 					} else {
 						cv = "now";
 					}
-				} else if ( meta && alt ) {
+				} else if ( shft && alt ) {
 					cv = "sequence";
 				}
 
@@ -1348,29 +1346,37 @@ chrome.storage.local.getBytesInUse( bytes => {
 	},
 
 	keyDown = evt => {
-		debugMsg( "keyDown:", { "evt": evt, "key": evt.key } );
+
+		// TODO keyboard access sucks slightly less now but still...
+
 		let k = evt.key,
-			arrw = /^Arrow/.test( k );
-		if ( !listEditorShowing() && !playlistFilterShowing() && /^(Arrow|Page)(Up|Down)$/.test( k ) ) {
+			alt = evt.altKey,
+			ctrl = evt.ctrlKey,
+			shft = evt.shiftKey,
+			pgud = k?.match( /^Page(Up|Down)$/ );
+
+		debugMsg( "keyDown:", { "evt": evt, "key": k } );
+
+		if ( !listEditorShowing() && !playlistFilterShowing() && !!pgud ) {
 
 			// TODO make it work with filtered and listEditor
 
 			let hpp = halfPlaypen(),
-				all = fromPlaylist[ arrw ? "tracks" : "folders" ].all(),
+				all = fromPlaylist[ shft ? "tracks" : "folders" ].all(),
 
 				// TODO if the global__current_playing_track or global__current_playing_folder are in view, use those as our kicking off point
 
 				fcs = removeFocussed() || cloneOf( all ).sort( ( a, b ) => ( a.offsetTop - hpp ) + ( b.offsetTop - hpp ) )[ 0 ];
-			evt.preventDefault();
+
 			if ( fcs ) {
-				let up = /Up$/.test( k );
-				if ( arrw && folderStruct( fcs ) ) {
+				let up = pgud[ 1 ] === "Up";
+				if ( shft && folderStruct( fcs ) ) {
 					if ( up ) {
 						fcs = notPop( tracksOfFolder( fcs.previousElementSibling ) );
 					} else {
 						fcs = tracksOfFolder( fcs, 0 );
 					}
-				} else if ( !arrw && !folderStruct( fcs ) ) {
+				} else if ( !shft && !folderStruct( fcs ) ) {
 					if ( up ) {
 						fcs = folderOfTrack( fcs );
 					} else {
@@ -1387,51 +1393,38 @@ chrome.storage.local.getBytesInUse( bytes => {
 				fcs.classList.add( "focussed" );
 				scrollToPlaying();
 			}
-		} else if ( !/^(input|select)$/i.test( evt.target.tagName ) ) { // document.activeElement
-			if ( arrw ) {
-				let right = /Right$/.test( k ),
-					left = /Left$/.test( k );
-				evt.preventDefault();
-				if ( isShuffleBy( "folder" ) && evt.ctrlKey ) {
-					if ( left ) {
-						if ( evt.altKey ) {
-							TRANSPORT.backFolder();
-						} else {
-							TRANSPORT.prevFolder();
-						}
-					} else if ( right ) {
-						TRANSPORT.nextFolder();
-					}
-				} else {
-					if ( left ) {
-						if ( evt.altKey ) {
-							TRANSPORT.backTrack();
-						} else {
-							TRANSPORT.prevTrack();
-						}
-					} else if ( right ) {
-						TRANSPORT.nextTrack();
-					}
-				}
-			} else if ( evt.ctrlKey && k === "f" ) {
-				evt.preventDefault();
-				CONTROLS.playlistFilter();
-			} else {
+		} else if ( k && document.activeElement?.type !== "text" ) {
+			if ( isShuffleBy( "folder" ) && ctrl ) {
 				switch ( k ) {
-					case "k":
-					case " ": {
-						TRANSPORT.pawsTrack();
+					case "-": {
+						TRANSPORT.backFolder();
 						break;
 					}
-					case "s": {
-						if ( evt.altKey ) {
-							if ( arrayExistsAndHasLength( global__sequence ) ) {
-								evt.preventDefault();
-								CONTROLS.sequencify();
-							}
-						} else {
-							TRANSPORT.stopTrack();
-						}
+					case "[": {
+						TRANSPORT.prevFolder();
+						break;
+					}
+					case "]": {
+						TRANSPORT.nextFolder();
+						break;
+					}
+				}
+			} else {
+				switch ( k ) {
+					case "-": {
+						TRANSPORT.backTrack();
+						break;
+					}
+					case "[": {
+						TRANSPORT.prevTrack();
+						break;
+					}
+					case "]": {
+						TRANSPORT.nextTrack();
+						break;
+					}
+					case ",": {
+						TRANSPORT.pawsTrack();
 						break;
 					}
 					case "q": {
@@ -1439,13 +1432,25 @@ chrome.storage.local.getBytesInUse( bytes => {
 						break;
 					}
 					case "p": {
-						if ( evt.altKey ) {
-							if ( playingPlayed() ) {
-								evt.preventDefault();
-								CONTROLS.stopPlayingPlayed();
-							}
-						} else {
-							CONTROLS.listEditor( global__played );
+						CONTROLS.listEditor( global__played );
+						break;
+					}
+					case "Escape": {
+						evt.preventDefault();
+						removeFocussed();
+						scrollToPlaying();
+						break;
+					}
+					case "f": {
+						if ( ctrl ) {
+							evt.preventDefault();
+							CONTROLS.playlistFilter();
+							break;
+						}
+					}
+					case "s": {
+						if ( arrayExistsAndHasLength( global__sequence ) ) {
+							CONTROLS.sequencify();
 						}
 						break;
 					}
@@ -1459,18 +1464,18 @@ chrome.storage.local.getBytesInUse( bytes => {
 					case "Enter": {
 						let fcs = fromPlaylist.focussed();
 						if ( fcs ) {
-							mousedownPlaylist( { "button": 0, "trg": folder( fcs ), "ctrlKey": evt.ctrlKey, "metaKey": evt.metaKey, "altKey": evt.altKey } );
-
-							// TODO metaKey + ctrlKey + Enter = Windows Narrator *facepalm*
-								// keyboard access sucks anyway...
-
+							mousedownPlaylist( { "button": 0, "trg": folder( fcs ), "ctrlKey": ctrl, "shiftKey": shft, "altKey": alt } );
 						}
 						break;
 					}
-					case "Escape": {
-						evt.preventDefault();
-						removeFocussed();
-						scrollToPlaying();
+					case ".": {
+						if ( alt ) {
+							if ( playingPlayed() ) {
+								CONTROLS.stopPlayingPlayed();
+							}
+						} else {
+							TRANSPORT.stopTrack();
+						}
 						break;
 					}
 				}
