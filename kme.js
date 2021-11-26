@@ -3,6 +3,10 @@
 
 dataset.op needs a function
 
+right click context menu(s)
+
+sequencify folders for shuffle-by-folder play
+
 prioritise UX for visually impaired
 
 gapless playback (surprisingly shitty)
@@ -290,7 +294,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		},
 
 		sequencify: () => {
-			if ( global__sequence.length ) {
+			if ( global__sequence?.length ) {
 				global__sequences.push( trackIDs( global__sequence ) );
 				chrome.storage.local.set( { "sequences": global__sequences } );
 				clear( "global__sequence" );
@@ -447,6 +451,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			fcs.classList.remove( "focussed" );
 			return fcs;
 		}
+		return null;
 	},
 
 	softStop = fs => {
@@ -1221,32 +1226,13 @@ chrome.storage.local.getBytesInUse( bytes => {
 
 		// TODO all DOM_PLAYLIST click actions in DOM_LIST_EDITOR too?
 
-		let btn = evt.button;
+		let trg = ( evt.trg || liFromEvtPath( evt ) ),
+			btn = evt.button;
 
-		if ( btn === 0 ) {
-			let trg = ( evt.trg || liFromEvtPath( evt ) );
-			if ( trg ) {
+		if ( trg ) {
+			if ( btn === 0 ) { // left click
 				let cv = ctrlVlu( "clicky" ),
-					ctrl = evt.ctrlKey,
-					shft = evt.shiftKey,
-					alt = evt.altKey,
 					tia = trg.tracks;
-
-				if ( ctrl ) {
-					if ( shft ) {
-						if ( alt ) {
-							cv = "delist";
-						} else {
-							cv = "next";
-						}
-					} else if ( alt ) {
-						cv = "end";
-					} else {
-						cv = "now";
-					}
-				} else if ( shft && alt ) {
-					cv = "sequence";
-				}
 
 				if ( tia ) {
 					clearQueueOf( tia );
@@ -1333,40 +1319,37 @@ chrome.storage.local.getBytesInUse( bytes => {
 					}
 				}
 				updateQueuetness();
-			}
-		} else if ( btn === 2 ) {
-			if ( !debugging ) {
-				let trg = liFromEvtPath( evt );
-				if ( trg ) {
+			} else if ( btn === 2 && !debugging ) { // right click
+				if ( evt.hasOwnProperty( "preventDefault" ) ) { // because evt might be fake
 					evt.preventDefault();
-					googleSearch( trg );
 				}
+				googleSearch( trg );
 			}
 		}
 	},
 
 	keyDown = evt => {
 
-		// TODO keyboard access sucks slightly less now but still...
+		// TODO keyboard access sucks less now but still...
 
 		let k = evt.key,
-			alt = evt.altKey,
 			ctrl = evt.ctrlKey,
 			shft = evt.shiftKey,
-			pgud = k?.match( /^Page(Up|Down)$/ );
+			pgud = k.match( /^Page(Up|Down)$/ ),
+			fcs;
 
-		debugMsg( "keyDown:", { "evt": evt, "key": k } );
+		debugMsg( "keyDown:", { "evt": evt, "key": k, "ctrl": ctrl, "shft": shft } );
 
-		if ( !listEditorShowing() && !playlistFilterShowing() && !!pgud ) {
+		if ( !!pgud && !listEditorShowing() && !playlistFilterShowing() ) {
 
 			// TODO make it work with filtered and listEditor
 
 			let hpp = halfPlaypen(),
-				all = fromPlaylist[ shft ? "tracks" : "folders" ].all(),
+				all = fromPlaylist[ shft ? "tracks" : "folders" ].all();
 
-				// TODO if the global__current_playing_track or global__current_playing_folder are in view, use those as our kicking off point
+			// TODO if the global__current_playing_track or global__current_playing_folder are in view, use those as our kicking off point
 
-				fcs = removeFocussed() || cloneOf( all ).sort( ( a, b ) => ( a.offsetTop - hpp ) + ( b.offsetTop - hpp ) )[ 0 ];
+			fcs = removeFocussed() || cloneOf( all ).sort( ( a, b ) => ( a.offsetTop - hpp ) + ( b.offsetTop - hpp ) )[ 0 ];
 
 			if ( fcs ) {
 				let up = pgud[ 1 ] === "Up";
@@ -1393,38 +1376,49 @@ chrome.storage.local.getBytesInUse( bytes => {
 				fcs.classList.add( "focussed" );
 				scrollToPlaying();
 			}
-		} else if ( k && document.activeElement?.type !== "text" ) {
-			if ( isShuffleBy( "folder" ) && ctrl ) {
+		} else {
+			if ( ctrl ) {
+				evt.preventDefault();
 				switch ( k ) {
-					case "-": {
-						TRANSPORT.backFolder();
+					case "f": {
+						CONTROLS.playlistFilter();
 						break;
 					}
-					case "[": {
-						TRANSPORT.prevFolder();
-						break;
-					}
-					case "]": {
-						TRANSPORT.nextFolder();
+					case ".": {
+						if ( playingPlayed() ) {
+							CONTROLS.stopPlayingPlayed();
+						}
 						break;
 					}
 				}
-			} else {
+				if ( isShuffleBy( "folder" ) ) {
+					switch ( k ) {
+						case "[": {
+							TRANSPORT.prevFolder();
+							break;
+						}
+						case ";": {
+							TRANSPORT.backFolder();
+							break;
+						}
+						case "]": {
+							TRANSPORT.nextFolder();
+							break;
+						}
+					}
+				}
+			} else if ( document.activeElement?.type !== "text" ) { // TODO be more specific?
 				switch ( k ) {
-					case "-": {
-						TRANSPORT.backTrack();
+					case "Enter":
+					case "g": {
+						if ( fcs = fromPlaylist.focussed() ) {
+							mousedownPlaylist( { "button": ( k === "g" ? 2 : 0 ), "trg": folder( fcs ) } );
+						}
 						break;
 					}
-					case "[": {
-						TRANSPORT.prevTrack();
-						break;
-					}
-					case "]": {
-						TRANSPORT.nextTrack();
-						break;
-					}
-					case ",": {
-						TRANSPORT.pawsTrack();
+					case "Backspace": {
+						removeFocussed();
+						scrollToPlaying();
 						break;
 					}
 					case "q": {
@@ -1435,47 +1429,28 @@ chrome.storage.local.getBytesInUse( bytes => {
 						CONTROLS.listEditor( global__played );
 						break;
 					}
-					case "Escape": {
-						evt.preventDefault();
-						removeFocussed();
-						scrollToPlaying();
-						break;
-					}
-					case "f": {
-						if ( ctrl ) {
-							evt.preventDefault();
-							CONTROLS.playlistFilter();
-							break;
-						}
-					}
 					case "s": {
-						if ( arrayExistsAndHasLength( global__sequence ) ) {
-							CONTROLS.sequencify();
-						}
+						CONTROLS.sequencify();
 						break;
 					}
-					case "g": {
-						let fcs = fromPlaylist.focussed();
-						if ( fcs ) {
-							googleSearch( folder( fcs ) );
-						}
+					case "[": {
+						TRANSPORT.prevTrack();
 						break;
 					}
-					case "Enter": {
-						let fcs = fromPlaylist.focussed();
-						if ( fcs ) {
-							mousedownPlaylist( { "button": 0, "trg": folder( fcs ), "ctrlKey": ctrl, "shiftKey": shft, "altKey": alt } );
-						}
+					case ";": {
+						TRANSPORT.backTrack();
+						break;
+					}
+					case ",": {
+						TRANSPORT.pawsTrack();
 						break;
 					}
 					case ".": {
-						if ( alt ) {
-							if ( playingPlayed() ) {
-								CONTROLS.stopPlayingPlayed();
-							}
-						} else {
-							TRANSPORT.stopTrack();
-						}
+						TRANSPORT.stopTrack();
+						break;
+					}
+					case "]": {
+						TRANSPORT.nextTrack();
 						break;
 					}
 				}

@@ -74,7 +74,7 @@
 				--><fieldset name="played_length_fs"><!--
 					--><output name="played_length" data-pl="0 TRACKS"></output><!--
 					--><label><input class="left_marg" name="listEditor" data-list="played" type="button" value="EDIT"><kbd class="left_marg">P</kbd></label><!--
-					--><label id="spp"><input class="left_marg" name="stopPlayingPlayed" type="button" value="STOP PLAYING PLAYED"><kbd class="left_marg">ALT + .</kbd></label><!--
+					--><label id="spp"><input class="left_marg" name="stopPlayingPlayed" type="button" value="STOP PLAYING PLAYED"><kbd class="left_marg">CTRL + .</kbd></label><!--
 				--></fieldset><!--
 
 				--><fieldset name="queue_length_fs"><!--
@@ -97,17 +97,20 @@
 					--></fieldset><!--
 					--><label class="child skip_played">SKIP PLAYED <span class="skip_tracks">TRACKS</span><span class="skip_folders">FOLDERS</span><input name="skiplayed" type="checkbox" checked></label><!--
 					--><label>IGNORE SEQUENCES<input name="ignoresequences" type="checkbox"></label><!--
-					--><label title="automatically scroll to show the currently playing track; turn off and on again to jump">SCROLL TO PLAYING<input name="scrolltoplaying" type="checkbox" checked></label><!--
+					--><label title="auto-scroll to the currently playing track; press ← (backspace) or turn off and on again to jump">SCROLL TO PLAYING<input name="scrolltoplaying" type="checkbox" checked><kbd title="backspace">←</kbd></label><!--
 					--><label class="child smooth_scrolling">SMOOTH SCROLLING<input name="smoothscrolling" type="checkbox" checked></label><!--
 				--></fieldset><!--
 
 				--><fieldset class="legend"><!--
 					--><legend>CLICK A TRACK OR FOLDER TO</legend><!--
-					--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"><kbd>+ CTRL</kbd></label><!-- I
-					--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end" checked><kbd>+ CTRL + ALT</kbd></label><!-- E
-					--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"><kbd>+ CTRL + SHIFT</kbd></label><!-- N
-					--><label>SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"><kbd>+ SHIFT + ALT</kbd></label><!-- S
-					--><label>DELIST<input name="clicky" type="radio" value="delist"><kbd>+ CTRL + SHIFT + ALT</kbd></label><!-- D
+
+					TODO context menu including googleSearch etc
+
+				--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
+				--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end" checked></label><!--
+				--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
+				--><label>SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
+				--><label>DELIST<input name="clicky" type="radio" value="delist"></label><!--
 				--></fieldset><!--
 
 				--><fieldset class="legend wrap"><!--
@@ -126,7 +129,7 @@
 				--></fieldset><!--
 
 				--><fieldset><!--
-					--><label>DISPLAY CONTROLS ON <input name="switchControls" type="button" value="LEFT"></label><!--
+					--><label>DISPLAY CONTROLS <input name="switchControls" type="button" value="LEFT"></label><!--
 
 					TODO user selectable colors
 
@@ -141,22 +144,22 @@
 
 				--><fieldset name="transport"><!--
 					--><fieldset name="folder"><!--
-					--><input name="prevFolder" title="CTRL + [" type="button"><!--
-					--><input name="backFolder" title="CTRL + -" type="button"><!--
+					--><input name="prevFolder" title="CTRL + [ (open bracket)" type="button"><!--
+					--><input name="backFolder" title="CTRL + ; (semi-colon)" type="button"><!--
 						--><span class="ib">FOLDERS</span><!--
-						--><input name="nextFolder" title="CTRL + ]" type="button"><!--
+						--><input name="nextFolder" title="CTRL + ] (close bracket)" type="button"><!--
 					--></fieldset><!--
-					--><input name="prevTrack" title="[" type="button"><!--
-					--><input name="backTrack" title="-" type="button"><!--
-					--><input name="pawsTrack" title="," type="button"><!--
-					--><input name="stopTrack" title="." type="button"><!--
-					--><input name="playTrack" title="," type="button"><!--
-					--><input name="nextTrack" title="]" type="button"><!--
+					--><input name="prevTrack" title="[ (open bracket)" type="button"><!--
+					--><input name="backTrack" title="; (semi-colon)" type="button"><!--
+					--><input name="pawsTrack" title=", (comma)" type="button"><!--
+					--><input name="stopTrack" title=". (period/stop)" type="button"><!--
+					--><input name="playTrack" title=", (comma)" type="button"><!--
+					--><input name="nextTrack" title="] (close bracket)" type="button"><!--
 					--><output class="ib" name="times" data-curt="00:00" data-dura="00:00" data-rema="00:00"></output><!--
 				--></fieldset><!--
 			--></form><!--
 
-			--><span>USE <kbd>PageUp</kbd> AND <kbd>PageDown</kbd> TO NAVIGATE FOLDERS AND (WITH <kbd>SHIFT</kbd>) TRACKS. THEN <kbd>ENTER</kbd> (WITH OPTIONAL CLICK MODIFIERS) TO APPLY THE SELECTED CLICK ACTION, AND <kbd>ESC</kbd> TO FINISH.</span><!--
+			--><span>USE <kbd title="page up">PGUP</kbd> AND <kbd title="page down">PGDN</kbd> TO NAVIGATE FOLDERS AND (WITH <kbd title="shift">⇧</kbd>) TRACKS, THEN <kbd title="enter">↵</kbd> TO APPLY THE SELECTED CLICK ACTION, AND <kbd title="backspace">←</kbd> TO FINISH.</span><!--
 
 		--></div><!--
 	--></body><script type="text/javascript" src="kme.js"></script>
