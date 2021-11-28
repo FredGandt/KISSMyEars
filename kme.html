@@ -19,14 +19,16 @@
 
 		--><audio></audio><!--
 
+		--><div class="overlay drop" id="welcome"><h1>Kiss My Ears</h1></div><!-- TODO introduction with walkthrough
+
 		--><form class="overlay" id="list_editor"><!--
 			--><fieldset name="pff" disabled><!--
-				--><h1 class="fleft">DRAGON DROPPINGS</h1><!--
+				--><h2 class="fleft">DRAGON DROPPINGS</h2><!--
 				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
 				--><input name="clear" type="button" value="CLEAR"><!--
 				--><input class="orange" name="done" type="button" value="DONE"><!--
 
-				TODO shuffle button
+				TODO shuffle existing queue button
 
 			--></fieldset><!--
 			--><ol class="dropzone"></ol><!--
@@ -42,6 +44,15 @@
 					--><label>CASE SENSITIVE<input name="casensitive" type="checkbox"></label><!--
 				--></fieldset><!--
 			--></fieldset><!--
+		--></form><!--
+
+		--><form class="overlay drop" style="top:40vh;left:3rem" id="context_menu"><!--
+			--><input name="now" type="button" value="PLAY IMMEDIATELY"><!--
+			--><input name="end" type="button" value="ENQUEUE AT END"><!--
+			--><input name="next" type="button" value="ENQUEUE NEXT"><!--
+			--><input name="sequence" type="button" value="SEQUENCIFY"><!--
+			--><input name="delist" type="button" value="DELIST"><!--
+			--><input name="google" type="button" value="GOOGLE SEARCH"><!--
 		--></form><!--
 
 		--><div class="section ib playlistsection"><!--
@@ -103,14 +114,11 @@
 
 				--><fieldset class="legend"><!--
 					--><legend>CLICK A TRACK OR FOLDER TO</legend><!--
-
-					TODO context menu including googleSearch etc
-
-				--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
-				--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end" checked></label><!--
-				--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
-				--><label>SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
-				--><label>DELIST<input name="clicky" type="radio" value="delist"></label><!--
+					--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
+					--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end" checked></label><!--
+					--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
+					--><label>SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
+					--><label>DELIST<input name="clicky" type="radio" value="delist"></label><!--
 				--></fieldset><!--
 
 				--><fieldset class="legend wrap"><!--
@@ -122,8 +130,6 @@
 					--><label class="cont_sequence">SEQUENCE<input class="pink" name="endof" type="radio" value="sequence"></label><!--
 
 					TODO stop at the end of "played"?
-
-					TODO endof sequence
 
 					--><label>TRACK<input name="endof" type="radio" value="track"></label><!--
 				--></fieldset><!--
@@ -159,7 +165,7 @@
 				--></fieldset><!--
 			--></form><!--
 
-			--><span>USE <kbd title="page up">PGUP</kbd> AND <kbd title="page down">PGDN</kbd> TO NAVIGATE FOLDERS AND (WITH <kbd title="shift">⇧</kbd>) TRACKS, THEN <kbd title="enter">↵</kbd> TO APPLY THE SELECTED CLICK ACTION, AND <kbd title="backspace">←</kbd> TO FINISH.</span><!--
+			--><span>USE <kbd title="page up">PGUP</kbd> AND <kbd title="page down">PGDN</kbd> TO NAVIGATE TRACKS AND (WITH <kbd title="shift">⇧</kbd>) FOLDERS, THEN <kbd>M</kbd> FOR THE ACTION MENU, AND <kbd title="backspace">←</kbd> WHEN YOU'RE DONE.</span><!--
 
 		--></div><!--
 	--></body><script type="text/javascript" src="kme.js"></script>
