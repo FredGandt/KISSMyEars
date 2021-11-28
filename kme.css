@@ -135,7 +135,7 @@ body.display_controls_left div.playlistsection {
 }
 
 div.controlssection {
-	height: 100vh;
+	height: calc( 100vh - 2rem );
 	width: 30rem; /* TODO this is going to keep happening */
 }
 
