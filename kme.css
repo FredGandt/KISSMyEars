@@ -18,7 +18,7 @@
 
 	--orange: #a97e3e;
 	--pink: #925572;
-	--red: #c72d2d;
+	--red: #8d2d2d;
 }
 
 /* TODO nothing should be important */
@@ -59,7 +59,7 @@
 	user-select: none;
 }
 
-.flight {
+.fright {
 	float: right;
 }
 
@@ -122,7 +122,7 @@ div.section {
 
 div.playlistsection {
 	height: calc( 100vh - 6.3rem + 2px ); /* TODO no ... just no */
-	width: calc( 100vw - 34rem ); /* TODO this is going to keep happening */
+	width: calc( 100vw - 38rem ); /* TODO this is going to keep happening */
 	margin: 1rem 0 0;
 }
 
@@ -136,23 +136,16 @@ body.display_controls_left div.playlistsection {
 
 div.controlssection {
 	height: calc( 100vh - 2rem );
-	width: 30rem; /* TODO this is going to keep happening */
+	width: 34rem; /* TODO this is going to keep happening */
 }
 
 body.display_controls_left div.controlssection {
 	border-right: var( --dark-turq-border );
-	width: calc( 30rem - 1px ); /* TODO this is going to keep happening */
-}
-
-div.controlssection > span {
-	text-align: center;
-	font-size: 80%;
-	padding: .5rem;
-	display: block;
+	width: calc( 34rem - 1px ); /* TODO this is going to keep happening */
 }
 
 #seek {
-	width: calc( 100vw - 35rem ); /* TODO this is going to keep happening */
+	width: calc( 100vw - 39rem ); /* TODO this is going to keep happening */
 	position: absolute;
 	padding: 1rem 1rem;
 	font-size: 1rem;
@@ -171,10 +164,9 @@ body.display_controls_left #seek {
 }
 
 fieldset[name="transport"],
-fieldset[name="folder"],
 output[name="times"] {
 	text-align: center;
-	width: 30rem; /* TODO this is going to keep happening */
+	width: 34rem; /* TODO this is going to keep happening */
 }
 
 div.dropzone {
@@ -209,7 +201,7 @@ h2 {
 
 #list_editor {
 	height: calc( 100vh - 4.3rem + 2px );
-	width: calc( 100vw - 33rem ); /* TODO this is going to keep happening */
+	width: calc( 100vw - 37rem ); /* TODO this is going to keep happening */
 	padding-bottom: 0;
 }
 
@@ -217,7 +209,7 @@ body.display_controls_left #list_editor {
 	right: 0;
 }
 
-#list_editor > fieldset:not(.pf) {
+#list_editor > fieldset {
 	background-color: inherit;
 	padding: 0 0 1rem;
 	margin-top: 0;
@@ -235,7 +227,7 @@ body.display_controls_left #list_editor {
 }
 
 #playlist_filter {
-	right: 34rem; /* TODO this is going to keep happening */
+	right: 38rem; /* TODO this is going to keep happening */
 	top: 3rem;
 }
 
@@ -266,28 +258,28 @@ fieldset {
 	border: 0;
 }
 
-fieldset:not(.pf) {
+fieldset {
 	margin-top: .5rem;
 }
 
-legend:not(.pf) {
+legend {
 	color: var( --turq );
 }
 
-fieldset.legend:not(.pf) {
+fieldset.legend {
 	border: var( --pixel-border ) var( --dark-turq );
 	border-radius: .2rem;
 }
 
-fieldset.legend:not(.pf) label {
+fieldset.legend.stacked > label {
 	display: block;
 }
 
-fieldset.child:not(.pf) {
+fieldset.child {
 	margin: 0;
 }
 
-fieldset:not(.pf, .legend) {
+fieldset:not(.legend) {
 	padding: 0;
 }
 
@@ -366,6 +358,10 @@ ul, ol {
 	margin: 0;
 }
 
+input:focus {
+	outline: 2px solid white; /* default seems to fail sometimes */
+}
+
 select,
 input {
 	background-color: var( --darkest-grey );
@@ -428,11 +424,13 @@ label.range::after {
 }
 
 fieldset[name="transport"] {
+	background-color: var( --darker-grey );
 	position: absolute;
 	bottom: 1rem;
 }
 
 fieldset[name="transport"] input {
+	margin-bottom: calc( 1rem - 1px );
 	background-color: transparent;
 	background-repeat: no-repeat;
 	background-position: center;
@@ -556,6 +554,10 @@ input.pink:checked {
 	background-color: var( --pink );
 }
 
+input[type="button"].red {
+	background-color: var( --red );
+}
+
 #spp input {
 	background-color: var( --turq );
 }
@@ -585,7 +587,6 @@ input.pink:checked {
 
 label.child {
 	text-indent: 1ch;
-	font-size: 80%;
 }
 
 #controls:not(.show_cont_queue) fieldset[name="queue_length_fs"],
@@ -625,30 +626,25 @@ fieldset[name="folder"],
 	padding: .2rem 0 .3rem;
 }
 
+fieldset[name="folder"] {
+	margin-right: 1rem;
+}
+
+fieldset[name="folder"] input {
+	margin-bottom: 0;
+}
+
 #controls.hide_cont_folder span.skip_tracks,
 #controls.hide_shuffle_by span.skip_tracks {
 	display: inline !important;
 }
 
-fieldset[name="folder"] {
-	background-color: var( --darker-grey );
-	border-top: var( --dark-turq-border );
-	padding-top: .5rem !important;
-}
-
 #controls:not(.hide_cont_folder, .hide_shuffle_by) fieldset[name="folder"] {
-	display: block !important;
-}
-
-fieldset[name="folder"] span {
-	width: calc( ( 3.5rem * 3 ) + .5rem );
-	color: var( --dark-turq );
-	vertical-align: top;
-	font-size: 200%;
+	display: inline-block !important;
 }
 
 kbd {
-	color: var( --mid-turq );
+	color: var( --turq );
 }
 
 label kbd {
@@ -664,10 +660,13 @@ label kbd::after {
 	content: ")";
 }
 
-fieldset.legend.wrap:not(.pf, .shuffle_by) label,
 input[name="fixBreakages"].show,
 div.dropzone,
 ol li span,
 .ib {
 	display: inline-block !important;
+}
+
+.smaller {
+	font-size: 80%;
 }

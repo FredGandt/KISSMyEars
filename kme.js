@@ -619,7 +619,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	toggleOptionsVisibility = () => {
 		let dccl = DOM_CONTROLS.classList;
 		if ( !dccl.toggle( "hide_shuffle_by", !ctrlChckd( "shuffle" ) ) ) {
-			if ( dccl.toggle( "hide_cont_folder", !isShuffleBy( "folder" ) ) ) { // animationend
+			if ( dccl.toggle( "hide_cont_folder", ( DOM_CONTROLS.folder.disabled = !isShuffleBy( "folder" ) ) ) ) {
 				if ( untilEndOf( "folder" ) ) {
 					defaultEndOf();
 				}
@@ -965,8 +965,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
 				TRANSPORT[ fnc ]();
 			}
-		} else if ( trg && /^(range|checkbox)$/.test( trg.type ) ) {
-			trg.dataset.clicked = true;
 		}
 	},
 
@@ -1137,10 +1135,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					}
 				}
 				toggleOptionsVisibility();
-			}
-			if ( trg.dataset.clicked ) {
-				trg.dataset.clicked = "";
-				trg.blur();
 			}
 		}
 	},

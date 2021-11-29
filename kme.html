@@ -35,7 +35,7 @@
 		--></form><!--
 
 		--><form class="overlay drop" id="playlist_filter"><!--
-			--><fieldset name="pff" class="pf" disabled><!--
+			--><fieldset name="pff" disabled><!--
 				--><input name="done" type="button" value="DONE"><!--
 				--><input name="toqueue" type="button" value="ADD TO QUEUE"><!--
 				--><fieldset><!--
@@ -47,7 +47,7 @@
 		--></form><!--
 
 		--><form class="overlay drop" style="top:40vh;left:3rem" id="context_menu"><!--
-			--><input name="cancel" type="button" value="CANCEL"><!--
+			--><input class="red" name="cancel" type="button" value="CANCEL"><!--
 			--><input name="now" type="button" value="PLAY IMMEDIATELY"><!--
 			--><input name="end" type="button" value="ENQUEUE AT END"><!--
 			--><input name="next" type="button" value="ENQUEUE NEXT"><!--
@@ -99,30 +99,37 @@
 					--><label><input class="pink left_marg" name="sequencify" type="button" value="SEQUENCIFY"><kbd class="left_marg">S</kbd></label><!--
 				--></fieldset><!--
 
-				--><fieldset class="legend"><!--
+				--><fieldset class="legend stacked"><!--
 					--><legend>TURN OFF-AND-ON-ABLE</legend><!--
 					--><label class="ib">SHUFFLE<input name="shuffle" type="checkbox" checked></label><!--
-					--><fieldset class="child legend wrap flight shuffle_by"><!--
+					--><fieldset class="child legend fright shuffle_by"><!--
 						--><legend>SHUFFLE BY</legend><!--
 						--><label>TRACK<input name="shuffleby" type="radio" value="track" checked></label><!--
 						--><label>FOLDER<input name="shuffleby" type="radio" value="folder"></label><!--
 					--></fieldset><!--
-					--><label class="child skip_played">SKIP PLAYED <span class="skip_tracks">TRACKS</span><span class="skip_folders">FOLDERS</span><input name="skiplayed" type="checkbox" checked></label><!--
+					--><label class="child smaller skip_played">SKIP PLAYED <span class="skip_tracks">TRACKS</span><span class="skip_folders">FOLDERS</span><input name="skiplayed" type="checkbox" checked></label><!--
 					--><label>IGNORE SEQUENCES<input name="ignoresequences" type="checkbox"></label><!--
-					--><label title="auto-scroll to the currently playing track; press ← (backspace) or turn off and on again to jump">SCROLL TO PLAYING<input name="scrolltoplaying" type="checkbox" checked><kbd title="backspace">←</kbd></label><!--
-					--><label class="child smooth_scrolling">SMOOTH SCROLLING<input name="smoothscrolling" type="checkbox" checked></label><!--
+					--><label title="auto-scroll to the currently playing track; press backspace or turn off and on again to jump">SCROLL TO PLAYING<input name="scrolltoplaying" type="checkbox" checked><kbd>BACKSPACE</kbd></label><!--
+					--><label class="child smaller smooth_scrolling">SMOOTH SCROLLING<input name="smoothscrolling" type="checkbox" checked></label><!--
 				--></fieldset><!--
 
 				--><fieldset class="legend"><!--
-					--><legend>CLICK A TRACK OR FOLDER TO</legend><!--
+					--><legend>WHEN CLICKING A TRACK OR FOLDER</legend><!--
 					--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
-					--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end" checked></label><!--
-					--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
-					--><label>SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
 					--><label>DELIST<input name="clicky" type="radio" value="delist"></label><!--
+					--><fieldset class="legend"><!--
+						--><legend>WITH CLICK AGAIN TO UNDO</legend><!--
+						--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end" checked></label><!--
+						--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
+						--><label>SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
+					--></fieldset><!--
+					--><fieldset class="legend smaller"><!--
+						--><legend>KEYBOARD NAVIGATION</legend><!--
+						-->USE <kbd title="page up">PGUP</kbd> AND <kbd title="page down">PGDN</kbd> TO NAVIGATE TRACKS AND (&zwj;WITH&nbsp;<kbd title="shift">⇧</kbd>&zwj;) FOLDERS, THEN <kbd>M</kbd> FOR THE ACTION MENU, AND <kbd>BACKSPACE</kbd> WHEN YOU'RE DONE.<!--
+					--></fieldset><!--
 				--></fieldset><!--
 
-				--><fieldset class="legend wrap"><!--
+				--><fieldset class="legend"><!--
 					--><legend>PLAY UNTIL THE END OF THE</legend><!--
 					--><label>WORLD<input name="endof" type="radio" value="world" checked></label><!--
 					--><label>LIST<input name="endof" type="radio" value="list"></label><!--
@@ -150,10 +157,10 @@
 				--></fieldset><!--
 
 				--><fieldset name="transport"><!--
-					--><fieldset name="folder"><!--
-					--><input name="prevFolder" title="CTRL + [ (open bracket)" type="button"><!--
-					--><input name="backFolder" title="CTRL + ; (semi-colon)" type="button"><!--
-						--><span class="ib">FOLDERS</span><!--
+					--><fieldset class="legend" name="folder" disabled><!--
+						--><legend>FOLDERS</legend><!--
+						--><input name="prevFolder" title="CTRL + [ (open bracket)" type="button"><!--
+						--><input name="backFolder" title="CTRL + ; (semi-colon)" type="button"><!--
 						--><input name="nextFolder" title="CTRL + ] (close bracket)" type="button"><!--
 					--></fieldset><!--
 					--><input name="prevTrack" title="[ (open bracket)" type="button"><!--
@@ -165,8 +172,6 @@
 					--><output class="ib" name="times" data-curt="00:00" data-dura="00:00" data-rema="00:00"></output><!--
 				--></fieldset><!--
 			--></form><!--
-
-			--><span>USE <kbd title="page up">PGUP</kbd> AND <kbd title="page down">PGDN</kbd> TO NAVIGATE TRACKS AND (WITH <kbd title="shift">⇧</kbd>) FOLDERS, THEN <kbd>M</kbd> FOR THE ACTION MENU, AND <kbd title="backspace">←</kbd> WHEN YOU'RE DONE.</span><!--
 
 		--></div><!--
 	--></body><script type="text/javascript" src="kme.js"></script>
