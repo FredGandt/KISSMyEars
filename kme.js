@@ -918,7 +918,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 		debugMsg( "playlistContextMenu:", evt );
 		DOM_CONTEXT_MENU.li = evt.li || liFromEvtPath( evt );
-		DOM_CONTEXT_MENU.disabled = false;
+		DOM_CONTEXT_MENU.pff.disabled = false;
 		DOM_CONTEXT_MENU.setAttribute( "style", `top:${Math.min( evt.y, Math.ceil( window.innerHeight - DOM_CONTEXT_MENU.offsetHeight ) )}px;left:${evt.x}px` );
 		DOM_CONTEXT_MENU.querySelector( `input[name="${ctrlVlu( "clicky" )}"]` ).focus();
 		DOM_CONTEXT_MENU.classList.add( "show" );
@@ -928,7 +928,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		debugMsg( "contextMenuClick:", evt );
 		let trg = evt.target,
 			nme = trg.name;
-		DOM_CONTEXT_MENU.disabled = true;
+		DOM_CONTEXT_MENU.pff.disabled = true;
 		if ( isBtn( trg ) ) {
 			if ( nme === "google" ) {
 				googleSearch( DOM_CONTEXT_MENU.li );

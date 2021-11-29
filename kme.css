@@ -358,8 +358,9 @@ ul, ol {
 	margin: 0;
 }
 
+select:focus,
 input:focus {
-	outline: 2px solid white; /* default seems to fail sometimes */
+	outline: 2px solid var( --bright-turq ); /* user-agent seems to fail sometimes */
 }
 
 select,
