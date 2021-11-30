@@ -1,4 +1,6 @@
 :root {
+	--pixel-border: 1px solid;
+
 	--darkerer-grey: #383838;
 	--darkest-grey: #2f2f2f;
 	--lighter-grey: #909090;
@@ -12,12 +14,14 @@
 	--mid-turq: #2c7b7b;
 	--turq: #339999;
 
-	--pixel-border: 1px solid;
-
 	--dark-turq-border: var( --pixel-border ) var( --dark-turq );
 
+	--bright-orange: #f99d12;
 	--orange: #a97e3e;
+
+	--bright-pink: #df438d;
 	--pink: #925572;
+
 	--red: #8d2d2d;
 }
 
@@ -190,7 +194,7 @@ h2 {
 	margin: 0 0 .5rem 0;
 }
 
-#sources fieldset {
+fieldset.snuggly {
 	margin-top: 0;
 }
 
@@ -254,12 +258,8 @@ body.display_controls_left #playlist_filter {
 }
 
 fieldset {
-	margin: 0;
+	margin: .5rem 0 0;
 	border: 0;
-}
-
-fieldset {
-	margin-top: .5rem;
 }
 
 legend {
@@ -361,6 +361,14 @@ ul, ol {
 select:focus,
 input:focus {
 	outline: 2px solid var( --bright-turq ); /* user-agent seems to fail sometimes */
+}
+
+input.orange:focus {
+	outline-color: var( --bright-orange ); /* user-agent seems to fail sometimes */
+}
+
+input.pink:focus {
+	outline-color: var( --bright-pink ); /* user-agent seems to fail sometimes */
 }
 
 select,
