@@ -1,28 +1,30 @@
 :root {
 	--pixel-border: 1px solid;
 
-	--darkerer-grey: #383838;
 	--darkest-grey: #2f2f2f;
-	--lighter-grey: #909090;
+	--darkerer-grey: #383838;
 	--darker-grey: #404040;
-	--light-grey: #808080;
 	--rude-grey: #696969;
+	--light-grey: #808080;
+	--lighter-grey: #909090;
+	--bright-grey: #a3a3a3;
 
 	--darkest-turq: #0d3435;
-	--bright-turq: #00ffdd;
 	--dark-turq: #246a6a;
 	--mid-turq: #2c7b7b;
 	--turq: #339999;
+	--bright-turq: #00ffdd;
 
 	--dark-turq-border: var( --pixel-border ) var( --dark-turq );
 
-	--bright-orange: #f99d12;
 	--orange: #a97e3e;
+	--bright-orange: #ffc062;
 
-	--bright-pink: #df438d;
 	--pink: #925572;
+	--bright-pink: #df438d;
 
 	--red: #8d2d2d;
+	--bright-red: #d53232;
 }
 
 /* TODO nothing should be important */
@@ -115,6 +117,7 @@ body {
 	color: var( --lighter-grey );
 	overflow: hidden;
 	font-size: 16px;
+	height: 100vh;
 	margin: 0;
 }
 
@@ -139,7 +142,7 @@ body.display_controls_left div.playlistsection {
 }
 
 div.controlssection {
-	height: calc( 100vh - 2rem );
+	height: calc( 100vh - 10rem );
 	width: 34rem; /* TODO this is going to keep happening */
 }
 
@@ -371,6 +374,11 @@ input.pink:focus {
 	outline-color: var( --bright-pink ); /* user-agent seems to fail sometimes */
 }
 
+input.red:focus {
+	outline-color: var( --bright-red ); /* user-agent seems to fail sometimes */
+	color: var( --bright-grey );
+}
+
 select,
 input {
 	background-color: var( --darkest-grey );
@@ -561,6 +569,7 @@ input.orange:checked {
 input[type="button"].pink,
 input.pink:checked {
 	background-color: var( --pink );
+	color: var( --darkest-grey );
 }
 
 input[type="button"].red {

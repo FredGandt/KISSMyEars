@@ -1,11 +1,17 @@
 
 /* TODO
 
+don't scrollToPlaying while creating sequences
+
 check TODO list ... no ... really
 
 sequencify folders
 
+group tracks from the same folder in list editor and allow the folder to be dragon dropped
+
 mark tracks/folders as played
+
+playing played sequenced tracks...
 
 if shuffleBy( "folder" ) && queue created; option to finish the folder first, play the queue then come back to the folder, or simply move on
 
@@ -87,6 +93,7 @@ let global__current_playing_folder,
 	global__played_index = null,
 	global__playlist_fragment,
 	global__queue_end = false,
+	global__softstop = false,
 	global__sequences = [],
 	global__sequence = [],
 	global__track_id = 0,
@@ -106,7 +113,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	DOM_WELCOME = document.getElementById( "welcome" ),
 	DOM_SOURCES = document.getElementById( "sources" ),
 	DOM_SEEK = document.getElementById( "seek" ),
-	DOM_SPP = document.getElementById( "spp" ), // TODO id?
+	DOM_SPP = document.getElementById( "spp" ),
 
 	DOM_LIST_EDITOR_TRASH = DOM_LIST_EDITOR.querySelector( "div" ),
 	DOM_LIST_EDITOR_LIST = DOM_LIST_EDITOR.querySelector( "ol" ),
@@ -154,6 +161,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	trackIDs = lst => lst.map( li => trackID( li ) ),
 
+	resetTrackTime = () => DOM_AUDIO.currentTime = 0,
+
 	arrayExistsAndHasLength = arr => arr && arr.length, // TODO deploy at all array.length checks?
 
 	folderOfTrack = li => li.parentElement.parentElement,
@@ -170,11 +179,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	folderStruct = li => ( li ? li.dataset.folder_struct : undefined ),
 
-	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
+	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length, // TODO arrayExistsAndHasLength?
 
 	trackTitleDataset = li => li.querySelector( "span[data-title]" ).dataset,
 
-	defaultEndOf = () => DOM_CONTROLS.endof.value = DOM_CONTROLS.dataset.endof,
+	defaultEndOf = () => DOM_CONTROLS.endof.value = DOM_CONTROLS.dataset.endof, // TODO if ( document.activeElement === an.endof ) { whatever.blur() }
 
 	listEditingQueue = trg => ( trg || DOM_LIST_EDITOR ).dataset.list === "queue", // TODO this is a bit rubbish
 
@@ -194,6 +203,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ), // TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
 
+	closeContextMenu = () => DOM_CONTEXT_MENU.pffs.disabled = !DOM_CONTEXT_MENU.classList.toggle( "show", false ),
+
 	listMatch = ( d, q ) => ( q ? global__queue : global__played ).findIndex( li => trackAbsPath( li ) === trackAbsPath( d ) ),
 
 	tagIs = ( tag, nme, typ ) => tag.tagName && tag.tagName.toLowerCase() === nme && ( typ ? tag.type && tag.type === typ : true ),
@@ -201,25 +212,21 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	sortPlaylist = () => fromPlaylist.folders.all().sort( ( a, b ) => collator.compare( folderStruct( a ), folderStruct( b ) ) ).forEach( li => DOM_PLAYLIST.append( li ) ),
 
 	TRANSPORT = {
-		backTrack: frc => {
-			DOM_AUDIO.currentTime = 0;
-			if ( frc && DOM_AUDIO.paused ) {
+		backTrack: () => {
+			resetTrackTime();
+			if ( DOM_AUDIO.paused && ctrlChckd( "wakeful" ) ) {
 				DOM_AUDIO.play();
 				setTitle();
 			}
 		},
 
-		nextTrack: ( prev, frc ) => {
-			TRANSPORT.stopTrack( true );
-			if ( frc ) {
-				TRANSPORT.playTrack();
-				return;
-			}
+		nextTrack: prev => {
 			let paused = DOM_AUDIO.paused;
+			TRANSPORT.stopTrack( true );
 			if ( !prev && playingPlayed() ) {
 				++global__played_index;
 			}
-			if ( paused ) {
+			if ( paused && !ctrlChckd( "wakeful" ) ) {
 				selectNext( prev );
 			} else {
 				TRANSPORT.playTrack( prev );
@@ -252,7 +259,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			// going to a previous track during a queue should requeue the track you've just ignored i.e. maintain the queue
 
 		prevTrack: () => {
-			let pl = global__played.length;
+			let pl = global__played.length; // TODO arrayExistsAndHasLength?
 			if ( pl ) {
 				if ( playingPlayed() && Math.abs( global__played_index ) < pl ) {
 					--global__played_index;
@@ -266,12 +273,12 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		stopTrack: async rs => {
 			if ( DOM_AUDIO.src ) {
 				let fade = DOM_CONTROLS.soft_stop.valueAsNumber;
-				if ( !rs && DOM_AUDIO.volume && fade ) {
+				if ( !rs && fade && !global__softstop && DOM_AUDIO.volume ) {
 					await softStop( fade );
 				}
 				DOM_AUDIO.pause();
 				DOM_AUDIO.volume = DOM_CONTROLS.volume.valueAsNumber;
-				TRANSPORT.backTrack();
+				resetTrackTime();
 				if ( rs ) {
 					DOM_AUDIO.removeAttribute( "src" );
 				} else {
@@ -307,7 +314,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		},
 
 		sequencify: () => {
-			if ( global__sequence?.length ) {
+			if ( global__sequence?.length ) { // TODO arrayExistsAndHasLength?
 				global__sequences.push( trackIDs( global__sequence ) );
 				chrome.storage.local.set( { "sequences": global__sequences } );
 				clear( "global__sequence" );
@@ -320,12 +327,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				global__current_playing_track = null;
 			} else {
 				TRANSPORT.nextTrack();
-			}
-		},
-
-		clearPlayedTracks: () => {
-			if ( global__played.length && confirm( "Clear the play history?" ) ) {
-				clear( "global__played" );
 			}
 		},
 
@@ -351,7 +352,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 			if ( listEditorShowing() ) {
 				listEditorClick();
-			} else if ( list.length ) {
+			} else if ( list.length ) { // TODO arrayExistsAndHasLength?
 				list.forEach( li => appendClone2ListEditor( li ) );
 				if ( playlistFilterShowing() ) {
 					closePlaylistFilter();
@@ -364,7 +365,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		},
 
 		clearPlaylist: () => {
-			if ( fromPlaylist.tracks.all().length && confirm( "Clear the playlist?" ) ) {
+			if ( fromPlaylist.tracks.all().length && confirm( "Clear the playlist?" ) ) { // TODO arrayExistsAndHasLength?
 				TRANSPORT.stopTrack( true );
 				DOM_PLAYLIST.innerHTML = "";
 				setTitle( "KISS My Ears" );
@@ -400,9 +401,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	},
 
 	clearQueueOf = arr => {
-		let ql = global__queue.length;
+		let ql = global__queue.length; // TODO arrayExistsAndHasLength?
 		global__queue = global__queue.filter( li => !~arr.indexOf( li ) );
-		return global__queue.length < ql;
+		return global__queue.length < ql; // TODO arrayExistsAndHasLength?
 	},
 
 	shuffleArray = arr => {
@@ -477,15 +478,18 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 		// TODO subtle as having your brains smashed out with a slice of lemon wrapped round a large gold brick
 
+		// TODO cancel (cut to chase) if backTrack is used
+
 		return new Promise( resolve => {
-			let sov = DOM_AUDIO.volume / ( fs * 100 ),
-				fadeout = setInterval( () => {
-					if ( ( DOM_AUDIO.volume -= sov ) <= sov ) {
-						clearInterval( fadeout );
-						DOM_AUDIO.volume = 0;
-						resolve( true );
-					}
-				}, 10 );
+			let sov = DOM_AUDIO.volume / ( fs * 100 );
+			global__softstop = setInterval( () => {
+				if ( ( DOM_AUDIO.volume -= sov ) <= sov ) {
+					clearInterval( global__softstop );
+					global__softstop = false;
+					DOM_AUDIO.volume = 0;
+					resolve( true );
+				}
+			}, 10 );
 		} );
 	},
 
@@ -511,11 +515,19 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		return [];
 	},
 
-	googleSearch = li => {
-		if ( navigator.onLine && ( li = li || folder( fromPlaylist.focussed() ) ) ) {
-			let query = ( li.folder ? folderStruct( li.folder ) : `${folderStruct( folderOfTrack( li ) )} | ${li.dataset.title}` );
+	googleSearch = ( li, rtq ) => {
+		if ( navigator.onLine ) {
+			let query;
+			if ( typeof li === "string" ) {
+				query = li;
+			} else if ( li = folder( li || fromPlaylist.focussed() ) ) {
+				query = ( li.folder ? folderStruct( li.folder ) : `${folderStruct( folderOfTrack( li ) )} | ${li.dataset.title}` );
+			}
+			if ( rtq ) {
+				return query;
+			}
 
-			// TODO with tags; track search should be "{artist} {title}"
+			// TODO with tags; track search should be `"${artist}" "${title}"`
 
 			if ( query ) {
 				chrome.tabs.create( { "url": `https://www.google.com/search?q=${encodeURIComponent( query )}`, "active": true } );
@@ -552,16 +564,16 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	},
 
 	updatePlaylistLength = () => {
-		let btl = fromPlaylist.tracks.broken().length,
+		let btl = fromPlaylist.tracks.broken().length, // TODO arrayExistsAndHasLength?
 			pllds = DOM_CONTROLS.playlist_length.dataset;
-		pllds.folders = multiTrack( fromPlaylist.folders.all().length, "FOLDER" );
+		pllds.folders = multiTrack( fromPlaylist.folders.all().length, "FOLDER" ); // TODO arrayExistsAndHasLength?
 		pllds.tracks = multiTrack( numberOfNotBrokenTracks() );
 		pllds.broken = ( btl ? ` + ${btl} BROKEN` : "" );
 		DOM_CONTROLS.fixBreakages.classList.toggle( "show", btl ); // TODO CONTROLS.fixBreakages()
 	},
 
 	updateQueuetness = () => {
-		let ql = global__queue.length;
+		let ql = global__queue.length; // TODO arrayExistsAndHasLength?
 		fromPlaylist.tracks.queued().forEach( xq => xq.dataset.queue = "" ); // TODO update instead of clear and reapply?
 		if ( DOM_CONTROLS.classList.toggle( "show_cont_queue", ql ) ) {
 			DOM_CONTROLS.queue_length.dataset.ql = multiTrack( ql );
@@ -583,7 +595,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		// TODO duplications?
 			// global__played could have a length of 10 but contain only 1 track
 
-		DOM_CONTROLS.played_length.dataset.pl = multiTrack( global__played.length );
+		DOM_CONTROLS.played_length.dataset.pl = multiTrack( global__played.length ); // TODO arrayExistsAndHasLength?
 
 		// TODO this is just horrible
 
@@ -603,7 +615,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	},
 
 	updateSequences = () => {
-		let sl = global__sequence.length;
+		let sl = global__sequence.length; // TODO arrayExistsAndHasLength?
 		fromPlaylist.tracks.sequencifiable().forEach( xs => xs.dataset.sequence = "" ); // TODO update instead of clear and reapply?
 		if ( sl ) {
 			global__sequence.forEach( ( li, i ) => sequenced( li, `NEW:${i + 1}` ) );
@@ -676,7 +688,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			scrollToPlaying();
 		} else {
 			global__current_playing_folder = global__current_playing_track = null;
-			CONTROLS.clearPlayedTracks();
+			if ( global__played.length && confirm( "Clear the play history?" ) ) { // TODO arrayExistsAndHasLength?
+				clear( "global__played" );
+			}
 			setTitle( "KISS My Ears" );
 		}
 	},
@@ -773,20 +787,20 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		return new Promise( resolve => {
 			if ( !DOM_AUDIO.src ) {
 				let listing;
-				if ( !ctrlChckd( "ignoresequences" ) && global__track_sequence.length ) {
+				if ( !ctrlChckd( "ignoresequences" ) && global__track_sequence.length ) { // TODO arrayExistsAndHasLength?
 					listing = global__track_sequence.shift();
 
 					// TODO if ( untilEndOf( "queue" ) && the last track of the queue is sequenced and not the last track of that sequence ) { stop at the end of the sequence }
 
 				} else {
-					let pl = global__played.length,
+					let pl = global__played.length, // TODO arrayExistsAndHasLength?
 						si;
 					clear( "global__track_sequence" );
 					if ( pl && playingPlayed() ) {
 						listing = global__played[ pl + global__played_index ];
 					} else {
 						global__played_index = null;
-						if ( global__queue.length ) {
+						if ( global__queue.length ) { // TODO arrayExistsAndHasLength?
 							listing = global__queue.shift();
 
 							// TODO if stop at the end of track lands here and the player is refreshed, the queue starts again at its next entry
@@ -795,7 +809,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 								// while solving that;
 									// address the crappy issue of not being able to stop at the end of the queue when the last track of the queue is playing
 
-							global__queue_end = !global__queue.length;
+							global__queue_end = !global__queue.length; // TODO arrayExistsAndHasLength?
 							if ( listEditorShowing( "queue" ) ) {
 								if ( global__queue_end ) {
 									listEditorClick();
@@ -806,7 +820,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 							updateQueuetness();
 						} else {
 							let list = fromPlaylist.tracks.notBroken();
-							if ( list.length ) {
+							if ( list.length ) { // TODO arrayExistsAndHasLength?
 								if ( ctrlChckd( "shuffle" ) ) {
 									if ( isShuffleBy( "folder" ) ) {
 
@@ -816,7 +830,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 										if ( global__current_playing_folder ) {
 											let tof = tracksOfFolder( global__current_playing_folder ),
 												lstndx = tof.indexOf( global__current_playing_track );
-											if ( lstndx < tof.length - 1 ) {
+											if ( lstndx < tof.length - 1 ) { // TODO arrayExistsAndHasLength?
 												listing = tof[ lstndx + 1 ];
 											} else {
 												global__current_playing_folder.classList.remove( "playing" ); // TODO check this // why doesn't this happen at displayTrackData?
@@ -829,13 +843,13 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 											} else {
 												list = fromPlaylist.folders.all();
 											}
-											listing = tracksOfFolder( global__current_playing_folder = list[ randNum( list.length ) ], 0 );
+											listing = tracksOfFolder( global__current_playing_folder = list[ randNum( list.length ) ], 0 ); // TODO arrayExistsAndHasLength?
 										}
 									} else {
 										if ( ctrlChckd( "skiplayed" ) ) {
 											list = fromPlaylist.tracks.notPlayed();
 										}
-										listing = list[ randNum( list.length ) ];
+										listing = list[ randNum( list.length ) ]; // TODO arrayExistsAndHasLength?
 									}
 								} else {
 
@@ -858,7 +872,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 						updateQueuetness();
 						listing = global__track_sequence.shift();
 					}
-					DOM_CONTROLS.classList.toggle( "show_cont_sequence", global__track_sequence.length );
+					DOM_CONTROLS.classList.toggle( "show_cont_sequence", global__track_sequence.length ); // TODO arrayExistsAndHasLength?
 				}
 				if ( listing ) {
 					DOM_AUDIO.src = `file:///${trackAbsPath( listing )}`;
@@ -875,11 +889,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	/* event functions */
 
-	listEditorDragEnd = () => global__dragee.classList.remove( "dragee" ),
-
 	seekInput = evt => DOM_AUDIO.currentTime = evt.target.value,
 
-	liFromEvtPath = evt => folder( evt?.composedPath().find( e => tagIs( e, "li" ) ) ),
+	listEditorDragEnd = () => global__dragee.classList.remove( "dragee" ),
+
+	liFromEvtPath = evt => evt?.composedPath().find( e => tagIs( e, "li" ) ),
 
 	audioLoadedMediaData = () => DOM_CONTROLS.times.dataset.dura = secondsToStr( DOM_SEEK.control.max = Math.ceil( DOM_AUDIO.duration ) ),
 
@@ -892,7 +906,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	dropzoneDragOver = evt => {
 		debugMsg( "dropzoneDragOver:", evt );
 		evt.preventDefault();
-		global__dropee = liFromEvtPath( evt );
+		global__dropee = folder( liFromEvtPath( evt ) );
 		global__dragee.classList.add( "dragee" );
 		evt.dataTransfer.dropEffect = "move";
 	},
@@ -933,9 +947,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			evt.preventDefault();
 		}
 		debugMsg( "playlistContextMenu:", evt );
-		DOM_CONTEXT_MENU.li = evt.li || liFromEvtPath( evt );
-		DOM_CONTEXT_MENU.pffs.disabled = false;
 		DOM_CONTEXT_MENU.setAttribute( "style", `top:${Math.min( evt.y, Math.ceil( window.innerHeight - DOM_CONTEXT_MENU.offsetHeight ) )}px;left:${evt.x}px` );
+		DOM_CONTEXT_MENU.google.title = googleSearch( DOM_CONTEXT_MENU.li = evt.li || liFromEvtPath( evt ), true );
+		DOM_CONTEXT_MENU.pffs.disabled = false;
 		DOM_CONTEXT_MENU.querySelector( `input[name="${ctrlVlu( "clicky" )}"]` ).focus();
 		DOM_CONTEXT_MENU.classList.add( "show" );
 	},
@@ -944,15 +958,14 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		debugMsg( "contextMenuClick:", evt );
 		let trg = evt.target,
 			nme = trg.name;
-		DOM_CONTEXT_MENU.pffs.disabled = true;
 		if ( isBtn( trg ) ) {
 			if ( nme === "google" ) {
-				googleSearch( DOM_CONTEXT_MENU.li );
+				googleSearch( DOM_CONTEXT_MENU.google.title || DOM_CONTEXT_MENU.li );
 			} else if ( nme !== "cancel" ) {
 				playlistClick( { "clicky": nme, "trg": DOM_CONTEXT_MENU.li } );
 			}
 		}
-		DOM_CONTEXT_MENU.classList.remove( "show" );
+		closeContextMenu();
 	},
 
 	audioTimeUpdate = () => {
@@ -991,10 +1004,10 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		debugMsg( "listEditorClick:", evt );
 		if ( evt && evt.target.name === "clear" ) {
 			if ( listEditingQueue() ) {
-				if ( global__queue.length && confirm( "Clear the queue?" ) ) {
+				if ( global__queue.length && confirm( "Clear the queue?" ) ) { // TODO arrayExistsAndHasLength?
 					clear( "global__queue" );
 				}
-			} else if ( global__played.length && confirm( "Clear played tracks?" ) ) {
+			} else if ( global__played.length && confirm( "Clear played tracks?" ) ) { // TODO arrayExistsAndHasLength?
 				clear( "global__played" );
 			}
 		}
@@ -1052,8 +1065,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		DOM_AUDIO.removeAttribute( "src" );
 
 		// TODO untilEndOf( "sequence" )
+			// if a queue ends on a sequence and untilEndOf( "queue" ) is selected, the queue will be cleared, so convert to end after the sequence
 
-		if ( global__queue_end && !global__queue.length && untilEndOf( "queue" ) ) {
+		if ( global__queue_end && !global__queue.length && untilEndOf( "queue" ) ) { // TODO arrayExistsAndHasLength?
 			cont = global__queue_end = false;
 		} else if ( untilEndOf( "track" ) || ( untilEndOf( "folder" ) && cpt && cpt.dataset.last_track ) ) {
 			cont = false;
@@ -1089,7 +1103,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				}
 			} ).filter( v => v ).join( ( fltrChckd( "combifilter" ) ? " " : "," ) ); // TODO combifilter won't work like this for more fields/tags;
 
-		if ( fltrs.length ) {
+		if ( fltrs.length ) { // TODO arrayExistsAndHasLength?
 			debugMsg( "playlistFilterInput - fltrs:", fltrs );
 
 			// TODO for efficiency; only clear what isn't about to be filtered?
@@ -1166,10 +1180,10 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				let fltrd = fromPlaylist.tracks.filtered(),
 					lessqueued = fltrd.filter( f => !trackTitleDataset( f ).queue ),
 					shuffle = false;
-				if ( fltrd.length > lessqueued.length && confirm( "Exclude tracks already in the queue?" ) ) {
+				if ( fltrd.length > lessqueued.length && confirm( "Exclude tracks already in the queue?" ) ) { // TODO arrayExistsAndHasLength?
 					fltrd = lessqueued;
 				}
-				if ( fltrd.length > 1 ) {
+				if ( fltrd.length > 1 ) { // TODO arrayExistsAndHasLength?
 
 					// TODO always append or follow ctrlVlu( "clicky" )?
 
@@ -1179,11 +1193,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 					if ( confirm( "Shuffle tracks before appending to the queue?" ) ) {
 						shuffleArray( fltrd );
-					} else if ( global__queue.length ) {
+					} else if ( global__queue.length ) { // TODO arrayExistsAndHasLength?
 						shuffle = confirm( "Shuffle the entire resultant queue?" );
 					}
 				}
-				if ( !fltrd.length ) return;
+				if ( !fltrd.length ) return; // TODO arrayExistsAndHasLength?
 				if ( isCtrlVlu( "clicky", "end" ) ) {
 					global__queue = global__queue.concat( fltrd );
 				} else {
@@ -1226,14 +1240,14 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					return {
 						"a": cp.map( pp => encodeURIComponent( pp ) ).join( "/" ), // TODO reduce paths object size
 						"f": cp.pop(),
-						"d": cp.slice( sp.length + 1 ).join( " | " ),
+						"d": cp.slice( sp.length + 1 ).join( " | " ), // TODO arrayExistsAndHasLength?
 						"i": ++global__track_id
 					};
 				} );
-			if ( paths.length ) {
+			if ( paths.length ) { // TODO arrayExistsAndHasLength?
 				chrome.storage.local.get( async store => {
 					paths = await pathsToPlaylist( paths, store.paths );
-					if ( paths.length ) {
+					if ( paths.length ) { // TODO arrayExistsAndHasLength?
 
 						// TODO only if something new is actually being added
 
@@ -1273,7 +1287,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 
 		// TODO all DOM_PLAYLIST click actions in DOM_LIST_EDITOR too?
 
-		let trg = folder( evt.trg ) || liFromEvtPath( evt ) || folder( fromPlaylist.focussed() );
+		let trg = folder( evt.trg || liFromEvtPath( evt ) || fromPlaylist.focussed() );
 
 		if ( trg ) {
 			let cv = evt.clicky || ctrlVlu( "clicky" ),
@@ -1326,17 +1340,16 @@ chrome.storage.local.getBytesInUse( bytes => {
 					updatePlaylistLength();
 				}
 			} else if ( cv === "now" ) {
-				let frc = ctrlChckd( "forceful" );
 				if ( tia ) {
 					global__queue = tia.concat( global__queue );
 				} else {
 					if ( trg === global__current_playing_track ) {
-						TRANSPORT.backTrack( frc );
+						TRANSPORT.backTrack();
 						return;
 					}
 					global__queue.unshift( trg );
 				}
-				TRANSPORT.nextTrack( null, frc );
+				TRANSPORT.nextTrack();
 			}
 
 			// TODO if ( tia && ctrlChckd( "shuffle" ) ) offer to shuffle before adding folders to the queue?
@@ -1446,7 +1459,9 @@ chrome.storage.local.getBytesInUse( bytes => {
 						break;
 					}
 					case "m": {
-						if ( no && ( fcs = fromPlaylist.focussed() ) ) {
+						if ( DOM_CONTEXT_MENU.classList.contains( "show" ) ) {
+							closeContextMenu();
+						} else if ( no && ( fcs = fromPlaylist.focussed() || global__current_playing_track ) ) {
 							playlistContextMenu( { li: fcs, y: window.innerHeight * 0.5, x: window.innerWidth * 0.5 } );
 						}
 						break;
@@ -1540,9 +1555,9 @@ chrome.storage.local.getBytesInUse( bytes => {
 					volume: DOM_CONTROLS.volume.valueAsNumber,
 					playedafter: DOM_PLAYED_AFTER.value,
 					skiplayed: ctrlChckd( "skiplayed" ),
-					forceful: ctrlChckd( "forceful" ),
 					shuffleby: ctrlVlu( "shuffleby" ),
 					endof: DOM_CONTROLS.dataset.endof,
+					wakeful: ctrlChckd( "wakeful" ),
 					shuffle: ctrlChckd( "shuffle" ),
 					clicky: ctrlVlu( "clicky" )
 				}
@@ -1562,8 +1577,8 @@ chrome.storage.local.getBytesInUse( bytes => {
 					playedafter: "21", // TODO hard coding this number/string is rubbish
 					playlistsize: 100,
 					skiplayed: true,
-					forceful: true,
 					endof: "world",
+					wakeful: true,
 					shuffle: true,
 					clicky: "end",
 					softstop: 0,
@@ -1584,8 +1599,8 @@ chrome.storage.local.getBytesInUse( bytes => {
 			DOM_CONTROLS.ignoresequences.checked = sttngs.ignoresequences;
 			DOM_PLAYPEN.style.fontSize = `${sttngs.playlistsize}%`;
 			DOM_CONTROLS.skiplayed.checked = sttngs.skiplayed;
-			DOM_CONTROLS.forceful.checked = sttngs.forceful;
 			DOM_CONTROLS.shuffleby.value = sttngs.shuffleby;
+			DOM_CONTROLS.wakeful.checked = sttngs.wakeful;
 			DOM_CONTROLS.shuffle.checked = sttngs.shuffle;
 			DOM_CONTROLS.clicky.value = sttngs.clicky;
 			toggleOptionsVisibility();
