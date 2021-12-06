@@ -8,7 +8,7 @@
 	</head>
 	<body style="opacity:1"><!--
 
-		--><template><!--
+		--><template id="playlist_filter_template"><!--
 			--><fieldset><!--
 				--><legend></legend><!--
 				--><input name="starts" type="text" placeholder="starts with"><!--
@@ -16,6 +16,10 @@
 				--><input name="ends" type="text" placeholder="ends with"><!--
 			--></fieldset>
 		--></template><!--
+
+		--><template id="track_template"><li><span></span><span data-title=""></span></li></template><!--
+
+		--><template id="folder_template"><li><ol></ol></li></template><!--
 
 		--><audio></audio><!--
 
@@ -26,7 +30,7 @@
 				--><h2 class="fleft">DRAGON DROPPINGS</h2><!--
 				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
 				--><input name="clear" type="button" value="CLEAR"><!--
-				--><input class="orange" name="done" type="button" value="DONE"><!--
+				--><input class="red" name="done" type="button" value="DONE"><!--
 
 				TODO shuffle existing queue button
 
@@ -36,8 +40,8 @@
 
 		--><form class="overlay drop" id="playlist_filter"><!--
 			--><fieldset name="pffs" disabled><!--
-				--><input name="done" type="button" value="DONE"><!--
-				--><input name="toqueue" type="button" value="ADD TO QUEUE"><!--
+				--><input class="red" name="done" type="button" value="DONE"><!--
+				--><input class="orange" name="toqueue" type="button" value="ADD TO QUEUE"><!--
 				--><fieldset><!--
 					--><label title="a matching track must match all filter values">COMBINE FILTERS<input name="combifilter" type="checkbox"></label><!--
 					--><label>EXCLUDE PLAYED<input name="onlyunplayed" type="checkbox"></label><!--
@@ -123,7 +127,7 @@
 						--><label>ENQUEUE: NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
 						--><label>AT END<input class="orange" name="clicky" type="radio" value="end" checked></label><!--
 					--></fieldset><!--
-					--><label title="click sequencifiable tracks again to undo">SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
+					--><label title="click sequencifiable tracks to desequencifiablitate them O_o">SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
 					--><label>DELIST<input name="clicky" type="radio" value="delist"></label><!--
 					--><fieldset class="legend smaller"><!--
 						--><legend>KEYBOARD NAVIGATION</legend><!--
