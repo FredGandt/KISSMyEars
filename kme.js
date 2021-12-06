@@ -777,12 +777,12 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				resolve( stored.concat( paths ) );
 
 				if ( !DOM_PLAYLIST_FILTER.querySelector( 'input[type="text"]' ) ) { // TODO derive from tags
-					let tmplt, lgnd;
+					let fltr_prp, lgnd;
 					[ "folder_struct", "title" ].forEach( col => {
-						guts = TEMPLATES.playlist_filter.cloneNode( true );
-						lgnd = guts.firstElementChild;
+						fltr_prp = TEMPLATES.playlist_filter.cloneNode( true );
+						lgnd = fltr_prp.firstElementChild;
 						lgnd.textContent = underspace( lgnd.dataset.data = col );
-						DOM_PLAYLIST_FILTER.pffs.append( guts );
+						DOM_PLAYLIST_FILTER.pffs.append( fltr_prp );
 					} );
 				}
 			}
@@ -1410,9 +1410,9 @@ chrome.storage.local.getBytesInUse( bytes => {
 			}
 		} else {
 			if ( ctrl ) {
-				evt.preventDefault();
 				switch ( k ) {
 					case "f": {
+						evt.preventDefault();
 						CONTROLS.playlistFilter();
 						break;
 					}
