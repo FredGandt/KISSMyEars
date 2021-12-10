@@ -4,7 +4,7 @@
 	--darkest-grey: #2f2f2f;
 	--darkerer-grey: #383838;
 	--darker-grey: #404040;
-	--rude-grey: #696969;
+	--meme-grey: #696969;
 	--light-grey: #808080;
 	--lighter-grey: #909090;
 	--bright-grey: #a3a3a3;
@@ -331,7 +331,7 @@ ol li {
 }
 
 #playlist li.played:not(.focussed) {
-	color: var( --rude-grey ) !important;
+	color: var( --meme-grey ) !important;
 }
 
 li.broken {
@@ -537,8 +537,8 @@ select {
 }
 
 #playlist.filtered li.filtered li.filtered,
-#list_editor li {
-	border-bottom: var( --pixel-border ) var( --rude-grey );
+#list_editor ol.dropzone > li {
+	border-bottom: var( --pixel-border ) var( --meme-grey );
 }
 
 #playlist ol li.playing:not(.broken) {
@@ -629,19 +629,25 @@ fieldset[name="folder"],
 	display: none !important;
 }
 
-#list_editor li:after {
-	content: attr( data-title );
-	margin-left: 1rem;
-	display: block;
+#list_editor li {
+	padding: .2rem 0 .3rem;
+	cursor: grab;
 }
 
-#list_editor li:before {
+#list_editor ol.dropzone > li:before {
 	content: attr( data-folder );
 	color: var( --lighter-grey );
 }
 
-#list_editor li {
-	padding: .2rem 0 .3rem;
+#list_editor ol.dropzone > li:not([data-title]):before {
+	font-weight: bold;
+	font-size: 120%;
+}
+
+#list_editor li:after {
+	content: attr( data-title );
+	margin-left: 1rem;
+	display: block;
 }
 
 fieldset[name="folder"] {
@@ -687,4 +693,10 @@ ol li span,
 
 .smaller {
 	font-size: 80%;
+}
+
+.nobum {
+	border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+	border-bottom-width: 0;
 }

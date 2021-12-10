@@ -5,9 +5,9 @@ sequence editor
 
 playing played sequenced tracks...
 
-group tracks from the same folder in list editor and allow the folder to be dragon dropped
-
 mark tracks/folders as played
+
+optionally automatically remove tracks from global__played if the entire folder is .played (i.e. recycling on the fly)
 
 if shuffleBy( "folder" ) && queue created; option to finish the folder first, play the queue then come back to the folder, or simply move on
 
@@ -97,7 +97,6 @@ let global__current_playing_folder,
 	global__queue = [],
 	user_reset = false,
 	global__dragee,
-	global__dropee,
 
 	debugging = false;
 
@@ -179,6 +178,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	folderStruct = li => ( li ? li.dataset.folder_struct : undefined ),
 
+	absPathsMatch = ( a, b ) => trackAbsPath( a ) === trackAbsPath( b ),
+
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
 
 	trackTitleDataset = li => li.querySelector( "span[data-title]" ).dataset,
@@ -204,8 +205,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ), // TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
 
 	closeContextMenu = () => DOM_CONTEXT_MENU.pffs.disabled = !DOM_CONTEXT_MENU.classList.toggle( "show", false ),
-
-	listMatch = ( d, q ) => ( q ? global__queue : global__played ).findIndex( li => trackAbsPath( li ) === trackAbsPath( d ) ),
 
 	tagIs = ( tag, nme, typ ) => tag.tagName && tag.tagName.toLowerCase() === nme && ( typ ? tag.type && tag.type === typ : true ),
 
@@ -400,6 +399,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
+	refreshListEditor = () => {
+		DOM_LIST_EDITOR_LIST.innerHTML = "";
+		( ( listEditingQueue() ? global__queue : global__played ) ).forEach( li => appendClone2ListEditor( li ) );
+	},
+
 	// TODO combine the shit out of this shit
 
 	clearQueueOf = ( arr, shave ) => {
@@ -459,13 +463,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				requestIdleCallback( () => DOM_PLAYPEN.scrollBy( 0, ( fcs || global__current_playing_track ).offsetTop - DOM_PLAYPEN.offsetTop - halfPlaypen() ) );
 			}
 		}
-	},
-
-	appendClone2ListEditor = li => {
-		let clone = li.cloneNode();
-		clone.draggable = true;
-		clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
-		DOM_LIST_EDITOR_LIST.append( clone );
 	},
 
 	listEditorShowing = lst => {
@@ -608,7 +605,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		if ( cpt && DOM_PLAYED_AFTER.valueAsNumber && cpt !== notPop( global__played ) ) { // TODO this condition is a bit cheeky really
 			global__played.push( cpt );
 			if ( listEditorShowing( "played" ) ) {
-				appendClone2ListEditor( cpt );
+				refreshListEditor();
 			}
 		}
 
@@ -691,6 +688,30 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			].filter( a => a ).join( ":" );
 		}
 		return "00:00";
+	},
+
+	appendClone2ListEditor = li => {
+
+		// TODO accept array
+		
+		let clone = li.cloneNode(),
+			lc = DOM_LIST_EDITOR_LIST.lastElementChild,
+			fldr = clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
+		clone.draggable = true;
+		if ( lc?.dataset.folder === fldr ) {
+			let ol = lc.firstElementChild;
+			if ( ol ) {
+				ol.append( clone );
+			} else {
+				li = TEMPLATES.folder.cloneNode( true );
+				li.draggable = true;
+				li.dataset.folder = fldr;
+				li.firstElementChild.append( lc, clone );
+				DOM_LIST_EDITOR_LIST.append( li );
+			}
+		} else {
+			DOM_LIST_EDITOR_LIST.append( clone );
+		}
 	},
 
 	displayTrackData = listing => {
@@ -820,7 +841,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 								if ( global__queue_end ) {
 									listEditorClick();
 								} else {
-									DOM_LIST_EDITOR.querySelector( "ol li" ).remove();
+									refreshListEditor();
 								}
 							}
 							updateQueuetness();
@@ -905,15 +926,23 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	listEditorDragStart = evt => {
 		debugMsg( "listEditorDragStart:", evt );
 		evt.dataTransfer.effectAllowed = "move";
-		global__dragee = evt.target;
+		( global__dragee = evt.target ).classList.add( "dragee" );
 	},
 
 	dropzoneDragOver = evt => {
 		debugMsg( "dropzoneDragOver:", evt );
 		evt.preventDefault();
-		global__dropee = folder( liFromEvtPath( evt ) );
-		global__dragee.classList.add( "dragee" );
 		evt.dataTransfer.dropEffect = "move";
+	},
+
+	playedAfterChanged = evt => {
+		debugMsg( "playedAfterChanged:", evt );
+
+		// TODO something is very wrong; the change sometimes fires before the change
+
+		let pa = evt.target,
+			pav = pa.value;
+		setOp( pa, ( pav === pa.max ? "AT END" : ( parseInt( pav ) ? pav : "NEVER" ) ) ); // TODO repeated more or less
 	},
 
 	wheel = evt => {
@@ -945,16 +974,17 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			// updatePlaylistLength
 	},
 
-	playlistContextMenu = evt => {
-		if ( "preventDefault" in evt ) {
-			evt.preventDefault();
+	controlsClick = evt => {
+		debugMsg( "controlsClick:", evt );
+		let trg = evt.target;
+		if ( isBtn( trg ) ) {
+			let fnc = trg.name;
+			if ( CONTROLS.hasOwnProperty( fnc ) ) {
+				CONTROLS[ fnc ]( ( fnc === "listEditor" ? ( listEditingQueue( trg ) ? global__queue : global__played ) : null ) );
+			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
+				TRANSPORT[ fnc ]();
+			}
 		}
-		debugMsg( "playlistContextMenu:", evt );
-		DOM_CONTEXT_MENU.setAttribute( "style", `top:${Math.min( evt.y, Math.ceil( window.innerHeight - DOM_CONTEXT_MENU.offsetHeight ) )}px;left:${evt.x}px` );
-		DOM_CONTEXT_MENU.google.title = googleSearch( DOM_CONTEXT_MENU.li = evt.li || liFromEvtPath( evt ), true );
-		DOM_CONTEXT_MENU.pffs.disabled = false;
-		DOM_CONTEXT_MENU.querySelector( `input[name="${ctrlVlu( "clicky" )}"]` ).focus();
-		DOM_CONTEXT_MENU.classList.add( "show" );
 	},
 
 	contextMenuClick = evt => {
@@ -971,6 +1001,18 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		closeContextMenu();
 	},
 
+	playlistContextMenu = evt => {
+		if ( "preventDefault" in evt ) {
+			evt.preventDefault();
+		}
+		debugMsg( "playlistContextMenu:", evt );
+		DOM_CONTEXT_MENU.setAttribute( "style", `top:${Math.min( evt.y, Math.ceil( window.innerHeight - DOM_CONTEXT_MENU.offsetHeight ) )}px;left:${evt.x}px` );
+		DOM_CONTEXT_MENU.google.title = googleSearch( DOM_CONTEXT_MENU.li = evt.li || liFromEvtPath( evt ), true );
+		DOM_CONTEXT_MENU.pffs.disabled = false;
+		DOM_CONTEXT_MENU.querySelector( `input[name="${ctrlVlu( "clicky" )}"]` ).focus();
+		DOM_CONTEXT_MENU.classList.add( "show" );
+	},
+
 	audioTimeUpdate = () => {
 		let curt = DOM_AUDIO.currentTime,
 			tds = DOM_CONTROLS.times.dataset,
@@ -985,19 +1027,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 		tds.curt = secondsToStr( DOM_SEEK.control.value = curt );
 		tds.rema = secondsToStr( ( DOM_AUDIO.duration - curt ) || 0 );
-	},
-
-	controlsClick = evt => {
-		debugMsg( "controlsClick:", evt );
-		let trg = evt.target;
-		if ( isBtn( trg ) ) {
-			let fnc = trg.name;
-			if ( CONTROLS.hasOwnProperty( fnc ) ) {
-				CONTROLS[ fnc ]( ( fnc === "listEditor" ? ( listEditingQueue( trg ) ? global__queue : global__played ) : null ) );
-			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
-				TRANSPORT[ fnc ]();
-			}
-		}
 	},
 
 	listEditorClick = evt => {
@@ -1026,33 +1055,37 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	},
 
 	dropzoneDrop = evt => {
+		evt.preventDefault();
 		debugMsg( "dropzoneDrop:", evt );
 
-		// TODO why shouldn't I be able to edit the order of global__played?
+		// TODO visual indication of where dropped stuff will end up
 
-		let q = listEditingQueue();
-		if ( global__dragee.parentElement ) {
-			evt.preventDefault();
-			let trg = evt.target;
-			if ( trg === DOM_LIST_EDITOR_TRASH ) {
-				DOM_LIST_EDITOR_TRASH.append( global__dragee );
-				( q ? global__queue : global__played ).splice( listMatch( global__dragee, q ), 1 );
-				global__dragee.remove();
-			} else if ( q ) {
-				let movee = global__queue.splice( listMatch( global__dragee, true ), 1 )[ 0 ];
-				if ( trg === DOM_LIST_EDITOR_LIST ) {
-					DOM_LIST_EDITOR_LIST.append( global__dragee );
-					global__queue.push( movee );
-				} else {
-					DOM_LIST_EDITOR_LIST.insertBefore( global__dragee, global__dropee );
-					global__queue.splice( listMatch( global__dropee, true ), 0, movee );
-				}
-			}
-			if ( q ) {
-				updateQueuetness();
+		// TODO keyboard list editing
+			// pgUp pgDn etc?
+
+		// TODO why shouldn't I be able to edit the order of global__played?
+			// because it might be complicated ;)
+
+		let q = listEditingQueue(),
+			drop_target = evt.target,
+			dragged_folder = global__dragee.firstElementChild,
+			dragee_arr = ( dragged_folder ? arrayFrom( dragged_folder.children ) : [ global__dragee ] ).map( tm => {
+				return ( q ? global__queue : global__played ).find( li => absPathsMatch( li, tm ) );
+			} );
+
+		if ( drop_target === DOM_LIST_EDITOR_TRASH ) {
+			( q ? clearQueueOf : clearPlayedOf )( dragee_arr );
+			refreshListEditor();
+		} else if ( q ) { // TODO for now
+			clearQueueOf( dragee_arr, true );
+			if ( drop_target === DOM_LIST_EDITOR_LIST ) {
+				global__queue.push( ...dragee_arr );
 			} else {
-				updatePlayedness();
+				let dtfec = drop_target.firstElementChild;
+				global__queue.splice( global__queue.findIndex( li => absPathsMatch( li, ( dtfec ? dtfec.lastElementChild : drop_target ) ) ), 0, ...dragee_arr );
 			}
+			updateQueuetness();
+ 			refreshListEditor();
 		}
 	},
 
@@ -1125,16 +1158,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		} else {
 			clearFilters();
 		}
-	},
-
-	playedAfterChanged = evt => {
-		debugMsg( "playedAfterChanged:", evt );
-
-		// TODO something is very wrong; the change sometimes fires before the change
-
-		let pa = evt.target,
-			pav = pa.value;
-		setOp( pa, ( pav === pa.max ? "AT END" : ( parseInt( pav ) ? pav : "NEVER" ) ) ); // TODO repeated more or less
 	},
 
 	controlsInput = evt => {
