@@ -274,6 +274,12 @@ fieldset.legend {
 	border-radius: .2rem;
 }
 
+fieldset.legend.nobum {
+	border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+	border-bottom-width: 0;
+}
+
 fieldset.legend.stacked > label {
 	display: block;
 }
@@ -693,10 +699,4 @@ ol li span,
 
 .smaller {
 	font-size: 80%;
-}
-
-.nobum {
-	border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
-	border-bottom-width: 0;
 }

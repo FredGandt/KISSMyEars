@@ -140,11 +140,11 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	trackID = li => li.dataset.id, // TODO reduce paths object size
 
-	cloneOf = arr => [].concat( arr ),
-
 	notPop = arr => arr.slice( -1 )[ 0 ],
 
 	arrayFrom = lst => Array.from( lst ),
+
+	cloneArray = arr => [].concat( arr ),
 
 	ctrlVlu = ctrl => DOM_CONTROLS[ ctrl ].value,
 
@@ -208,7 +208,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	tagIs = ( tag, nme, typ ) => tag.tagName && tag.tagName.toLowerCase() === nme && ( typ ? tag.type && tag.type === typ : true ),
 
-	sortPlaylist = () => fromPlaylist.folders.all().sort( ( a, b ) => collator.compare( folderStruct( a ), folderStruct( b ) ) ).forEach( li => DOM_PLAYLIST.append( li ) ),
+	sortPlaylist = () => DOM_PLAYLIST.append( ...fromPlaylist.folders.all().sort( ( a, b ) => collator.compare( folderStruct( a ), folderStruct( b ) ) ) ),
 
 	TRANSPORT = {
 		backTrack: () => {
@@ -287,7 +287,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		},
 
 		prevFolder: () => {
-			global__current_playing_folder = folderOfTrack( cloneOf( global__played ).reverse().find( trck => folderOfTrack( trck ) !== global__current_playing_folder ) );
+			global__current_playing_folder = folderOfTrack( cloneArray( global__played ).reverse().find( trck => folderOfTrack( trck ) !== global__current_playing_folder ) );
 			TRANSPORT.nextTrack();
 		},
 
@@ -352,7 +352,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			if ( listEditorShowing() ) {
 				listEditorClick();
 			} else if ( list.length ) {
-				list.forEach( li => appendClone2ListEditor( li ) );
+				appendClones2ListEditor( list );
 				if ( playlistFilterShowing() ) {
 					closePlaylistFilter();
 				}
@@ -401,7 +401,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	refreshListEditor = () => {
 		DOM_LIST_EDITOR_LIST.innerHTML = "";
-		( ( listEditingQueue() ? global__queue : global__played ) ).forEach( li => appendClone2ListEditor( li ) );
+		appendClones2ListEditor( ( listEditingQueue() ? global__queue : global__played ) );
 	},
 
 	// TODO combine the shit out of this shit
@@ -594,7 +594,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		fromPlaylist.tracks.queued().forEach( xq => xq.dataset.queue = "" ); // TODO update instead of clear and reapply?
 		if ( DOM_CONTROLS.classList.toggle( "show_cont_queue", ql ) ) {
 			DOM_CONTROLS.queue_length.dataset.ql = multiTrack( ql );
-			global__queue.forEach( ( q, i ) => trackTitleDataset( q ).queue = ( i + 1 === ql ? ( ql === 1 ? "ONLY" : "LAST" ) : ( !i ? "NEXT" : i + 1 ) ) );
+			global__queue.forEach( ( q, i ) => trackTitleDataset( q ).queue = ( i + 1 === ql ? ( ql === 1 ? "ONLY" : `LAST (${i + 1})` ) : ( !i ? "NEXT" : i + 1 ) ) );
 		}
 	},
 
@@ -690,28 +690,27 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		return "00:00";
 	},
 
-	appendClone2ListEditor = li => {
-
-		// TODO accept array
-		
-		let clone = li.cloneNode(),
-			lc = DOM_LIST_EDITOR_LIST.lastElementChild,
-			fldr = clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
-		clone.draggable = true;
-		if ( lc?.dataset.folder === fldr ) {
-			let ol = lc.firstElementChild;
-			if ( ol ) {
-				ol.append( clone );
+	appendClones2ListEditor = list => {
+		list.forEach( li => {
+			let clone = li.cloneNode(),
+				lc = DOM_LIST_EDITOR_LIST.lastElementChild,
+				fldr = clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
+				clone.draggable = true;
+			if ( lc?.dataset.folder === fldr ) {
+				let ol = lc.firstElementChild;
+				if ( ol ) {
+					ol.append( clone );
+				} else {
+					li = TEMPLATES.folder.cloneNode( true );
+					li.draggable = true;
+					li.dataset.folder = fldr;
+					li.firstElementChild.append( lc, clone );
+					DOM_LIST_EDITOR_LIST.append( li );
+				}
 			} else {
-				li = TEMPLATES.folder.cloneNode( true );
-				li.draggable = true;
-				li.dataset.folder = fldr;
-				li.firstElementChild.append( lc, clone );
-				DOM_LIST_EDITOR_LIST.append( li );
+				DOM_LIST_EDITOR_LIST.append( clone );
 			}
-		} else {
-			DOM_LIST_EDITOR_LIST.append( clone );
-		}
+		} );
 	},
 
 	displayTrackData = listing => {
@@ -1227,9 +1226,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					return;
 				}
 				if ( isCtrlVlu( "clicky", "end" ) ) {
-					global__queue = global__queue.concat( fltrd );
+					global__queue.push( ...fltrd );
 				} else {
-					global__queue = fltrd.concat( global__queue );
+					global__queue.unshift( ...fltrd );
 				}
 				if ( shuffle ) {
 					shuffleArray( global__queue );
@@ -1352,7 +1351,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 
 				clearSequenceOf( tau, true );
 				if ( !( !tia && /^NEW/.test( sequenced( trg ) ) ) ) { // TODO in lieu of a sequence editor
-					global__sequence = global__sequence.concat( tau );
+					global__sequence.push( ...tau );
 				}
 				updateSequences();
 			} else {
@@ -1361,24 +1360,20 @@ chrome.storage.local.getBytesInUse( bytes => {
 
 				clearQueueOf( tau, true );
 				if ( cv === "now" ) {
-					if ( tia ) {
-						global__queue = tia.concat( global__queue );
-					} else {
-						if ( trg === global__current_playing_track ) {
-							TRANSPORT.backTrack();
-							return;
-						}
-						global__queue.unshift( trg );
+					if ( !tia && trg === global__current_playing_track ) {
+						TRANSPORT.backTrack();
+						return;
 					}
+					global__queue.unshift( ...tau );
 					TRANSPORT.nextTrack();
 				} else {
 
 					// TODO if ( tia && ctrlChckd( "shuffle" ) ) offer to shuffle before adding folders to the queue?
 
 					if ( cv === "next" ) {
-						global__queue = ( tau ).concat( global__queue );
+						global__queue.unshift( ...tau );
 					} else if ( cv === "end" ) {
-						global__queue = global__queue.concat( tau );
+						global__queue.push( ...tau );
 					}
 				}
 				updateQueuetness();
@@ -1405,7 +1400,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 
 			let hpp = halfPlaypen(),
 				all = fromPlaylist[ ( shft ? "folders" : "tracks" ) ].all();
-			fcs = removeFocussed() || cloneOf( all ).sort( ( a, b ) => ( a.offsetTop - hpp ) + ( b.offsetTop - hpp ) )[ 0 ];
+			fcs = removeFocussed() || cloneArray( all ).sort( ( a, b ) => ( a.offsetTop - hpp ) + ( b.offsetTop - hpp ) )[ 0 ];
 			if ( fcs ) {
 				let up = pgud[ 1 ] === "Up";
 				if ( !shft && folderStruct( fcs ) ) {
@@ -1534,15 +1529,15 @@ chrome.storage.local.getBytesInUse( bytes => {
 					p = store.played,
 					q = store.queue;
 				if ( p?.length ) {
-					global__played = global__played.concat( tracksFromIDs( p ) );
+					global__played.push( ...tracksFromIDs( p ) );
 					updatePlayedness();
 				}
 				if ( q?.length ) {
-					global__queue = global__queue.concat( tracksFromIDs( q ) );
+					global__queue.push( ...tracksFromIDs( q ) );
 					updateQueuetness();
 				}
 				if ( s?.length ) {
-					global__sequences = global__sequences.concat( s ); // TODO tracksFromIDs?
+					global__sequences.push( ...s ); // TODO tracksFromIDs?
 					updateSequences();
 				}
 			}
