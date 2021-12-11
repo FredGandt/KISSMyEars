@@ -53,6 +53,7 @@
 		--><form class="overlay drop" style="top:40vh;left:3rem" id="context_menu"><!--
 			--><fieldset name="pffs" disabled><!--
 				--><input class="red" name="cancel" type="button" value="CANCEL"><!--
+				--><input name="unplayed" type="button" value="MARK AS (UN)PLAYED"><!--
 				--><input name="now" type="button" value="PLAY IMMEDIATELY"><!--
 				--><input class="orange" name="end" type="button" value="ENQUEUE AT END"><!--
 				--><input class="orange" name="next" type="button" value="ENQUEUE NEXT"><!--
@@ -100,6 +101,8 @@
 					--><label><input class="orange left_marg" name="listEditor" data-list="queue" type="button" value="EDIT"><kbd class="left_marg">Q</kbd></label><!--
 				--></fieldset><!--
 
+				sequence editor
+
 				--><fieldset name="sequence_fs"><!--
 					--><output name="sequence_length" data-sl="0 TRACKS"></output><!--
 					--><label><input class="pink left_marg" name="sequencify" type="button" value="SEQUENCIFY"><kbd class="left_marg">S</kbd></label><!--
@@ -122,6 +125,7 @@
 
 				--><fieldset class="legend stacked"><!--
 					--><legend>WHEN CLICKING A TRACK OR FOLDER</legend><!--
+					--><label>MARK AS (UN)PLAYED<input name="clicky" type="radio" value="unplayed"></label><!--
 					--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
 					--><fieldset class="snuggly"><!--
 						--><label>ENQUEUE: NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--

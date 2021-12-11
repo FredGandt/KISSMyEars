@@ -1,6 +1,7 @@
 :root {
 	--pixel-border: 1px solid;
 
+	--near-black: #161616;
 	--darkest-grey: #2f2f2f;
 	--darkerer-grey: #383838;
 	--darker-grey: #404040;
@@ -225,8 +226,9 @@ body.display_controls_left #list_editor {
 }
 
 #list_editor > ol.dropzone {
-	height: calc( 100vh - 8rem );
-	overflow: auto;
+  height: calc( 100vh - 12rem );
+  padding: 2rem 0;
+  overflow: auto;
 }
 
 #list_editor li.dragee {
@@ -263,6 +265,10 @@ body.display_controls_left #playlist_filter {
 fieldset {
 	margin: .5rem 0 0;
 	border: 0;
+}
+
+fieldset[name="pffs"] {
+	margin: 0;
 }
 
 legend {
@@ -565,7 +571,6 @@ input[type="button"].orange,
 #spp input {
 	background-color: var( --orange );
 	color: var( --darkest-grey );
-	padding-bottom: .1rem;
 }
 
 input.orange:checked {
@@ -575,7 +580,7 @@ input.orange:checked {
 input[type="button"].pink,
 input.pink:checked {
 	background-color: var( --pink );
-	color: var( --darkest-grey );
+	color: var( --near-black );
 }
 
 input[type="button"].red {
@@ -613,6 +618,7 @@ label.child {
 	text-indent: 1ch;
 }
 
+#controls:not(.show_cont_played) fieldset[name="played_length_fs"],
 #controls:not(.show_cont_queue) fieldset[name="queue_length_fs"],
 body:not(.scroll_to_playing) #controls label.smooth_scrolling,
 #controls:not(.show_cont_sequence) label.cont_sequence,

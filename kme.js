@@ -5,8 +5,6 @@ sequence editor
 
 playing played sequenced tracks...
 
-mark tracks/folders as played
-
 optionally automatically remove tracks from global__played if the entire folder is .played (i.e. recycling on the fly)
 
 if shuffleBy( "folder" ) && queue created; option to finish the folder first, play the queue then come back to the folder, or simply move on
@@ -138,6 +136,10 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		numeric: true
 	} ),
 
+	plus1 = n => n + 1,
+
+	minus1 = n => n - 1,
+
 	trackID = li => li.dataset.id, // TODO reduce paths object size
 
 	notPop = arr => arr.slice( -1 )[ 0 ],
@@ -184,6 +186,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	trackTitleDataset = li => li.querySelector( "span[data-title]" ).dataset,
 
+	contextMenuShowing = () => DOM_CONTEXT_MENU.classList.contains( "show" ),
+
 	defaultEndOf = () => DOM_CONTROLS.endof.value = DOM_CONTROLS.dataset.endof, // TODO move the focus too
 
 	listEditingQueue = trg => ( trg || DOM_LIST_EDITOR ).dataset.list === "queue", // TODO this is a bit rubbish
@@ -203,8 +207,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	folder = li => ( folderStruct( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
 
 	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ), // TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
-
-	closeContextMenu = () => DOM_CONTEXT_MENU.pffs.disabled = !DOM_CONTEXT_MENU.classList.toggle( "show", false ),
 
 	tagIs = ( tag, nme, typ ) => tag.tagName && tag.tagName.toLowerCase() === nme && ( typ ? tag.type && tag.type === typ : true ),
 
@@ -315,7 +317,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		sequencify: () => {
 			if ( global__sequence.length ) {
 				global__sequences.push( trackIDs( global__sequence ) );
-				chrome.storage.local.set( { "sequences": global__sequences } );
 				clear( "global__sequence" );
 			}
 		},
@@ -404,6 +405,12 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		appendClones2ListEditor( ( listEditingQueue() ? global__queue : global__played ) );
 	},
 
+	closeContextMenu = () => {
+		DOM_CONTEXT_MENU.pffs.disabled = true;
+		DOM_CONTEXT_MENU.classList.remove( "show" );
+		scrollToPlaying();
+	},
+
 	// TODO combine the shit out of this shit
 
 	clearQueueOf = ( arr, shave ) => {
@@ -431,7 +438,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	shuffleArray = arr => {
 		arr.forEach( ( r, i ) => {
-			r = randNum( i + 1 );
+			r = randNum( plus1( i ) );
 			[ arr[ i ], arr[ r ] ] = [ arr[ r ], arr[ i ] ];
 		} );
 	},
@@ -457,7 +464,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 		// TODO isShuffleBy( "folder" )??
 
-		if ( !global__sequence.length && !playlistFilterShowing() ) {
+		if ( !global__sequence.length && !playlistFilterShowing() && !contextMenuShowing() ) {
 			let fcs = fromPlaylist.focussed();
 			if ( fcs || ( global__current_playing_track && ctrlChckd( "scrolltoplaying" ) ) ) {
 				requestIdleCallback( () => DOM_PLAYPEN.scrollBy( 0, ( fcs || global__current_playing_track ).offsetTop - DOM_PLAYPEN.offsetTop - halfPlaypen() ) );
@@ -594,7 +601,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		fromPlaylist.tracks.queued().forEach( xq => xq.dataset.queue = "" ); // TODO update instead of clear and reapply?
 		if ( DOM_CONTROLS.classList.toggle( "show_cont_queue", ql ) ) {
 			DOM_CONTROLS.queue_length.dataset.ql = multiTrack( ql );
-			global__queue.forEach( ( q, i ) => trackTitleDataset( q ).queue = ( i + 1 === ql ? ( ql === 1 ? "ONLY" : `LAST (${i + 1})` ) : ( !i ? "NEXT" : i + 1 ) ) );
+			global__queue.forEach( ( q, i ) => trackTitleDataset( q ).queue = ( plus1( i ) === ql ? ( ql === 1 ? "ONLY" : `LAST OF ${plus1( i )}` ) : ( !i ? "NEXT" : plus1( i ) ) ) );
 		}
 	},
 
@@ -612,13 +619,14 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		// TODO duplications?
 			// global__played could have a length of 10 but contain only 1 track
 
-		DOM_CONTROLS.played_length.dataset.pl = multiTrack( global__played.length );
+		if ( DOM_CONTROLS.classList.toggle( "show_cont_played", global__played.length ) ) {
+			DOM_CONTROLS.played_length.dataset.pl = multiTrack( global__played.length );
+		}
 
 		// TODO this is just horrible
 
-		fromPlaylist.tracks.played().filter( li => !~global__played.indexOf( li ) )
-			.concat( fromPlaylist.folders.played().filter( li => li.querySelector( "li:not(.played)" ) ) )
-			.forEach( li => li.classList.remove( "played" ) );
+		fromPlaylist.tracks.played().filter( li => !~global__played.indexOf( li ) ).forEach( li => li.classList.remove( "played" ) );
+		fromPlaylist.folders.played().filter( li => li.querySelector( "li:not(.played)" ) ).forEach( li => li.classList.remove( "played" ) );
 
 		let fldr;
 
@@ -635,13 +643,13 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		let sl = global__sequence.length;
 		fromPlaylist.tracks.sequencifiable().forEach( xs => xs.dataset.sequence = "" ); // TODO update instead of clear and reapply?
 		if ( sl ) {
-			global__sequence.forEach( ( li, i ) => sequenced( li, `NEW:${i + 1}` ) );
+			global__sequence.forEach( ( li, i ) => sequenced( li, `NEW:${plus1( i )}` ) );
 			if ( DOM_CONTROLS.sequence_fs.classList.toggle( "show", sl > 1 ) ) {
 				DOM_CONTROLS.sequence_length.dataset.sl = multiTrack( sl );
 			}
 		} else {
 			DOM_CONTROLS.sequence_fs.classList.remove( "show" );
-			global__sequences.forEach( ( squnc, ndx ) => tracksFromIDs( squnc ).forEach( ( li, i ) => sequenced( li, `${ndx + 1}:${i + 1}` ) ) );
+			global__sequences.forEach( ( squnc, ndx ) => tracksFromIDs( squnc ).forEach( ( li, i ) => sequenced( li, `${plus1( ndx )}:${plus1( i )}` ) ) );
 
 			// TODO removal of dead sequences; "dead"? please leave clearer notes  >.<
 
@@ -856,8 +864,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 										if ( global__current_playing_folder ) {
 											let tof = tracksOfFolder( global__current_playing_folder ),
 												lstndx = tof.indexOf( global__current_playing_track );
-											if ( lstndx < tof.length - 1 ) {
-												listing = tof[ lstndx + 1 ];
+											if ( lstndx < minus1( tof.length ) ) {
+												listing = tof[ plus1( lstndx ) ];
 											} else {
 												global__current_playing_folder.classList.remove( "playing" ); // TODO check this // why doesn't this happen at displayTrackData?
 												global__current_playing_folder.classList.add( "played" );
@@ -893,7 +901,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 						// TODO when playing played?
 
-						global__track_sequence = tracksFromIDs( global__sequences[ si - 1 ] );
+						global__track_sequence = tracksFromIDs( global__sequences[ minus1( si ) ] );
 						clearQueueOf( global__track_sequence );
 						listing = global__track_sequence.shift();
 					}
@@ -979,7 +987,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		if ( isBtn( trg ) ) {
 			let fnc = trg.name;
 			if ( CONTROLS.hasOwnProperty( fnc ) ) {
-				CONTROLS[ fnc ]( ( fnc === "listEditor" ? ( listEditingQueue( trg ) ? global__queue : global__played ) : null ) );
+				CONTROLS[ fnc ]( ( fnc === "listEditor" ? ( listEditingQueue( trg ) ? global__queue : global__played ) : null ) ); // TODO sequence editor
 			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
 				TRANSPORT[ fnc ]();
 			}
@@ -1001,7 +1009,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	},
 
 	playlistContextMenu = evt => {
-		if ( "preventDefault" in evt ) {
+		if ( "preventDefault" in evt && !debugging ) {
 			evt.preventDefault();
 		}
 		debugMsg( "playlistContextMenu:", evt );
@@ -1058,12 +1066,14 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		debugMsg( "dropzoneDrop:", evt );
 
 		// TODO visual indication of where dropped stuff will end up
+			// dropzoneDragOver
 
 		// TODO keyboard list editing
 			// pgUp pgDn etc?
 
 		// TODO why shouldn't I be able to edit the order of global__played?
 			// because it might be complicated ;)
+			// playing played would go wild
 
 		let q = listEditingQueue(),
 			drop_target = evt.target,
@@ -1267,7 +1277,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					return {
 						"a": cp.map( pp => encodeURIComponent( pp ) ).join( "/" ), // TODO reduce paths object size
 						"f": cp.pop(),
-						"d": cp.slice( sp.length + 1 ).join( " | " ),
+						"d": cp.slice( plus1( sp.length ) ).join( " | " ),
 						"i": ++global__track_id
 					};
 				} );
@@ -1354,6 +1364,16 @@ chrome.storage.local.getBytesInUse( bytes => {
 					global__sequence.push( ...tau );
 				}
 				updateSequences();
+			} else if ( cv === "unplayed" ) {
+				clearPlayedOf( tau, true );
+				if ( tia ) {
+					if ( !( trg.folder.classList.contains( "played" ) || trg.tracks.filter( li => li.classList.contains( "played" ) ).length >= ( trg.tracks.length * 0.5 ) ) ) {
+						global__played.push( ...tau );
+					}
+				} else if ( !trg.classList.contains( "played" ) ) {
+					global__played.push( ...tau );
+				}
+				updatePlayedness();
 			} else {
 
 				// TODO allow the same track(s) in the queue more than once?
@@ -1465,7 +1485,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 						break;
 					}
 					case "m": {
-						if ( DOM_CONTEXT_MENU.classList.contains( "show" ) ) {
+						if ( contextMenuShowing() ) {
 							closeContextMenu();
 						} else if ( no && ( fcs = fromPlaylist.focussed() || global__current_playing_track ) ) {
 							playlistContextMenu( { li: fcs, y: window.innerHeight * 0.5, x: window.innerWidth * 0.5 } );
@@ -1550,6 +1570,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 			chrome.storage.local.set( {
 				"played": trackIDs( global__played ),
 				"queue": trackIDs( global__queue ),
+				"sequences": global__sequences,
 				"settings": {
 					displaybrightness: DOM_CONTROLS.display_brightness.value,
 					playlistsize: parseInt( DOM_PLAYPEN.style.fontSize ),
