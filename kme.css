@@ -147,11 +147,6 @@ div.controlssection {
 	width: 34rem; /* TODO this is going to keep happening */
 }
 
-body.display_controls_left div.controlssection {
-	border-right: var( --dark-turq-border );
-	width: 34rem; /* TODO this is going to keep happening */
-}
-
 #seek {
 	width: calc( 100vw - 39rem ); /* TODO this is going to keep happening */
 	position: absolute;
