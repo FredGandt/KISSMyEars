@@ -5,6 +5,10 @@ sequence editor
 
 playing played sequenced tracks...
 
+"show in playlist" from list editor
+
+skip sequence button
+
 optionally automatically remove tracks from global__played if the entire folder is .played (i.e. recycling on the fly)
 
 if shuffleBy( "folder" ) && queue created; option to finish the folder first, play the queue then come back to the folder, or simply move on

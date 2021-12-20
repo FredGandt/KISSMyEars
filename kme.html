@@ -123,16 +123,30 @@
 					--><label class="child smaller smooth_scrolling">SMOOTH SCROLLING<input name="smoothscrolling" type="checkbox" checked></label><!--
 				--></fieldset><!--
 
-				--><fieldset class="legend stacked"><!--
+				--><fieldset class="legend"><!--
+					--><legend>ADJUSTABLE</legend><!--
+					--><label class="range" data-op="1">DISPLAY BRIGHTNESS <input name="display_brightness" type="range" min="0.1" step="0.1" max="1" value="1"></label><!--
+					--><label class="range" data-op="AT END" title="add a track to the played list NEVER, after 1&ndash;20 seconds of playing, or AT END">MARK AS PLAYED<input class="left_marg" name="played_after" type="range" min="0" step="1" max="21" value="21"></label><!--
+					--><label class="range" data-op="0">SOFT STOP<input class="left_marg" name="soft_stop" type="range" min="0" step="0.1" max="10" value="0"></label><!--
+					--><label class="range" data-op="0.5">VOLUME<input class="left_marg" name="volume" type="range" min="0" step="0.1" max="1" value="0.5"></label><!--
+					--><label class="fright">DISPLAY CONTROLS <input name="switchControls" type="button" value="LEFT"></label><!--
+
+					TODO user selectable colors
+
+				--></fieldset><!--
+
+				--><fieldset class="legend"><!--
 					--><legend>WHEN CLICKING A TRACK OR FOLDER</legend><!--
-					--><label>MARK AS (UN)PLAYED<input name="clicky" type="radio" value="unplayed"></label><!--
-					--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
-					--><fieldset class="snuggly"><!--
-						--><label>ENQUEUE: NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
-						--><label>AT END<input class="orange" name="clicky" type="radio" value="end" checked></label><!--
+					--><fieldset class="stacked fleft"><!--
+						--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
+						--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end" checked></label><!--
+						--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
 					--></fieldset><!--
-					--><label title="click sequencifiable tracks to desequencifiablitate them O_o">SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
-					--><label>DELIST<input name="clicky" type="radio" value="delist"></label><!--
+					--><fieldset class="stacked fright"><!--
+						--><label>MARK AS (UN)PLAYED<input name="clicky" type="radio" value="unplayed"></label><!--
+						--><label title="click sequencifiable tracks to desequencifiablitate them O_o">SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
+						--><label>DELIST<input name="clicky" type="radio" value="delist"></label><!--
+					--></fieldset><!--
 					--><fieldset class="legend smaller nobum"><!--
 						--><legend>KEYBOARD NAVIGATION</legend><!--
 						-->USE <kbd title="page up">PGUP</kbd> AND <kbd title="page down">PGDN</kbd> TO NAVIGATE TRACKS AND (&zwj;WITH&nbsp;<kbd title="shift">⇧</kbd>&zwj;) FOLDERS, THEN <kbd>M</kbd> FOR THE ACTION MENU, AND <kbd>BACKSPACE</kbd> WHEN YOU'RE DONE.<!--
@@ -150,20 +164,6 @@
 					TODO stop at the end of "played"?
 
 					--><label>TRACK<input name="endof" type="radio" value="track"></label><!--
-				--></fieldset><!--
-
-				--><fieldset><!--
-					--><label>DISPLAY CONTROLS <input name="switchControls" type="button" value="LEFT"></label><!--
-
-					TODO user selectable colors
-
-				--></fieldset><!--
-
-				--><fieldset><!--
-					--><label class="range" data-op="1">DISPLAY BRIGHTNESS <input name="display_brightness" type="range" min="0.1" step="0.1" max="1" value="1"></label><!--
-					--><label class="range" data-op="AT END" title="add a track to the played list NEVER, after 1&ndash;20 seconds of playing, or AT END">MARK AS PLAYED<input class="left_marg" name="played_after" type="range" min="0" step="1" max="21" value="21"></label><!--
-					--><label class="range" data-op="0">SOFT STOP<input class="left_marg" name="soft_stop" type="range" min="0" step="0.1" max="10" value="0"></label><!--
-					--><label class="range" data-op="0.5">VOLUME<input class="left_marg" name="volume" type="range" min="0" step="0.1" max="1" value="0.5"></label><!--
 				--></fieldset><!--
 
 				--><fieldset name="transport"><!--

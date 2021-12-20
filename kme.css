@@ -149,7 +149,7 @@ div.controlssection {
 
 body.display_controls_left div.controlssection {
 	border-right: var( --dark-turq-border );
-	width: calc( 34rem - 1px ); /* TODO this is going to keep happening */
+	width: 34rem; /* TODO this is going to keep happening */
 }
 
 #seek {
@@ -278,20 +278,27 @@ legend {
 fieldset.legend {
 	border: var( --pixel-border ) var( --dark-turq );
 	border-radius: .2rem;
+	clear: both;
 }
 
 fieldset.legend.nobum {
 	border-bottom-right-radius: 0;
   border-bottom-left-radius: 0;
 	border-bottom-width: 0;
+	padding-bottom: 0;
 }
 
-fieldset.legend.stacked > label {
+fieldset.stacked > label {
 	display: block;
 }
 
 fieldset.child {
 	margin: 0;
+}
+
+fieldset.stacked.fright,
+fieldset.stacked.fleft {
+	margin: 0 0 .5rem;
 }
 
 fieldset:not(.legend) {
@@ -459,12 +466,12 @@ fieldset[name="transport"] {
 }
 
 fieldset[name="transport"] input {
-	margin-bottom: calc( 1rem - 1px );
 	background-color: transparent;
 	background-repeat: no-repeat;
 	background-position: center;
 	background-size: contain;
 	border-radius: 0.4rem;
+	margin-bottom: 1rem;
 	height: 3rem;
 	width: 3rem;
 }
