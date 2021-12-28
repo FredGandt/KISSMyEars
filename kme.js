@@ -1,17 +1,22 @@
 
 /* TODO
 
+"show in playlist" from list editor // contextmenu // tracksFromIDs
+
+option to automatically remove tracks from global__played if the entire folder is .played (i.e. recycling on the fly)
+
+if shuffleBy( "folder" ) && queue created; option to finish the folder first, play the queue then come back to the folder, or simply move on
+
+skip sequence button
+
 sequence editor
 
 playing played sequenced tracks...
 
-"show in playlist" from list editor
-
-skip sequence button
-
-optionally automatically remove tracks from global__played if the entire folder is .played (i.e. recycling on the fly)
-
-if shuffleBy( "folder" ) && queue created; option to finish the folder first, play the queue then come back to the folder, or simply move on
+fix responsiveness of UI
+	// window.devicePixelRatio
+	// window.matchMedia()
+	// css max() & min()
 
 prioritise UX for visually impaired
 
@@ -102,8 +107,9 @@ let global__current_playing_folder,
 
 	debugging = false;
 
-const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
-	DOM_CONTEXT_MENU = document.getElementById( "context_menu" ),
+const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_context_menu" ),
+	DOM_PLAYLIST_CONTEXT_MENU = document.getElementById( "playlist_context_menu" ),
+	DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	DOM_LIST_EDITOR = document.getElementById( "list_editor" ),
 	DOM_PLAYLIST = document.getElementById( "playlist" ),
 	DOM_CONTROLS = document.getElementById( "controls" ),
@@ -182,6 +188,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	setOp = ( trg, op ) => ( trg.parentElement.dataset.op = op ),
 
+	arrayize = stuff => ( Array.isArray( stuff ) ? stuff : [ stuff ] ),
+
 	folderStruct = li => ( li ? li.dataset.folder_struct : undefined ),
 
 	absPathsMatch = ( a, b ) => trackAbsPath( a ) === trackAbsPath( b ),
@@ -190,7 +198,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	trackTitleDataset = li => li.querySelector( "span[data-title]" ).dataset,
 
-	contextMenuShowing = () => DOM_CONTEXT_MENU.classList.contains( "show" ),
+	contextMenuShowing = () => DOM_PLAYLIST_CONTEXT_MENU.classList.contains( "show" ),
 
 	defaultEndOf = () => DOM_CONTROLS.endof.value = DOM_CONTROLS.dataset.endof, // TODO move the focus too
 
@@ -206,9 +214,9 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	multiTrack = ( n, tof ) => `${n} ${( tof ? tof : "TRACK" )}${( n !== 1 ? "S" : "" )}`,
 
-	tracksFromIDs = ids => ids.map( id => DOM_PLAYLIST.querySelector( `li[data-id="${id}"]` ) ),
-
 	folder = li => ( folderStruct( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
+
+	tracksFromIDs = ids => arrayize( ids ).map( id => DOM_PLAYLIST.querySelector( `li[data-id="${id}"]` ) ),
 
 	setTitle = ( ttl, pp ) => document.title = ( ttl ? ttl + ( pp ? ` ${cleanTitle()}` : "" ) : cleanTitle() ), // TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
 
@@ -375,7 +383,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				setTitle( "KISS My Ears" );
 				updatePlaylistLength();
 				let tds = DOM_CONTROLS.times.dataset;
-				tds.dura = tds.rema = secondsToStr();
+				tds.dura = tds.rema = seconds2Str();
 			}
 			chrome.storage.local.get( store => {
 				if ( store.paths?.length && confirm( "Clear the automatically included tracks? Queued, played or sequenced tracks will also be cleared." ) ) {
@@ -407,12 +415,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	refreshListEditor = () => {
 		DOM_LIST_EDITOR_LIST.innerHTML = "";
 		appendClones2ListEditor( ( listEditingQueue() ? global__queue : global__played ) );
-	},
-
-	closeContextMenu = () => {
-		DOM_CONTEXT_MENU.pffs.disabled = true;
-		DOM_CONTEXT_MENU.classList.remove( "show" );
-		scrollToPlaying();
 	},
 
 	// TODO combine the shit out of this shit
@@ -462,13 +464,22 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		fromPlaylist.filtered().forEach( li => li.classList.remove( "filtered" ) );
 	},
 
-	scrollToPlaying = () => {
+	removeFocussed = () => {
+		let fcs = fromPlaylist.focussed();
+		if ( fcs ) {
+			fcs.classList.remove( "focussed" );
+			return fcs;
+		}
+		return null;
+	},
+
+	scroll2Track = frc => {
 
 		// TODO goes wonky sometimes after being brought to the foreground
 
 		// TODO isShuffleBy( "folder" )??
 
-		if ( !global__sequence.length && !playlistFilterShowing() && !contextMenuShowing() ) {
+		if ( frc || ( !global__sequence.length && !playlistFilterShowing() && !contextMenuShowing() ) ) {
 			let fcs = fromPlaylist.focussed();
 			if ( fcs || ( global__current_playing_track && ctrlChckd( "scrolltoplaying" ) ) ) {
 				requestIdleCallback( () => DOM_PLAYPEN.scrollBy( 0, ( fcs || global__current_playing_track ).offsetTop - DOM_PLAYPEN.offsetTop - halfPlaypen() ) );
@@ -487,18 +498,6 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			return true;
 		}
 		return false;
-	},
-
-	removeFocussed = () => {
-		let fcs = fromPlaylist.focussed();
-		if ( fcs ) {
-			if ( !folderStruct( fcs ) ) {
-				folderOfTrack( fcs ).classList.remove( "focussed_folder" );
-			}
-			fcs.classList.remove( "focussed" );
-			return fcs;
-		}
-		return null;
 	},
 
 	softStop = fs => {
@@ -526,7 +525,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		document.activeElement.blur();
 		DOM_PLAYLIST_FILTER.reset();
 		clearFilters( true );
-		scrollToPlaying();
+		scroll2Track();
 	},
 
 	tracksOfFolder = ( fldr, trck ) => {
@@ -605,7 +604,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		fromPlaylist.tracks.queued().forEach( xq => xq.dataset.queue = "" ); // TODO update instead of clear and reapply?
 		if ( DOM_CONTROLS.classList.toggle( "show_cont_queue", ql ) ) {
 			DOM_CONTROLS.queue_length.dataset.ql = multiTrack( ql );
-			global__queue.forEach( ( q, i ) => trackTitleDataset( q ).queue = ( plus1( i ) === ql ? ( ql === 1 ? "ONLY" : `LAST OF ${plus1( i )}` ) : ( !i ? "NEXT" : plus1( i ) ) ) );
+			global__queue.forEach( ( q, i ) => trackTitleDataset( q ).queue = `${plus1( i )}/${ql}` );
 		}
 	},
 
@@ -686,7 +685,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	secondsToStr = f => {
+	seconds2Str = f => {
 		if ( f ) {
 			f = parseFloat( f );
 			let seconds = f % 60,
@@ -737,7 +736,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 			global__current_playing_folder.classList.add( "playing" );
 			listing.classList.add( "playing" );
 			setTitle( listing.dataset.title );
-			scrollToPlaying();
+			scroll2Track();
 		} else {
 			global__current_playing_folder = global__current_playing_track = null;
 			if ( global__played.length && confirm( "Clear the play history?" ) ) {
@@ -747,7 +746,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	collectionToHTML = ( folder, end ) => {
+	collection2HTML = ( folder, end ) => {
 
 		// TODO use tags to determine fields to create
 
@@ -773,7 +772,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	pathsToPlaylist = ( paths, stored ) => {
+	paths2Playlist = ( paths, stored ) => {
 		stored = stored || [];
 		return new Promise( resolve => {
 			if ( paths?.length ) {
@@ -788,7 +787,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					}
 					if ( pastpath !== path.d ) {
 						pastpath = path.d;
-						collectionToHTML( folder );
+						collection2HTML( folder );
 						folder = { "tracks": [], "path": "" };
 					}
 					folder.path = path.d;
@@ -805,7 +804,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					debugMsg( "Unprocessable file name format:", path, "warn" ); // TODO what if the folder is empty?
 					return false;
 				} );
-				collectionToHTML( folder, true );
+				collection2HTML( folder, true );
 				resolve( stored.concat( paths ) );
 
 				if ( !DOM_PLAYLIST_FILTER.querySelector( 'input[type="text"]' ) ) { // TODO derive from tags
@@ -932,7 +931,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 	liFromEvtPath = evt => evt?.composedPath().find( e => tagIs( e, "li" ) ),
 
-	audioLoadedMediaData = () => DOM_CONTROLS.times.dataset.dura = secondsToStr( DOM_SEEK.control.max = Math.ceil( DOM_AUDIO.duration ) ),
+	audioLoadedMediaData = () => DOM_CONTROLS.times.dataset.dura = seconds2Str( DOM_SEEK.control.max = Math.ceil( DOM_AUDIO.duration ) ),
 
 	listEditorDragStart = evt => {
 		debugMsg( "listEditorDragStart:", evt );
@@ -962,11 +961,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		if ( tagIs( trg, "input", "range" ) ) {
 
 			// TODO use wheel to adjust range values
-
-		} else if ( evt.ctrlKey ) { // TODO temporary kludge in place of nicely responsive default zooming // playlistsize
-			evt.preventDefault();
-			let pps = DOM_PLAYPEN.style;
-			pps.fontSize = `${parseInt( pps.fontSize ) - ( dlty / 5 )}%`;
+				// the event listener currently commented out Fred ;)
 		}
 	},
 
@@ -998,31 +993,74 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		}
 	},
 
-	contextMenuClick = evt => {
-		debugMsg( "contextMenuClick:", evt );
+	// TODO combine the shit out of this shit
+
+	// TODO close context menu(s) when they're being ignored i.e. playlist menu should close if the editor is opened
+
+	closeContextMenu = () => {
+		DOM_PLAYLIST_CONTEXT_MENU.pffs.disabled = DOM_LIST_EDITOR_CONTEXT_MENU.pffs.disabled = true;
+		DOM_PLAYLIST_CONTEXT_MENU.classList.remove( "show" );
+		DOM_LIST_EDITOR_CONTEXT_MENU.classList.remove( "show" );
+		scroll2Track();
+	},
+
+	listEditorContextMenuClick = evt => {
+		debugMsg( "listEditorContextMenuClick:", evt );
+		let trg = evt.target,
+			nme = trg.name;
+		if ( isBtn( trg ) ) {
+			if ( nme === "reveal" ) {
+				DOM_LIST_EDITOR_CONTEXT_MENU.li.classList.add( "focussed" );
+				listEditorClick();
+				scroll2Track( true );
+			}
+			closeContextMenu();
+		}
+	},
+
+	listEditorContextMenu = evt => {
+		debugMsg( "listEditorContextMenu:", evt );
+		let trg = evt.target;
+		if ( !debugging && tagIs( trg, "li" ) ) {
+			evt.preventDefault();
+			let tds = trg.dataset,
+				li = tds.id ? tracksFromIDs( tds.id )[ 0 ] : DOM_PLAYLIST.querySelector( `li[data-folder_struct="${tds.folder}"]` );
+			if ( li ) {
+				DOM_LIST_EDITOR_CONTEXT_MENU.setAttribute( "style", `top:${Math.min( evt.y, Math.ceil( window.innerHeight - DOM_LIST_EDITOR_CONTEXT_MENU.offsetHeight ) )}px;left:${evt.x}px` );
+				DOM_LIST_EDITOR_CONTEXT_MENU.li = li;
+				DOM_LIST_EDITOR_CONTEXT_MENU.pffs.disabled = false;
+				DOM_LIST_EDITOR_CONTEXT_MENU.classList.add( "show" );
+			}
+		}
+	},
+
+	playlistContextMenuClick = evt => {
+		debugMsg( "playlistContextMenuClick:", evt );
 		let trg = evt.target,
 			nme = trg.name;
 		if ( isBtn( trg ) ) {
 			if ( nme === "google" ) {
-				googleSearch( DOM_CONTEXT_MENU.google.title || DOM_CONTEXT_MENU.li );
+				googleSearch( DOM_PLAYLIST_CONTEXT_MENU.google.title || DOM_PLAYLIST_CONTEXT_MENU.li );
 			} else if ( nme !== "cancel" ) {
-				playlistClick( { "clicky": nme, "trg": DOM_CONTEXT_MENU.li } );
+				playlistClick( { "clicky": nme, "trg": DOM_PLAYLIST_CONTEXT_MENU.li } );
 			}
+			closeContextMenu();
 		}
-		closeContextMenu();
 	},
 
 	playlistContextMenu = evt => {
-		if ( "preventDefault" in evt && !debugging ) {
+		if ( !( evt.nare && debugging ) ) {
 			evt.preventDefault();
 		}
 		debugMsg( "playlistContextMenu:", evt );
-		DOM_CONTEXT_MENU.setAttribute( "style", `top:${Math.min( evt.y, Math.ceil( window.innerHeight - DOM_CONTEXT_MENU.offsetHeight ) )}px;left:${evt.x}px` );
-		DOM_CONTEXT_MENU.google.title = googleSearch( DOM_CONTEXT_MENU.li = evt.li || liFromEvtPath( evt ), true );
-		DOM_CONTEXT_MENU.pffs.disabled = false;
-		DOM_CONTEXT_MENU.querySelector( `input[name="${ctrlVlu( "clicky" )}"]` ).focus();
-		DOM_CONTEXT_MENU.classList.add( "show" );
+		DOM_PLAYLIST_CONTEXT_MENU.setAttribute( "style", `top:${Math.min( evt.y, Math.ceil( window.innerHeight - DOM_PLAYLIST_CONTEXT_MENU.offsetHeight ) )}px;left:${evt.x}px` );
+		DOM_PLAYLIST_CONTEXT_MENU.google.title = googleSearch( DOM_PLAYLIST_CONTEXT_MENU.li = evt.li || liFromEvtPath( evt ), true );
+		DOM_PLAYLIST_CONTEXT_MENU.pffs.disabled = false;
+		DOM_PLAYLIST_CONTEXT_MENU.querySelector( `input[name="${ctrlVlu( "clicky" )}"]` ).focus();
+		DOM_PLAYLIST_CONTEXT_MENU.classList.add( "show" );
 	},
+
+	// TODO combine the shit out of that shit
 
 	audioTimeUpdate = () => {
 		let curt = DOM_AUDIO.currentTime,
@@ -1036,8 +1074,8 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 
 			updatePlayedness( cpt );
 		}
-		tds.curt = secondsToStr( DOM_SEEK.control.value = curt );
-		tds.rema = secondsToStr( ( DOM_AUDIO.duration - curt ) || 0 );
+		tds.curt = seconds2Str( DOM_SEEK.control.value = curt );
+		tds.rema = seconds2Str( ( DOM_AUDIO.duration - curt ) || 0 );
 	},
 
 	listEditorClick = evt => {
@@ -1124,7 +1162,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 		if ( cont ) {
 			TRANSPORT.playTrack();
 		} else {
-			DOM_CONTROLS.times.dataset.dura = secondsToStr();
+			DOM_CONTROLS.times.dataset.dura = seconds2Str();
 			selectNext().then( t => {
 				setTitle( "[STOPPED]", true );
 				defaultEndOf();
@@ -1194,7 +1232,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 					if ( nme === "scrolltoplaying" ) {
 						DOM_BODY.classList.toggle( "scroll_to_playing", trg.checked );
 						removeFocussed();
-						scrollToPlaying();
+						scroll2Track();
 					} else if ( nme === "smoothscrolling" ) {
 						DOM_PLAYPEN.classList.toggle( "smooth_scrolling", trg.checked );
 					}
@@ -1287,7 +1325,7 @@ const DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 				} );
 			if ( paths.length ) {
 				chrome.storage.local.get( async store => {
-					paths = await pathsToPlaylist( paths, store.paths );
+					paths = await paths2Playlist( paths, store.paths );
 					if ( paths.length ) {
 
 						// TODO only if something new is actually being added
@@ -1413,15 +1451,12 @@ chrome.storage.local.getBytesInUse( bytes => {
 			ctrl = evt.ctrlKey,
 			shft = evt.shiftKey,
 			pgud = k.match( /^Page(Up|Down)$/ ),
-			no = !listEditorShowing() && !playlistFilterShowing(),
+			no = !listEditorShowing() && !playlistFilterShowing(), // TODO this needs work
 			fcs;
 
 		debugMsg( "keyDown:", { "evt": evt, "key": k, "ctrl": ctrl, "shft": shft } );
 
 		if ( !!pgud && no ) {
-
-			// TODO make it work with filtered and listEditor
-
 			let hpp = halfPlaypen(),
 				all = fromPlaylist[ ( shft ? "folders" : "tracks" ) ].all();
 			fcs = removeFocussed() || cloneArray( all ).sort( ( a, b ) => ( a.offsetTop - hpp ) + ( b.offsetTop - hpp ) )[ 0 ];
@@ -1444,11 +1479,8 @@ chrome.storage.local.getBytesInUse( bytes => {
 				}
 			}
 			if ( fcs ) {
-				if ( !folderStruct( fcs ) ) {
-					folderOfTrack( fcs ).classList.add( "focussed_folder" );
-				}
 				fcs.classList.add( "focussed" );
-				scrollToPlaying();
+				scroll2Track();
 			}
 		} else {
 			if ( ctrl ) {
@@ -1485,14 +1517,14 @@ chrome.storage.local.getBytesInUse( bytes => {
 				switch ( k ) {
 					case "Backspace": {
 						removeFocussed();
-						scrollToPlaying();
+						scroll2Track();
 						break;
 					}
 					case "m": {
 						if ( contextMenuShowing() ) {
 							closeContextMenu();
 						} else if ( no && ( fcs = fromPlaylist.focussed() || global__current_playing_track ) ) {
-							playlistContextMenu( { li: fcs, y: window.innerHeight * 0.5, x: window.innerWidth * 0.5 } );
+							playlistContextMenu( { nare: true, li: fcs, y: window.innerHeight * 0.5, x: window.innerWidth * 0.5 } );
 						}
 						break;
 					}
@@ -1577,7 +1609,6 @@ chrome.storage.local.getBytesInUse( bytes => {
 				"sequences": global__sequences,
 				"settings": {
 					displaybrightness: DOM_CONTROLS.display_brightness.value,
-					playlistsize: parseInt( DOM_PLAYPEN.style.fontSize ),
 					displaycontrols: DOM_CONTROLS.switchControls.value,
 					ignoresequences: ctrlChckd( "ignoresequences" ),
 					scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
@@ -1606,7 +1637,6 @@ chrome.storage.local.getBytesInUse( bytes => {
 					smoothscrolling: true,
 					shuffleby: "track",
 					playedafter: "21", // TODO hard coding this number/string is rubbish
-					playlistsize: 100,
 					skiplayed: true,
 					endof: "world",
 					wakeful: true,
@@ -1628,7 +1658,6 @@ chrome.storage.local.getBytesInUse( bytes => {
 			setOp( DOM_CONTROLS.soft_stop, DOM_CONTROLS.soft_stop.value = sttngs.softstop );
 			DOM_CONTROLS.dataset.endof = DOM_CONTROLS.endof.value = sttngs.endof;
 			DOM_CONTROLS.ignoresequences.checked = sttngs.ignoresequences;
-			DOM_PLAYPEN.style.fontSize = `${sttngs.playlistsize}%`;
 			DOM_CONTROLS.skiplayed.checked = sttngs.skiplayed;
 			DOM_CONTROLS.shuffleby.value = sttngs.shuffleby;
 			DOM_CONTROLS.wakeful.checked = sttngs.wakeful;
@@ -1646,7 +1675,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 	};
 
 window.addEventListener( "keydown", keyDown );
-window.addEventListener( "wheel", wheel, { passive: false } );
+//window.addEventListener( "wheel", wheel, { passive: false } ); // TODO ranges
 window.addEventListener( "beforeunload", beforeUnload, { passive: true } );
 
 DOM_AUDIO.addEventListener( "error", audioError, { passive: true } );
@@ -1663,14 +1692,16 @@ DOM_PLAYED_AFTER.addEventListener( "change", playedAfterChanged, { passive: true
 
 DOM_SEEK.addEventListener( "input", seekInput, { passive: true } );
 
-DOM_PLAYLIST.addEventListener( "contextmenu", playlistContextMenu );
-DOM_PLAYLIST.addEventListener( "click", playlistClick, { passive: true } );
-
-DOM_CONTEXT_MENU.addEventListener( "click", contextMenuClick, { passive: true } );
-
 DOM_PLAYLIST_FILTER.addEventListener( "input", playlistFilterInput, { passive: true } );
 DOM_PLAYLIST_FILTER.addEventListener( "click", playlistFilterClick, { passive: true } );
 
+DOM_PLAYLIST.addEventListener( "contextmenu", playlistContextMenu );
+DOM_PLAYLIST.addEventListener( "click", playlistClick, { passive: true } );
+
+DOM_PLAYLIST_CONTEXT_MENU.addEventListener( "click", playlistContextMenuClick, { passive: true } );
+DOM_LIST_EDITOR_CONTEXT_MENU.addEventListener( "click", listEditorContextMenuClick, { passive: true } );
+
+DOM_LIST_EDITOR.addEventListener( "contextmenu", listEditorContextMenu );
 DOM_LIST_EDITOR.addEventListener( "click", listEditorClick, { passive: true } );
 DOM_LIST_EDITOR.addEventListener( "dragend", listEditorDragEnd, { passive: true } );
 DOM_LIST_EDITOR.addEventListener( "dragstart", listEditorDragStart, { passive: true } );
@@ -1681,7 +1712,7 @@ DOM_LIST_EDITOR.querySelectorAll( ".dropzone" ).forEach( dz => {
 
 chrome.storage.local.get( store => {
 	applySettings( store.settings ).then( t => {
-		pathsToPlaylist( store.paths ).then( t => {
+		paths2Playlist( store.paths ).then( t => {
 			mindTheStore( store ).then( t => {
 				TRANSPORT.playTrack();
 				setLibraries( store.libraries );
