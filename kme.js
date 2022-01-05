@@ -1,24 +1,29 @@
 
 /* TODO
 
-"show in playlist" from list editor // contextmenu // tracksFromIDs
-
-option to automatically remove tracks from global__played if the entire folder is .played (i.e. recycling on the fly)
-
 if shuffleBy( "folder" ) && queue created; option to finish the folder first, play the queue then come back to the folder, or simply move on
 
-skip sequence button
+sequencify folders for isShuffleBy( "folder" ) i.e. dic 1 & 2 of double album
 
-sequence editor
+temporary ignorables during not shuffled play e.g. skip tracks this time
+	break at marker?
+
+skip sequence button (instead of next next next...)
+
+sequence editing
+	add tracks to or remove tracks from established sequences
+	alter the order of tracks in a sequence
+	combine or split sequences
+	delete sequences
 
 playing played sequenced tracks...
+
+prioritise UX for visually impaired
 
 fix responsiveness of UI
 	// window.devicePixelRatio
 	// window.matchMedia()
 	// css max() & min()
-
-prioritise UX for visually impaired
 
 gapless playback (surprisingly shitty)
 
@@ -48,8 +53,6 @@ possible settings/options
 	include cover art image files in uploads and display
 	start shuffle play again after e.g. finishing a folder etc.
 	disable marking queued tracks as played during otherwise shuffled play
-	unmark tracks as played when the whole containing folder is played
-		this is an odd one, but for some reason it makes sense to me
 	repeat track, folder, sequence, queue (or playlist when implemented)
 
 maybe
@@ -64,30 +67,36 @@ maybe
 "use strict";
 
 function FromPlaylist() {
-	this.get = ( qs, only ) => {
-		let arr = arrayFrom( DOM_PLAYLIST.querySelectorAll( qs ) )
-		if ( typeof only === "number" ) {
-			return arr[ only ];
+	this.get = ( qs, gnrbl ) => {
+		let arr = arrayFrom( DOM_PLAYLIST.querySelectorAll( qs ) );
+		if ( gnrbl ) {
+			return arr.filter( li => !isIgnorable( li ) );
 		}
 		return arr;
 	};
+
 	this.tracks = {
-		queued: ndx => this.get( 'span[data-queue]:not([data-queue=""])', ndx ),
-		sequencifiable: ndx => this.get( 'span[data-sequence^="NEW"]', ndx ),
-		notPlayed: ndx => this.get( "ol li:not(.played)", ndx ),
-		notBroken: ndx => this.get( "ol li:not(.broken)", ndx ),
-		filtered: ndx => this.get( "ol li.filtered", ndx ),
-		broken: ndx => this.get( "ol li.broken", ndx ),
-		played: ndx => this.get( "ol li.played", ndx ),
-		all: ndx => this.get( "ol li", ndx )
+		ignorable: () => this.get( 'ol li:not(.broken) span[data-ignorable]:not([data-ignorable=""])' ),
+		sequenced: () => this.get( 'ol li:not(.broken) span[data-sequence]:not([data-sequence=""])' ),
+		queue: () => this.get( 'ol li:not(.broken) span[data-queue]:not([data-queue=""])' ), // TODO should be "queued" but for scrubTrackMarkers() -_-
+		sequence: () => this.get( 'ol li:not(.broken) span[data-sequence^="NEW"]' ), // TODO should be "sequencifiable" but for scrubTrackMarkers() -_-
+
+		notPlayed: gnrbl => this.get( "ol li:not(.broken):not(.played)", gnrbl ),
+		filtered: () => this.get( "ol li:not(.broken).filtered" ),
+		played: () => this.get( "ol li:not(.broken).played" ),
+		all: gnrbl => this.get( "ol li:not(.broken)", gnrbl ),
+		broken: () => this.get( "ol li.broken" )
 	};
+
 	this.folders = {
-		notPlayed: ndx => this.get( "li[data-folder_struct]:not(.played)", ndx ),
-		played: ndx => this.get( "li[data-folder_struct].played", ndx ),
-		all: ndx => this.get( "li[data-folder_struct]", ndx )
+		notPlayed: gnrbl => this.get( "li[data-folder_struct]:not(.played)", gnrbl ),
+		played: () => this.get( "li[data-folder_struct].played" ),
+		all: gnrbl => this.get( "li[data-folder_struct]", gnrbl )
 	};
-	this.filtered = ndx => this.get( "li.filtered", ndx );
-	this.focussed = () => this.get( "li.focussed", 0 );
+
+	this.focussed = () => this.get( "li:not(.broken).focussed" )[ 0 ];
+	this.filtered = () => this.get( "li:not(.broken).filtered" );
+	this.played = () => this.get( "li:not(.broken).played" );
 };
 
 let global__current_playing_folder,
@@ -97,6 +106,7 @@ let global__current_playing_folder,
 	global__playlist_fragment,
 	global__queue_end = false,
 	global__softstop = false,
+	global__ignorables = [],
 	global__sequences = [],
 	global__sequence = [],
 	global__track_id = 0,
@@ -136,6 +146,8 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 			console[ how || "log" ]( where, what );
 		}
 	},
+
+	BROWSER = ( "browser" in window ? browser : chrome ),
 
 	fromPlaylist = new FromPlaylist(),
 
@@ -180,6 +192,8 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	isCtrlVlu = ( ctrl, vlu ) => ctrlVlu( ctrl ) === vlu,
 
+	isIgnorable = li => trackTitleDataset( li ).ignorable, // TODO take array
+
 	displayBrightness = bn => DOM_BODY.style.opacity = bn,
 
 	isBtn = trg => trg && trg.type && trg.type === "button",
@@ -188,17 +202,15 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	setOp = ( trg, op ) => ( trg.parentElement.dataset.op = op ),
 
+	numberOfNotBrokenTracks = () => fromPlaylist.tracks.all().length,
+
 	arrayize = stuff => ( Array.isArray( stuff ) ? stuff : [ stuff ] ),
 
 	folderStruct = li => ( li ? li.dataset.folder_struct : undefined ),
 
 	absPathsMatch = ( a, b ) => trackAbsPath( a ) === trackAbsPath( b ),
 
-	numberOfNotBrokenTracks = () => fromPlaylist.tracks.notBroken().length,
-
 	trackTitleDataset = li => li.querySelector( "span[data-title]" ).dataset,
-
-	contextMenuShowing = () => DOM_PLAYLIST_CONTEXT_MENU.classList.contains( "show" ),
 
 	defaultEndOf = () => DOM_CONTROLS.endof.value = DOM_CONTROLS.dataset.endof, // TODO move the focus too
 
@@ -212,9 +224,15 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	cleanTitle = () => document.title.replace( /^(?:\[(?:PAUS|STOPP)ED\] )+/, "" ),
 
+	contextMenuShowing = () => DOM_PLAYLIST_CONTEXT_MENU.classList.contains( "show" ),
+
 	multiTrack = ( n, tof ) => `${n} ${( tof ? tof : "TRACK" )}${( n !== 1 ? "S" : "" )}`,
 
+	markUnplayed = trcks => arrayize( trcks ).forEach( li => li.classList.remove( "played" ) ),
+
 	folder = li => ( folderStruct( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li ),
+
+	scrubTrackMarkers = mrkr => fromPlaylist.tracks[ mrkr ]().forEach( xi => xi.dataset[ mrkr ] = "" ),
 
 	tracksFromIDs = ids => arrayize( ids ).map( id => DOM_PLAYLIST.querySelector( `li[data-id="${id}"]` ) ),
 
@@ -319,7 +337,13 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 	},
 
 	CONTROLS = {
+
 		fixBreakages: () => debugMsg( "fixBreakages:", fromPlaylist.tracks.broken(), "warn" ), // TODO all the things
+
+		addTracks: () => {
+			DOM_SOURCES.pffs.disabled = !DOM_SOURCES.classList.toggle( "show" );
+			DOM_SOURCES.libraries.focus();
+		},
 
 		switchControls: () => {
 			let sc = DOM_CONTROLS.switchControls;
@@ -327,6 +351,9 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		},
 
 		sequencify: () => {
+
+			// TODO ctrlChckd( "ignoresequencefolder" )
+
 			if ( global__sequence.length ) {
 				global__sequences.push( trackIDs( global__sequence ) );
 				clear( "global__sequence" );
@@ -377,7 +404,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		},
 
 		clearPlaylist: () => {
-			if ( fromPlaylist.tracks.all().length && confirm( "Clear the playlist?" ) ) {
+			if ( numberOfNotBrokenTracks() && confirm( "Clear the playlist?" ) ) {
 				TRANSPORT.stopTrack( true );
 				DOM_PLAYLIST.innerHTML = "";
 				setTitle( "KISS My Ears" );
@@ -385,7 +412,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 				let tds = DOM_CONTROLS.times.dataset;
 				tds.dura = tds.rema = seconds2Str();
 			}
-			chrome.storage.local.get( store => {
+			BROWSER.storage.local.get( store => {
 				if ( store.paths?.length && confirm( "Clear the automatically included tracks? Queued, played or sequenced tracks will also be cleared." ) ) {
 
 					// TODO find a way to reapply sequences and other markers to new imports
@@ -393,18 +420,18 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 					clear( "global__queue" );
 					clear( "global__played" );
 					clear( "global__sequences" );
-					chrome.storage.local.remove( "paths" );
-					chrome.storage.local.remove( "queue" );
-					chrome.storage.local.remove( "played" );
-					chrome.storage.local.remove( "sequences" );
+					BROWSER.storage.local.remove( "paths" );
+					BROWSER.storage.local.remove( "queue" );
+					BROWSER.storage.local.remove( "played" );
+					BROWSER.storage.local.remove( "sequences" );
 				}
 				if ( store.libraries?.length && confirm( "Clear the stored libraries?" ) ) {
-					chrome.storage.local.remove( "libraries" );
+					BROWSER.storage.local.remove( "libraries" );
 
 					// TODO clear the GUI too
 				}
 				if ( store.settings && confirm( "Clear the settings and reload the player?" ) ) {
-					chrome.storage.local.remove( "settings" );
+					BROWSER.storage.local.remove( "settings" );
 					user_reset = true;
 					location.reload();
 				}
@@ -437,6 +464,13 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		global__sequence = global__sequence.filter( li => !~arr.indexOf( li ) );
 		if ( !shave ) {
 			updateSequences();
+		}
+	},
+
+	clearIgnorablesOf = ( arr, shave ) => {
+		global__ignorables = global__ignorables.filter( li => !~arr.indexOf( li ) );
+		if ( !shave ) {
+			updateIgnorables();
 		}
 	},
 
@@ -556,7 +590,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 			// TODO with tags; track search should be `"${artist}" "${title}"`
 
 			if ( query ) {
-				chrome.tabs.create( { "url": `https://www.google.com/search?q=${encodeURIComponent( query )}`, "active": true } );
+				BROWSER.tabs.create( { "url": `https://www.google.com/search?q=${encodeURIComponent( query )}`, "active": true } );
 			}
 		}
 	},
@@ -583,6 +617,11 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 				updateSequences();
 				break;
 			}
+			case "global__ignorables": {
+				global__ignorables = [];
+				updateIgnorables();
+				break;
+			}
 			case "global__track_sequence": {
 				global__track_sequence = [];
 				break;
@@ -591,17 +630,24 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 	},
 
 	updatePlaylistLength = () => {
-		let btl = fromPlaylist.tracks.broken().length,
+		let atl = numberOfNotBrokenTracks(),
+			btl = fromPlaylist.tracks.broken().length,
 			pllds = DOM_CONTROLS.playlist_length.dataset;
-		pllds.folders = multiTrack( fromPlaylist.folders.all().length, "FOLDER" );
-		pllds.tracks = multiTrack( numberOfNotBrokenTracks() );
+		pllds.tracks = multiTrack( atl );
 		pllds.broken = ( btl ? ` + ${btl} BROKEN` : "" );
 		DOM_CONTROLS.fixBreakages.classList.toggle( "show", btl ); // TODO CONTROLS.fixBreakages()
+		pllds.folders = multiTrack( fromPlaylist.folders.all().length, "FOLDER" );
+	},
+
+	updateIgnorables = () => {
+		let il = global__ignorables.length;
+		scrubTrackMarkers( "ignorable" ); // TODO update instead of clear and reapply?
+		global__ignorables.forEach( i => trackTitleDataset( i ).ignorable = "?" );
 	},
 
 	updateQueuetness = () => {
 		let ql = global__queue.length;
-		fromPlaylist.tracks.queued().forEach( xq => xq.dataset.queue = "" ); // TODO update instead of clear and reapply?
+		scrubTrackMarkers( "queue" ); // TODO update instead of clear and reapply?
 		if ( DOM_CONTROLS.classList.toggle( "show_cont_queue", ql ) ) {
 			DOM_CONTROLS.queue_length.dataset.ql = multiTrack( ql );
 			global__queue.forEach( ( q, i ) => trackTitleDataset( q ).queue = `${plus1( i )}/${ql}` );
@@ -626,12 +672,11 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 			DOM_CONTROLS.played_length.dataset.pl = multiTrack( global__played.length );
 		}
 
-		// TODO this is just horrible
+		// TODO doing the hokey-cokey with classes -_-
 
-		fromPlaylist.tracks.played().filter( li => !~global__played.indexOf( li ) ).forEach( li => li.classList.remove( "played" ) );
-		fromPlaylist.folders.played().filter( li => li.querySelector( "li:not(.played)" ) ).forEach( li => li.classList.remove( "played" ) );
+		markUnplayed( fromPlaylist.played().filter( li => !~global__played.indexOf( li ) ) );
 
-		let fldr;
+		let fldr, trcks;
 
 		global__played.filter( li => !li.classList.contains( "played" ) ).forEach( li => {
 			li.classList.add( "played" );
@@ -640,11 +685,20 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 				fldr.classList.add( "played" );
 			}
 		} );
+
+		if ( cpt && ctrlChckd( "recycle" ) ) {
+			fromPlaylist.folders.played().forEach( li => {
+				trcks = tracksOfFolder( li );
+				clearPlayedOf( trcks, true );
+				markUnplayed( trcks );
+				markUnplayed( li );
+			} );
+		}
 	},
 
 	updateSequences = () => {
 		let sl = global__sequence.length;
-		fromPlaylist.tracks.sequencifiable().forEach( xs => xs.dataset.sequence = "" ); // TODO update instead of clear and reapply?
+		scrubTrackMarkers( "sequence" ); // TODO update instead of clear and reapply?
 		if ( sl ) {
 			global__sequence.forEach( ( li, i ) => sequenced( li, `NEW:${plus1( i )}` ) );
 			if ( DOM_CONTROLS.sequence_fs.classList.toggle( "show", sl > 1 ) ) {
@@ -727,13 +781,9 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 	displayTrackData = listing => {
 		if ( global__current_playing_track ) {
 			global__current_playing_track.classList.remove( "playing" );
-			if ( global__current_playing_folder ) {
-				global__current_playing_folder.classList.remove( "playing" );
-			}
 		}
 		if ( listing ) {
 			global__current_playing_folder = folderOfTrack( global__current_playing_track = listing );
-			global__current_playing_folder.classList.add( "playing" );
 			listing.classList.add( "playing" );
 			setTitle( listing.dataset.title );
 			scroll2Track();
@@ -824,15 +874,14 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		return new Promise( resolve => {
 			if ( !DOM_AUDIO.src ) {
 				let listing;
-				if ( !ctrlChckd( "ignoresequences" ) && global__track_sequence.length ) {
+				if ( ctrlChckd( "respectsequences" ) && global__track_sequence.length ) {
 					listing = global__track_sequence.shift();
 
 					// TODO if ( untilEndOf( "queue" ) && the last track of the queue is sequenced and not the last track of that sequence ) { stop at the end of the sequence }
 
 				} else {
-					let pl = global__played.length,
-						si;
 					clear( "global__track_sequence" );
+					let pl = global__played.length;
 					if ( pl && playingPlayed() ) {
 						listing = global__played[ pl + global__played_index ];
 					} else {
@@ -856,51 +905,45 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 							}
 							updateQueuetness();
 						} else {
-							let list = fromPlaylist.tracks.notBroken();
-							if ( list.length ) {
-								if ( ctrlChckd( "shuffle" ) ) {
-									if ( isShuffleBy( "folder" ) ) {
+							let list;
+							if ( ctrlChckd( "shuffle" ) ) {
+								if ( isShuffleBy( "folder" ) ) {
 
-									// TODO on startup (assuming we end up here) pick up where we left off
-										// currently finds a new folder to start instead of carrying on with the last one, even if there are tracks remaining to play
+								// TODO on startup (assuming we end up here) pick up where we left off
+									// currently finds a new folder to start instead of carrying on with the last one, even if there are tracks remaining to play
 
-										if ( global__current_playing_folder ) {
-											let tof = tracksOfFolder( global__current_playing_folder ),
-												lstndx = tof.indexOf( global__current_playing_track );
-											if ( lstndx < minus1( tof.length ) ) {
-												listing = tof[ plus1( lstndx ) ];
-											} else {
-												global__current_playing_folder.classList.remove( "playing" ); // TODO check this // why doesn't this happen at displayTrackData?
-												global__current_playing_folder.classList.add( "played" );
-											}
+									if ( global__current_playing_folder ) {
+										let tof = tracksOfFolder( global__current_playing_folder ),
+											lstndx = tof.indexOf( global__current_playing_track );
+										if ( lstndx < minus1( tof.length ) ) {
+											listing = tof[ plus1( lstndx ) ];
+										} else {
+											global__current_playing_folder.classList.add( "played" );  // TODO why not at displayTrackData?
 										}
-										if ( !listing ) {
-											if ( ctrlChckd( "skiplayed" ) ) {
-												list = fromPlaylist.folders.notPlayed();
-											} else {
-												list = fromPlaylist.folders.all();
-											}
-											listing = tracksOfFolder( global__current_playing_folder = list[ randNum( list.length ) ], 0 );
-										}
-									} else {
-										if ( ctrlChckd( "skiplayed" ) ) {
-											list = fromPlaylist.tracks.notPlayed();
-										}
-										listing = list[ randNum( list.length ) ];
+									}
+
+									if ( !listing ) {
+										list = fromPlaylist.folders[ ( ctrlChckd( "skiplayed" ) ? "notPlayed" : "all" ) ]( ctrlChckd( "ignoreshufflefolder" ) );
+										listing = tracksOfFolder( global__current_playing_folder = list[ randNum( list.length ) ], 0 );
 									}
 								} else {
-
-									// TODO allow next and back folder when not shuffle playing
-
-									// TODO allow skipping played tracks when not shuffle playing?
-
-									let lstndx = list.indexOf( global__current_playing_track || notPop( global__played ) );
-									listing = list[ ( ~lstndx ? lstndx + ( prev ? -1 : 1 ) : 0 ) ];
+									list = fromPlaylist.tracks[ ( ctrlChckd( "skiplayed" ) ? "notPlayed" : "all" ) ]( ctrlChckd( "ignoreshuffletrack" ) );
+									listing = list[ randNum( list.length ) ];
 								}
+							} else {
+
+								// TODO allow next and back folder when not shuffle playing
+
+								// TODO allow skipping played tracks when not shuffle playing?
+
+								list = fromPlaylist.tracks.all( ctrlChckd( "ignorenonshuffle" ) );
+								let lstndx = list.indexOf( global__current_playing_track || notPop( global__played ) );
+								listing = list[ ( ~lstndx ? lstndx + ( prev ? -1 : 1 ) : 0 ) ];
 							}
 						}
 					}
-					if ( listing && !ctrlChckd( "ignoresequences" ) && ( si = parseInt( sequenced( listing ) ) ) ) {
+					let si;
+					if ( listing && ctrlChckd( "respectsequences" ) && ( si = parseInt( sequenced( listing ) ) ) ) {
 
 						// TODO when playing played?
 
@@ -913,7 +956,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 				if ( listing ) {
 					DOM_AUDIO.src = `file:///${trackAbsPath( listing )}`;
 					displayTrackData( listing );
-				} else if ( untilEndOf( "world" ) && numberOfNotBrokenTracks() ) {
+				} else if ( untilEndOf( "world" ) && numberOfNotBrokenTracks() ) { // TODO check this won't infinite loop
 					DOM_AUDIO.removeAttribute( "src" );
 					displayTrackData();
 					TRANSPORT.playTrack(); // TODO why is this here?
@@ -971,6 +1014,8 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		updatePlaylistLength();
 		TRANSPORT.nextTrack();
 
+		// TODO if everything appears broken; slam the brakes on
+
 		// TODO mark folders as broken if all their tracks are?
 
 		// TODO offer to remove or do it automatically and give notice?
@@ -995,13 +1040,15 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	// TODO combine the shit out of this shit
 
+	// TODO add other options for tracks in list editor appropriate for played and queue
+
 	// TODO close context menu(s) when they're being ignored i.e. playlist menu should close if the editor is opened
 
 	closeContextMenu = () => {
 		DOM_PLAYLIST_CONTEXT_MENU.pffs.disabled = DOM_LIST_EDITOR_CONTEXT_MENU.pffs.disabled = true;
 		DOM_PLAYLIST_CONTEXT_MENU.classList.remove( "show" );
 		DOM_LIST_EDITOR_CONTEXT_MENU.classList.remove( "show" );
-		scroll2Track();
+		scroll2Track(); // TODO annoying
 	},
 
 	listEditorContextMenuClick = evt => {
@@ -1020,9 +1067,11 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	listEditorContextMenu = evt => {
 		debugMsg( "listEditorContextMenu:", evt );
-		let trg = evt.target;
-		if ( !debugging && tagIs( trg, "li" ) ) {
+		if ( !debugging ) {
 			evt.preventDefault();
+		}
+		let trg = evt.target;
+		if ( tagIs( trg, "li" ) ) {
 			let tds = trg.dataset,
 				li = tds.id ? tracksFromIDs( tds.id )[ 0 ] : DOM_PLAYLIST.querySelector( `li[data-folder_struct="${tds.folder}"]` );
 			if ( li ) {
@@ -1049,10 +1098,10 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 	},
 
 	playlistContextMenu = evt => {
-		if ( !( evt.nare && debugging ) ) {
+		debugMsg( "playlistContextMenu:", evt );
+		if ( !evt.nare && !debugging ) {
 			evt.preventDefault();
 		}
-		debugMsg( "playlistContextMenu:", evt );
 		DOM_PLAYLIST_CONTEXT_MENU.setAttribute( "style", `top:${Math.min( evt.y, Math.ceil( window.innerHeight - DOM_PLAYLIST_CONTEXT_MENU.offsetHeight ) )}px;left:${evt.x}px` );
 		DOM_PLAYLIST_CONTEXT_MENU.google.title = googleSearch( DOM_PLAYLIST_CONTEXT_MENU.li = evt.li || liFromEvtPath( evt ), true );
 		DOM_PLAYLIST_CONTEXT_MENU.pffs.disabled = false;
@@ -1254,6 +1303,9 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 			if ( nme === "done" ) {
 				closePlaylistFilter();
 			} else if ( nme === "toqueue" ) {
+
+				// TODO ctrlChckd( "ignoreenqueuefilter" )
+
 				let fltrd = fromPlaylist.tracks.filtered(),
 					lessqueued = fltrd.filter( f => !trackTitleDataset( f ).queue ),
 					shuffle = false;
@@ -1299,9 +1351,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		if ( slv ) {
 			DOM_SOURCES.lib_name.value = DOM_SOURCES.lib_path.value = "";
 			DOM_SOURCES.include.disabled = false;
-			DOM_SOURCES.new_lib.disabled = true;
 		} else {
-			DOM_SOURCES.new_lib.disabled = false;
 			DOM_SOURCES.include.disabled = !( libnme && libpth );
 		}
 		if ( trg === DOM_SOURCES.include ) {
@@ -1313,6 +1363,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 			} else {
 				slv = String.raw`${DOM_SOURCES.lib_path.value}`;
 			}
+			CONTROLS.addTracks();
 			let sp = slv.split( /\\|\//g ).filter( f => f ),
 				paths = arrayFrom( trg.files ).filter( file => /^audio\//.test( file.type ) ).map( file => {
 					let cp = sp.concat( file.webkitRelativePath.split( "/" ).filter( f => f ) );
@@ -1324,7 +1375,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 					};
 				} );
 			if ( paths.length ) {
-				chrome.storage.local.get( async store => {
+				BROWSER.storage.local.get( async store => {
 					paths = await paths2Playlist( paths, store.paths );
 					if ( paths.length ) {
 
@@ -1339,13 +1390,13 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 							let nl = { "lib_path": slv, "lib_name": libnme },
 								libraries = ( store.libraries || [] ).filter( l => l.lib_path !== nl.lib_path ).concat( [ nl ] ); // TODO uniqueness must include selected folder
 							setLibraries( libraries );
-							chrome.storage.local.set( { "libraries": libraries, "paths": paths } );
+							BROWSER.storage.local.set( { "libraries": libraries, "paths": paths } );
 
 							// TODO sophisticate
-								// new Promise( resolve => chrome.storage.local.getBytesInUse( bytes => resolve( chrome.storage.local.QUOTA_BYTES - bytes ) ) )
+								// new Promise( resolve => BROWSER.storage.local.getBytesInUse( bytes => resolve( BROWSER.storage.local.QUOTA_BYTES - bytes ) ) )
 /*
-chrome.storage.local.getBytesInUse( bytes => {
-	let quota = chrome.storage.local.QUOTA_BYTES;
+BROWSER.storage.local.getBytesInUse( bytes => {
+	let quota = BROWSER.storage.local.QUOTA_BYTES;
 	console.log( `Quota: ${quota}, Bytes in use: ${bytes}, Difference: ${quota - bytes}` );
 } );
 */
@@ -1355,9 +1406,6 @@ chrome.storage.local.getBytesInUse( bytes => {
 					}
 				} );
 			}
-			DOM_SOURCES.reset(); // TODO this is kind of annoying
-			DOM_SOURCES.new_lib.disabled = false;
-			DOM_SOURCES.include.disabled = true;
 		}
 	},
 
@@ -1371,7 +1419,6 @@ chrome.storage.local.getBytesInUse( bytes => {
 			let cv = evt.clicky || ctrlVlu( "clicky" ),
 				tia = trg.tracks,
 				tau = tia || [ trg ];
-
 			if ( cv === "delist" ) {
 
 				// TODO playing tracks continue playing after being delisted O_o
@@ -1381,12 +1428,13 @@ chrome.storage.local.getBytesInUse( bytes => {
 					// TODO reduce paths object size
 
 					// TODO when sequenced tracks are removed from the playlist, the respective sequence needs to be adjusted or deleted
-						// same is true for broken tracks
+						// broken tracks...
 
 					clearQueueOf( tau );
 					clearPlayedOf( tau );
 					clearSequenceOf( tau );
-					chrome.storage.local.get( store => chrome.storage.local.set( { "paths": store.paths.filter( sp => ( tia ? !tia.some( li => sp.a === trackAbsPath( li ) ) : sp.a !== trackAbsPath( trg ) ) ) } ) );
+					clearIgnorablesOf( tau );
+					BROWSER.storage.local.get( store => BROWSER.storage.local.set( { "paths": store.paths.filter( sp => ( tia ? !tia.some( li => sp.a === trackAbsPath( li ) ) : sp.a !== trackAbsPath( trg ) ) ) } ) );
 					if ( tia ) {
 						trg.folder.remove();
 					} else {
@@ -1401,15 +1449,27 @@ chrome.storage.local.getBytesInUse( bytes => {
 
 				// TODO can a track be part of more than one sequence?
 
+				// TODO ctrlChckd( "ignoresequencefolder" )
+
 				clearSequenceOf( tau, true );
-				if ( !( !tia && /^NEW/.test( sequenced( trg ) ) ) ) { // TODO in lieu of a sequence editor
+				if ( !( !tia && /^NEW/.test( sequenced( trg ) ) ) ) { // TODO in lieu of a sequence editor?
 					global__sequence.push( ...tau );
 				}
 				updateSequences();
+			} else if ( cv === "unignorable" ) {
+				clearIgnorablesOf( tau, true );
+				if ( tia ) {
+					if ( !( trg.tracks.filter( li => isIgnorable( li ) ).length >= ( trg.tracks.length * 0.5 ) ) ) {
+						global__ignorables.push( ...tau );
+					}
+				} else if ( !isIgnorable( trg ) ) {
+					global__ignorables.push( ...tau );
+				}
+				updateIgnorables();
 			} else if ( cv === "unplayed" ) {
 				clearPlayedOf( tau, true );
 				if ( tia ) {
-					if ( !( trg.folder.classList.contains( "played" ) || trg.tracks.filter( li => li.classList.contains( "played" ) ).length >= ( trg.tracks.length * 0.5 ) ) ) {
+					if ( !( trg.folder.classList.contains( "played" ) || ( trg.tracks.filter( li => li.classList.contains( "played" ) ).length >= ( trg.tracks.length * 0.5 ) ) ) ) {
 						global__played.push( ...tau );
 					}
 				} else if ( !trg.classList.contains( "played" ) ) {
@@ -1420,6 +1480,11 @@ chrome.storage.local.getBytesInUse( bytes => {
 
 				// TODO allow the same track(s) in the queue more than once?
 
+				// TODO if ( tia && ctrlChckd( "shuffle" ) ) offer to shuffle before adding folders to the queue?
+
+				if ( tia && ctrlChckd( "ignoreenqueuefolder" ) ) {
+					tau = tau.filter( li => !isIgnorable( li ) );
+				}
 				clearQueueOf( tau, true );
 				if ( cv === "now" ) {
 					if ( !tia && trg === global__current_playing_track ) {
@@ -1428,15 +1493,10 @@ chrome.storage.local.getBytesInUse( bytes => {
 					}
 					global__queue.unshift( ...tau );
 					TRANSPORT.nextTrack();
-				} else {
-
-					// TODO if ( tia && ctrlChckd( "shuffle" ) ) offer to shuffle before adding folders to the queue?
-
-					if ( cv === "next" ) {
-						global__queue.unshift( ...tau );
-					} else if ( cv === "end" ) {
-						global__queue.push( ...tau );
-					}
+				} else if ( cv === "next" ) {
+					global__queue.unshift( ...tau );
+				} else if ( cv === "end" ) {
+					global__queue.push( ...tau );
 				}
 				updateQueuetness();
 			}
@@ -1574,23 +1634,28 @@ chrome.storage.local.getBytesInUse( bytes => {
 	setLibraries = libs => {
 		if ( libs ) {
 			DOM_SOURCES.libraries.innerHTML = `<option value="" selected>ADD NEW LIBRARY</option>` +
-				libs.map( ( l, i ) => `<option value="${l.lib_path}" title="${l.lib_path}">${l.lib_name}</option>` ).join( "" );
+				libs.map( l => `<option value="${l.lib_path}" title="${l.lib_path}">${l.lib_name}</option>` ).join( "" );
 		}
 	},
 
 	mindTheStore = store => {
 		return new Promise( resolve => {
 			if ( store ) {
-				let s = store.sequences,
+				let i = store.ignorables,
+					s = store.sequences,
 					p = store.played,
 					q = store.queue;
+				if ( q?.length ) {
+					global__queue.push( ...tracksFromIDs( q ) );
+					updateQueuetness();
+				}
 				if ( p?.length ) {
 					global__played.push( ...tracksFromIDs( p ) );
 					updatePlayedness();
 				}
-				if ( q?.length ) {
-					global__queue.push( ...tracksFromIDs( q ) );
-					updateQueuetness();
+				if ( i?.length ) {
+					global__ignorables.push( ...tracksFromIDs( i ) );
+					updateIgnorables();
 				}
 				if ( s?.length ) {
 					global__sequences.push( ...s ); // TODO tracksFromIDs?
@@ -1603,14 +1668,21 @@ chrome.storage.local.getBytesInUse( bytes => {
 
 	beforeUnload = () => {
 		if ( !user_reset ) {
-			chrome.storage.local.set( {
+			BROWSER.storage.local.set( {
+				"ignorables": trackIDs( global__ignorables ),
 				"played": trackIDs( global__played ),
 				"queue": trackIDs( global__queue ),
 				"sequences": global__sequences,
 				"settings": {
+					ignoresequencefolder: ctrlChckd( "ignoresequencefolder" ),
 					displaybrightness: DOM_CONTROLS.display_brightness.value,
+					ignoreshufflefolder: ctrlChckd( "ignoreshufflefolder" ),
+					ignoreenqueuefilter: ctrlChckd( "ignoreenqueuefilter" ),
+					ignoreenqueuefolder: ctrlChckd( "ignoreenqueuefolder" ),
+					ignoreshuffletrack: ctrlChckd( "ignoreshuffletrack" ),
 					displaycontrols: DOM_CONTROLS.switchControls.value,
-					ignoresequences: ctrlChckd( "ignoresequences" ),
+					ignorenonshuffle: ctrlChckd( "ignorenonshuffle" ),
+					respectsequences: ctrlChckd( "respectsequences" ),
 					scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
 					smoothscrolling: ctrlChckd( "smoothscrolling" ),
 					softstop: DOM_CONTROLS.soft_stop.valueAsNumber,
@@ -1621,6 +1693,7 @@ chrome.storage.local.getBytesInUse( bytes => {
 					endof: DOM_CONTROLS.dataset.endof,
 					wakeful: ctrlChckd( "wakeful" ),
 					shuffle: ctrlChckd( "shuffle" ),
+					recycle: ctrlChckd( "recycle" ),
 					clicky: ctrlVlu( "clicky" )
 				}
 			} );
@@ -1630,14 +1703,21 @@ chrome.storage.local.getBytesInUse( bytes => {
 	applySettings = settings => {
 		return new Promise( resolve => {
 			let sttngs = Object.assign( {
+					ignoresequencefolder: false,
+					ignoreshufflefolder: false,
+					ignoreenqueuefilter: false,
+					ignoreenqueuefolder: false,
+					ignoreshuffletrack: false,
+					ignorenonshuffle: false,
 					displaycontrols: "LEFT", // NOTE: flipped by logic; RIGHT is the real default
 					displaybrightness: "1",
-					ignoresequences: false,
+					respectsequences: true,
 					scrolltoplaying: true,
 					smoothscrolling: true,
 					shuffleby: "track",
 					playedafter: "21", // TODO hard coding this number/string is rubbish
 					skiplayed: true,
+					recycle: false,
 					endof: "world",
 					wakeful: true,
 					shuffle: true,
@@ -1656,12 +1736,19 @@ chrome.storage.local.getBytesInUse( bytes => {
 			DOM_CONTROLS.scrolltoplaying.checked = DOM_BODY.classList.toggle( "scroll_to_playing", sttngs.scrolltoplaying );
 			setOp( DOM_CONTROLS.volume, DOM_AUDIO.volume = DOM_CONTROLS.volume.value = sttngs.volume );
 			setOp( DOM_CONTROLS.soft_stop, DOM_CONTROLS.soft_stop.value = sttngs.softstop );
+			DOM_CONTROLS.ignoresequencefolder.checked = sttngs.ignoresequencefolder;
+			DOM_CONTROLS.ignoreshufflefolder.checked = sttngs.ignoreshufflefolder;
+			DOM_CONTROLS.ignoreenqueuefilter.checked = sttngs.ignoreenqueuefilter;
+			DOM_CONTROLS.ignoreenqueuefolder.checked = sttngs.ignoreenqueuefolder;
 			DOM_CONTROLS.dataset.endof = DOM_CONTROLS.endof.value = sttngs.endof;
-			DOM_CONTROLS.ignoresequences.checked = sttngs.ignoresequences;
+			DOM_CONTROLS.ignoreshuffletrack.checked = sttngs.ignoreshuffletrack;
+			DOM_CONTROLS.ignorenonshuffle.checked = sttngs.ignorenonshuffle;
+			DOM_CONTROLS.respectsequences.checked = sttngs.respectsequences;
 			DOM_CONTROLS.skiplayed.checked = sttngs.skiplayed;
 			DOM_CONTROLS.shuffleby.value = sttngs.shuffleby;
 			DOM_CONTROLS.wakeful.checked = sttngs.wakeful;
 			DOM_CONTROLS.shuffle.checked = sttngs.shuffle;
+			DOM_CONTROLS.recycle.checked = sttngs.recycle;
 			DOM_CONTROLS.clicky.value = sttngs.clicky;
 			toggleOptionsVisibility();
 			DOM_WELCOME.addEventListener( "animationend", () => {
@@ -1710,7 +1797,7 @@ DOM_LIST_EDITOR.querySelectorAll( ".dropzone" ).forEach( dz => {
 	dz.addEventListener( "drop", dropzoneDrop );
 } );
 
-chrome.storage.local.get( store => {
+BROWSER.storage.local.get( store => {
 	applySettings( store.settings ).then( t => {
 		paths2Playlist( store.paths ).then( t => {
 			mindTheStore( store ).then( t => {

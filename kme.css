@@ -24,6 +24,9 @@
 	--pink: #925572;
 	--bright-pink: #df438d;
 
+	--purple: #7652d1;
+	--bright-purple: #4f55ff;
+
 	--red: #8d2d2d;
 	--bright-red: #d53232;
 }
@@ -54,10 +57,6 @@
 	appearance: none;
 	height: .8em;
 	width: .8em;
-}
-
-::-webkit-file-upload-button {
-	visibility: hidden;
 }
 
 *:not(input[type="text"]) {
@@ -91,10 +90,14 @@
 	z-index: 1;
 }
 
+.overlay.drop.show {
+	z-index: 2;
+}
+
 /* TODO introduction with walkthrough */
 #welcome {
 	animation: welcome 2s ease-in 0s 1 forwards;
-	z-index: 1;
+	z-index: 2;
 	left: 40vw;
 	top: 40vh;
 }
@@ -127,9 +130,10 @@ div.section {
 }
 
 div.playlistsection {
-	height: calc( 100vh - 6.3em + 2px ); /* TODO no ... just no */
+	height: calc( 100vh - 4.2em );
 	width: calc( 100vw - 38em ); /* TODO this is going to keep happening */
 	margin: 1em 0 0;
+	padding: 0 1em;
 }
 
 div.playlistsection.smooth_scrolling {
@@ -187,6 +191,16 @@ h2 {
 	margin: 0;
 }
 
+#sources {
+	right: 14em;
+	top: 4.4em;
+}
+
+body.display_controls_left #sources {
+	right: unset;
+	left: 1.2em;
+}
+
 #sources select,
 #sources input {
 	width: -webkit-fill-available;
@@ -197,7 +211,29 @@ h2 {
 	margin: 0 0 .5em 0;
 }
 
-fieldset.snuggly {
+::-webkit-file-upload-button {
+	visibility: hidden;
+}
+
+input[type="file"] {
+	background-color: var( --darker-grey );
+	color: transparent;
+}
+
+input + input:not([type="file"]) {
+	margin-left: .5em;
+}
+
+input[type="file"]::before {
+	background-color: var( --darkest-grey );
+	color: var( --lighter-grey );
+	content: "SELECT FOLDERS";
+	border-radius: .2em;
+	padding: .2em .4em;
+	cursor: pointer;
+}
+
+#controls > fieldset:first-child {
 	margin-top: 0;
 }
 
@@ -207,7 +243,7 @@ form.contextmenu input:not(:last-child) {
 }
 
 #list_editor {
-	height: calc( 100vh - 4.3em + 2px );
+	height: calc( 100vh - 4.2em );
 	width: calc( 100vw - 37em ); /* TODO this is going to keep happening */
 	padding-bottom: 0;
 }
@@ -235,13 +271,13 @@ body.display_controls_left #list_editor {
 }
 
 #playlist_filter {
-	right: 38em; /* TODO this is going to keep happening */
-	top: 3em;
+	right: 2.7em; /* TODO this is going to keep happening */
+	top: 4.4em;
 }
 
 body.display_controls_left #playlist_filter {
 	right: unset;
-	left: 2em;
+	left: 2.7em;
 }
 
 #playlist_filter input[type="text"] {
@@ -291,13 +327,10 @@ fieldset.stacked > label {
 	display: block;
 }
 
+fieldset.stacked.fright,
+fieldset.stacked.fleft,
 fieldset.child {
 	margin: 0;
-}
-
-fieldset.stacked.fright,
-fieldset.stacked.fleft {
-	margin: 0 0 .5em;
 }
 
 fieldset:not(.legend) {
@@ -341,6 +374,10 @@ ol li span::after {
 ol li {
 	padding: .1em .5em .2em;
 	color: var( --turq );
+}
+
+#playlist {
+	padding-bottom: 1em;
 }
 
 #list_editor > ol,
@@ -389,6 +426,10 @@ input.pink:focus {
 	outline-color: var( --bright-pink ); /* user-agent seems to fail sometimes */
 }
 
+input.purple:focus {
+	outline-color: var( --bright-purple ); /* user-agent seems to fail sometimes */
+}
+
 input.red:focus {
 	outline-color: var( --bright-red ); /* user-agent seems to fail sometimes */
 	color: var( --bright-grey );
@@ -414,21 +455,6 @@ input[type="radio"] {
 
 input[type="radio"] {
 	border-radius: 50%;
-}
-
-input[type="file"] {
-	background-color: var( --darker-grey );
-	color: transparent;
-	display: block;
-}
-
-input[type="file"]::before {
-	background-color: var( --darkest-grey );
-	color: var( --lighter-grey );
-	content: "SELECT FOLDERS";
-	padding: .2em .4em .1em;
-	border-radius: .2em;
-	cursor: pointer;
 }
 
 input[type="range"] {
@@ -500,8 +526,7 @@ input:checked {
 	background-color: var( --turq );
 }
 
-output:not([name="playlist_length"]) + input,
-input + input:not([type="file"]) {
+output:not([name="playlist_length"]) + input {
 	margin-left: .5em;
 }
 
@@ -579,6 +604,12 @@ input.pink:checked {
 	color: var( --near-black );
 }
 
+input[type="button"].purple,
+input.purple:checked {
+	background-color: var( --purple );
+	color: var( --near-black );
+}
+
 input[type="button"].red {
 	background-color: var( --red );
 }
@@ -587,17 +618,18 @@ input[type="button"].red {
 	background-color: var( --turq );
 }
 
+#playlist ol li span[data-ignorable]:not([data-ignorable=""])::before,
 #playlist ol li span[data-sequence]:not([data-sequence=""])::before,
 #playlist ol li span[data-queue]:not([data-queue=""])::before {
 	color: var( --darkest-grey );
 	border-radius: .2em;
 	margin-right: .5em;
-	padding: 0 .5em;
+	padding: 0 .25em;
 }
 
-#playlist ol li span[data-queue]:not([data-queue=""])::before {
-	background-color: var( --orange );
-	content: attr( data-queue );
+#playlist ol li span[data-ignorable]:not([data-ignorable=""])::before {
+	background-color: var( --purple );
+	content: attr( data-ignorable );
 }
 
 #playlist ol li span[data-sequence]:not([data-sequence=""])::before {
@@ -605,7 +637,27 @@ input[type="button"].red {
 	content: attr( data-sequence );
 }
 
-#playlist ol li span[data-queue]:not([data-queue=""])[data-sequence]:not([data-sequence=""])::before {
+#playlist ol li span[data-queue]:not([data-queue=""])::before {
+	background-color: var( --orange );
+	content: attr( data-queue );
+}
+
+#playlist ol li span[data-ignorable]:not([data-ignorable=""])[data-sequence]:not([data-sequence=""])::before {
+	background-image: linear-gradient( to right, var( --purple ), var( --pink ) );
+	content: attr( data-ignorable ) "\0000a0|\0000a0" attr( data-sequence );
+}
+
+#playlist ol li span[data-ignorable]:not([data-ignorable=""])[data-queue]:not([data-queue=""])::before {
+	background-image: linear-gradient( to right, var( --purple ), var( --orange ) );
+	content: attr( data-ignorable ) "\0000a0|\0000a0" attr( data-queue );
+}
+
+#playlist ol li span[data-ignorable]:not([data-ignorable=""])[data-sequence]:not([data-sequence=""])[data-queue]:not([data-queue=""])::before {
+	background-image: linear-gradient( to right, var( --purple ), var( --pink ), var( --orange ) );
+	content: attr( data-ignorable ) "\0000a0|\0000a0" attr( data-sequence ) "\0000a0|\0000a0" attr( data-queue );
+}
+
+#playlist ol li span[data-sequence]:not([data-sequence=""])[data-queue]:not([data-queue=""])::before {
 	background-image: linear-gradient( to right, var( --pink ), var( --orange ) );
 	content: attr( data-sequence ) "\0000a0|\0000a0" attr( data-queue );
 }
@@ -625,8 +677,6 @@ body:not(.scroll_to_playing) #controls label.smooth_scrolling,
 #controls.hide_shuffle_by label.skip_played,
 #controls.hide_shuffle_by span.skip_folders,
 #list_editor ol li span:not(:nth-child(2)),
-#sources fieldset[name="new_lib"]:disabled,
-#sources input[name="include"]:disabled,
 fieldset[name="sequence_fs"]:not(.show),
 #playlist.filtered li:not(.filtered),
 #list_editor div.dropzone li,

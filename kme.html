@@ -25,19 +25,6 @@
 
 		--><div class="overlay drop" id="welcome"><h1>Kiss My Ears</h1></div><!-- TODO introduction with walkthrough
 
-		--><form class="overlay" id="list_editor"><!--
-			--><fieldset name="pffs" disabled><!--
-				--><h2 class="fleft">DRAGON DROPPINGS</h2><!--
-				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
-				--><input name="clear" type="button" value="CLEAR"><!--
-				--><input class="red" name="done" type="button" value="DONE"><!--
-
-				TODO shuffle existing queue button
-
-			--></fieldset><!--
-			--><ol class="dropzone"></ol><!--
-		--></form><!--
-
 		--><form class="overlay drop" id="playlist_filter"><!--
 			--><fieldset name="pffs" disabled><!--
 				--><input class="red" name="done" type="button" value="DONE"><!--
@@ -50,13 +37,23 @@
 			--></fieldset><!--
 		--></form><!--
 
+		--><form class="overlay drop" id="sources"><!--
+			--><fieldset name="pffs" disabled><!--
+				--><select name="libraries"><option value="">ADD NEW LIBRARY</option></select><!--
+				--><input name="lib_name" type="text" placeholder="NAME"><!--
+				--><input name="lib_path" type="text" placeholder="along/this/full/path"><!--
+				--><input name="include" type="file" webkitdirectory disabled><!--
+			--></fieldset><!--
+		--></form><!--
+
 		--><form class="overlay drop contextmenu" style="top:40vh;left:3rem" id="playlist_context_menu"><!--
 			--><fieldset name="pffs" disabled><!--
 				--><input class="red" name="cancel" type="button" value="CANCEL"><!--
-				--><input name="unplayed" type="button" value="MARK AS (UN)PLAYED"><!--
 				--><input name="now" type="button" value="PLAY IMMEDIATELY"><!--
 				--><input class="orange" name="end" type="button" value="ENQUEUE AT END"><!--
 				--><input class="orange" name="next" type="button" value="ENQUEUE NEXT"><!--
+				--><input class="purple" name="unignorable" type="button" value="MARK AS (UN)IGNORABLE"><!--
+				--><input name="unplayed" type="button" value="MARK AS (UN)PLAYED"><!--
 				--><input class="pink" name="sequence" type="button" value="SEQUENCIFY"><!--
 				--><input name="delist" type="button" value="DELIST"><!--
 				--><input name="google" type="button" value="GOOGLE SEARCH"><!--
@@ -70,6 +67,21 @@
 			--></fieldset><!--
 		--></form><!--
 
+		--><div id="backdrop"><!--
+
+		--><form class="overlay" id="list_editor"><!--
+			--><fieldset name="pffs" disabled><!--
+				--><h2 class="fleft">DRAGON DROPPINGS</h2><!--
+				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
+				--><input name="clear" type="button" value="CLEAR"><!--
+				--><input class="red" name="done" type="button" value="DONE"><!--
+
+				TODO shuffle existing queue button
+
+			--></fieldset><!--
+			--><ol class="dropzone"></ol><!--
+		--></form><!--
+
 		--><div class="section ib playlistsection"><!--
 			--><ul id="playlist"></ul><!--
 			--><form id="seek"><!--
@@ -78,20 +90,11 @@
 		--></div><!--
 
 		--><div class="section ib controlssection"><!--
-
-			--><form id="sources"><!--
-				--><select name="libraries"><option value="">ADD NEW LIBRARY</option></select><!--
-				--><fieldset class="snuggly" name="new_lib"><!--
-					--><input name="lib_name" type="text" placeholder="NAME"><!--
-					--><input name="lib_path" type="text" placeholder="along/this/full/path"><!--
-				--></fieldset><!--
-				--><input name="include" type="file" webkitdirectory disabled><!--
-			--></form><!--
-
 			--><form id="controls"><!--
 
 				--><fieldset><!--
 					--><output name="playlist_length" data-tracks="0 TRACKS" data-folders="0 FOLDERS" data-broken=""></output><!--
+					--><input name="addTracks" type="button" value="ADD"><!--
 					--><input name="clearPlaylist" type="button" value="CLEAR"><!--
 					--><label><input class="left_marg" name="playlistFilter" type="button" value="FILTER"><kbd class="left_marg">CTRL + F</kbd></label><!--
 					--><input name="fixBreakages" type="button" value="BREAKAGES"><!--
@@ -108,7 +111,7 @@
 					--><label><input class="orange left_marg" name="listEditor" data-list="queue" type="button" value="EDIT"><kbd class="left_marg">Q</kbd></label><!--
 				--></fieldset><!--
 
-				sequence editor
+				TODO sequence editor
 
 				--><fieldset name="sequence_fs"><!--
 					--><output name="sequence_length" data-sl="0 TRACKS"></output><!--
@@ -124,10 +127,24 @@
 						--><label>FOLDER<input name="shuffleby" type="radio" value="folder"></label><!--
 					--></fieldset><!--
 					--><label class="child smaller skip_played">SKIP PLAYED <span class="skip_tracks">TRACKS</span><span class="skip_folders">FOLDERS</span><input name="skiplayed" type="checkbox" checked></label><!--
-					--><label>IGNORE SEQUENCES<input name="ignoresequences" type="checkbox"></label><!--
+					--><label title="automatically mark fully played folders as unplayed">RECYCLE PLAYED FOLDERS<input name="recycle" type="checkbox"></label><!--
+					--><label>RESPECT SEQUENCES<input name="respectsequences" type="checkbox" checked></label><!--
 					--><label title="selecting tracks to play while paused will restart playback">WAKE FROM PAUSED<input name="wakeful" type="checkbox" checked></label><!--
 					--><label title="auto-scroll to the currently playing track; press backspace or turn off and on again to jump">SCROLL TO PLAYING<input name="scrolltoplaying" type="checkbox" checked><kbd>BACKSPACE</kbd></label><!--
 					--><label class="child smaller smooth_scrolling">SMOOTH SCROLLING<input name="smoothscrolling" type="checkbox" checked></label><!--
+					--><fieldset name="ignorables" class="legend nobum"><!--
+						--><legend>IGNORE IGNORABLES WHEN</legend><!--
+						--><fieldset class="pff fleft stacked"><!--
+							--><label>PLAYING UNSHUFFLED<input name="ignorenonshuffle" type="checkbox"></label><!--
+							--><label>SHUFFLING BY TRACK<input name="ignoreshuffletrack" type="checkbox"></label><!--
+							--><label>SHUFFLING BY FOLDER<input name="ignoreshufflefolder" type="checkbox"></label><!--
+						--></fieldset><!--
+						--><fieldset class="pff fright stacked"><!--
+							--><label>ENQUEUING A FILTER<input name="ignoreenqueuefilter" type="checkbox"></label><!--
+							--><label>ENQUEUING A FOLDER<input name="ignoreenqueuefolder" type="checkbox"></label><!--
+							--><label>SEQUENCING A FOLDER<input name="ignoresequencefolder" type="checkbox"></label><!--
+						--></fieldset><!--
+					--></fieldset><!--
 				--></fieldset><!--
 
 				--><fieldset class="legend stacked"><!--
@@ -148,10 +165,14 @@
 						--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
 						--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end" checked></label><!--
 						--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
+
+						TODO ENQUEUE splice the track(s) into the queue randomly
+
 					--></fieldset><!--
 					--><fieldset class="stacked fright"><!--
+						--><label title="tracks may be ignored under various conditions">MARK AS (UN)IGNORABLE<input class="purple" name="clicky" type="radio" value="unignorable"></label><!--
 						--><label>MARK AS (UN)PLAYED<input name="clicky" type="radio" value="unplayed"></label><!--
-						--><label title="click sequencifiable tracks to desequencifiablitate them O_o">SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
+						--><label title="click the sequencifiable to desequencifiablitate them O_o">SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
 						--><label>DELIST<input name="clicky" type="radio" value="delist"></label><!--
 					--></fieldset><!--
 					--><fieldset class="legend smaller nobum"><!--
@@ -188,8 +209,9 @@
 					--><input name="nextTrack" title="] (close bracket)" type="button"><!--
 					--><output class="ib" name="times" data-curt="00:00" data-dura="00:00" data-rema="00:00"></output><!--
 				--></fieldset><!--
-			--></form><!--
 
+			--></form><!--
+		--></div><!--
 		--></div><!--
 	--></body><script type="text/javascript" src="kme.js"></script>
 </html>
