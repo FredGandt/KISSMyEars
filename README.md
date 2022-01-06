@@ -18,9 +18,12 @@ With this premise in mind, I am working to build a Chrome web browser extension 
 
 ![kme-screenshot](https://user-images.githubusercontent.com/3055947/124341320-654b6180-dbb3-11eb-927f-1da0fdf302b8.png)
 
-
 ## Development
-I haven't even finished building it yet and it's already, by far, the most satisfying music player I have used, but there is still a lot of coding to do. This is my primary, nay, only music player, and there's no better way to assess the usability than by actually using it, so every day I tinker with ideas and bugs. Speaking as an alpha user, it's coming along nicely :)
+When I say "play my music archive in reasonably expected ways"; sometimes I'd like to listen to whole albums, but don't mind much which (i.e. shuffle by album), and in that mode, I might prefer to avoid playing bonus tracks to get an authentic experience as the artist intended (i.e. by ignoring ignorable tracks). If shuffling by track and landing on the 3rd movement of a 5 movement symphony, I might prefer to listen to the whole symphony (i.e. sequenced).
+
+These and other quality of life options lie at the heart of my reason to build this player; I was fed up with being tied into pedestrian players with 20 ways to acquire images from the net and connect to various online accounts that scribble all over my files, instead of a music-playing-focussed UX.
+
+I haven't even finished building it yet and it's already, by far, the most satisfying music player I have used but, there is still a lot of coding to do. This is my primary, nay, only music player and, there's no better way to assess the usability than by actually using it, so every day I tinker with ideas and bugs. Speaking as an alpha user, it's coming along nicely :)
 
 Feel free to try it out as an unpackaged extension while I work on it, and I will publish it on the Chrome Web Store when it's in a fit state for simpler installation.
 

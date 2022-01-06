@@ -16,6 +16,8 @@ mark albums to be ignored during shuffle by album
 
 skip sequence button (instead of next next next...)
 
+mark newly added tracks and make them easy to find
+
 sequence editing
 	add tracks to or remove tracks from established sequences
 	alter the order of tracks in a sequence
