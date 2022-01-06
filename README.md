@@ -16,7 +16,7 @@ Having tried many local music players, on Windoze and Linux, I have frequently b
 
 With this premise in mind, I am working to build a Chrome web browser extension that provides **only** the features I **need** and presents them in a one stop control panel. It currently looks like this:
 
-![kme-screenshot](https://user-images.githubusercontent.com/3055947/124341320-654b6180-dbb3-11eb-927f-1da0fdf302b8.png)
+![Screenshot 2022-01-06 075501](https://user-images.githubusercontent.com/3055947/148348802-b7b1eeef-7125-4509-8801-8aabde654602.png)
 
 ## Development
 When I say "play my music archive in reasonably expected ways"; sometimes I'd like to listen to whole albums, but don't mind much which (i.e. shuffle by album), and in that mode, I might prefer to avoid playing bonus tracks to get an authentic experience as the artist intended (i.e. by ignoring ignorable tracks). If shuffling by track and landing on the 3rd movement of a 5 movement symphony, I might prefer to listen to the whole symphony (i.e. sequenced).
