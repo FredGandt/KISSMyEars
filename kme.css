@@ -145,7 +145,7 @@ body.display_controls_left div.playlistsection {
 }
 
 div.controlssection {
-	height: calc( 100vh - 9.7em );
+	max-height: calc( 100vh - 9.7em );
 	width: 34em; /* TODO this is going to keep happening */
 }
 
@@ -204,6 +204,7 @@ body.display_controls_left #sources {
 #sources select,
 #sources input {
 	width: -webkit-fill-available;
+	width: -moz-available;
 	display: block;
 }
 
@@ -272,7 +273,7 @@ body.display_controls_left #list_editor {
 
 #playlist_filter {
 	right: 2.7em; /* TODO this is going to keep happening */
-	top: 4.4em;
+	top: 9em;
 }
 
 body.display_controls_left #playlist_filter {
@@ -709,6 +710,7 @@ fieldset[name="folder"],
 }
 
 fieldset[name="folder"] {
+	border-radius: 1.5em;
 	margin-right: 1em;
 }
 

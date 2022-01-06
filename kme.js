@@ -8,6 +8,12 @@ sequencify folders for isShuffleBy( "folder" ) i.e. dic 1 & 2 of double album
 temporary ignorables during not shuffled play e.g. skip tracks this time
 	break at marker?
 
+if recycling; recyle folder with unplayed ignorables...?
+
+tag prefered versions i.e. play the prefered track/folder instead
+
+mark albums to be ignored during shuffle by album
+
 skip sequence button (instead of next next next...)
 
 sequence editing
