@@ -14,21 +14,21 @@
 	--dark-turq: #246a6a;
 	--mid-turq: #2c7b7b;
 	--turq: #339999;
-	--bright-turq: #00ffdd;
+	--bright-turq: #5cddcc;
 
 	--dark-turq-border: var( --pixel-border ) var( --dark-turq );
 
 	--orange: #a97e3e;
-	--bright-orange: #ffc062;
+	--bright-orange: #edb25a;
 
 	--pink: #925572;
-	--bright-pink: #df438d;
+	--bright-pink: #d16598;
 
 	--purple: #7652d1;
-	--bright-purple: #4f55ff;
+	--bright-purple: #8c90ff;
 
 	--red: #8d2d2d;
-	--bright-red: #d53232;
+	--bright-red: #c74040;
 }
 
 /* TODO nothing should be important */
@@ -273,7 +273,7 @@ body.display_controls_left #list_editor {
 
 #playlist_filter {
 	right: 2.7em; /* TODO this is going to keep happening */
-	top: 9em;
+	top: 11em;
 }
 
 body.display_controls_left #playlist_filter {
