@@ -450,12 +450,13 @@ input {
 input[type="checkbox"],
 input[type="radio"] {
 	appearance: none;
-	margin: 0 .4em;
+	margin: 0 .5em;
 	padding: .4em;
 }
 
 input[type="radio"] {
 	border-radius: 50%;
+	padding: .42em;
 }
 
 input[type="range"] {

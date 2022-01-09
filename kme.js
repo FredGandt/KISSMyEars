@@ -80,7 +80,7 @@ function FromPlaylist() {
 	this.get = ( qs, gnrbl ) => {
 		let arr = arrayFrom( DOM_PLAYLIST.querySelectorAll( qs ) );
 		if ( gnrbl ) {
-			return arr.filter( li => !isIgnorable( li ) );
+			return notIgnorable( arr );
 		}
 		return arr;
 	};
@@ -171,6 +171,8 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	minus1 = n => n - 1,
 
+	half = n => n * 0.5,
+
 	trackID = li => li.dataset.id, // TODO reduce paths object size
 
 	notPop = arr => arr.slice( -1 )[ 0 ],
@@ -205,11 +207,17 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	isIgnorable = li => trackTitleDataset( li ).ignorable,
 
+	sequenceData = li => trackTitleDataset( li ).sequence,
+
 	displayBrightness = bn => DOM_BODY.style.opacity = bn,
 
 	isBtn = trg => trg && trg.type && trg.type === "button",
 
 	fltrChckd = ctrl => DOM_PLAYLIST_FILTER[ ctrl ].checked,
+
+	isNewSequenced = li => /^NEW/.test( sequenceData( li ) ),
+
+	notIgnorable = arr => arr.filter( li => !isIgnorable( li ) ),
 
 	folderStruct = li => li ? li.dataset.folder_struct : undefined,
 
@@ -217,7 +225,11 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	absPathsMatch = ( a, b ) => trackAbsPath( a ) === trackAbsPath( b ),
 
+	markSequenced = ( li, sq ) => trackTitleDataset( li ).sequence = sq,
+
 	trackTitleDataset = li => li.querySelector( "span[data-title]" ).dataset,
+
+	halfPlaypen = () => DOM_PLAYPEN.scrollTop + half( DOM_PLAYPEN.offsetHeight ),
 
 	multiTrack = ( n, tof ) => `${n} ${tof ? tof : "TRACK"}${n !== 1 ? "S" : ""}`,
 
@@ -226,8 +238,6 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 	setOp = ( ctrl, op ) => ( DOM_CONTROLS[ ctrl ].parentElement.dataset.op = op ),
 
 	cleanTitle = () => document.title.replace( /^(?:\[(?:PAUS|STOPP)ED\] )+/, "" ),
-
-	halfPlaypen = () => DOM_PLAYPEN.scrollTop + ( DOM_PLAYPEN.offsetHeight * 0.5 ),
 
 	playingPlayed = () => DOM_SPP.classList.toggle( "show", global__played_index ),
 
@@ -252,6 +262,8 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 	tagIs = ( tag, nme, typ ) => tag.tagName && tag.tagName.toLowerCase() === nme && ( typ ? tag.type && tag.type === typ : true ),
 
 	listEditorShowing = lst => DOM_LIST_EDITOR.classList.contains( "show" ) && ( lst ? DOM_LIST_EDITOR.dataset.list === lst : true ),
+
+	iDunnoWhat2CallThis = ( tia, trg, fnc ) => ( !tia && !fnc( trg ) ) || ( tia && tia.filter( li => fnc( li ) ).length < half( tia.length ) ),
 
 	sortPlaylist = () => DOM_PLAYLIST.append( ...fromPlaylist.folders.all().sort( ( a, b ) => collator.compare( folderStruct( a ), folderStruct( b ) ) ) ),
 
@@ -510,14 +522,6 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		} );
 	},
 
-	sequence = ( li, ndx ) => {
-		let dss = trackTitleDataset( li );
-		if ( ndx !== undefined ) {
-			dss.sequence = ndx;
-		}
-		return dss.sequence;
-	},
-
 	removeFocussed = () => {
 		let fcs = fromPlaylist.focussed();
 		if ( fcs ) {
@@ -674,13 +678,13 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		STORAGE.set( { "sequences": global__sequences } );
 		scrubTrackMarkers( "sequence" );
 		if ( sl ) {
-			global__sequence.forEach( ( li, i ) => sequence( li, `NEW:${plus1( i )}` ) );
+			global__sequence.forEach( ( li, i ) => markSequenced( li, `NEW:${plus1( i )}` ) );
 			if ( DOM_CONTROLS.sequence_fs.classList.toggle( "show", sl > 1 ) ) {
 				DOM_CONTROLS.sequence_length.dataset.sl = multiTrack( sl );
 			}
 		} else {
 			DOM_CONTROLS.sequence_fs.classList.remove( "show" );
-			global__sequences.forEach( ( squnc, ndx ) => tracksFromIDs( ...squnc ).forEach( ( li, i ) => sequence( li, `${plus1( ndx )}:${plus1( i )}` ) ) );
+			global__sequences.forEach( ( squnc, ndx ) => tracksFromIDs( ...squnc ).forEach( ( li, i ) => markSequenced( li, `${plus1( ndx )}:${plus1( i )}` ) ) ); // TODO markSequenced()
 
 			// TODO removal of dead sequences; "dead"? please leave clearer notes  >.<
 
@@ -954,7 +958,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 						}
 					}
 					let si;
-					if ( listing && ctrlChckd( "respectsequences" ) && ( si = parseInt( sequence( listing ) ) ) ) {
+					if ( listing && ctrlChckd( "respectsequences" ) && ( si = parseInt( sequenceData( listing ) ) ) ) {
 
 						// TODO when playing played?
 
@@ -1395,58 +1399,40 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 					}
 					updatePlaylistLength();
 				}
-			}
-
-			// TODO combine the shit out of this shit
-
-			else if ( cv === "sequence" ) {
+			} else if ( cv === "sequence" ) {
 
 				// TODO can a track be part of more than one sequence?
 
 				if ( tia && ctrlChckd( "ignoresequencefolder" ) ) {
-					tau = tau.filter( li => !isIgnorable( li ) );
+					tau = notIgnorable( tau );
 				}
 				clearSequenceOf( tau, true );
-				if ( tia ) {
-					if ( !( trg.tracks.filter( li => /^NEW/.test( sequence( li ) ) ).length >= ( trg.tracks.length * 0.5 ) ) ) { // TODO "NEW"? what about fully sequenced?
-						global__sequence.push( ...tau );
-					}
-				} else if ( !/^NEW/.test( sequence( trg ) ) ) { // TODO "NEW"? what about fully sequenced?
+				if ( iDunnoWhat2CallThis( tia, trg, isNewSequenced ) ) {
 					global__sequence.push( ...tau );
 				}
 				updateSequences();
 			} else if ( cv === "unignorable" ) {
 				clearIgnorablesOf( tau, true );
-				if ( tia ) {
-					if ( !( trg.tracks.filter( li => isIgnorable( li ) ).length >= ( trg.tracks.length * 0.5 ) ) ) {
-						global__ignorable.push( ...tau );
-					}
-				} else if ( !isIgnorable( trg ) ) {
+				if ( iDunnoWhat2CallThis( tia, trg, isIgnorable ) ) {
 					global__ignorable.push( ...tau );
 				}
 				updateIgnorables();
 			} else if ( cv === "unplayed" ) {
 				clearPlayedOf( tau, true );
-				if ( tia ) {
-					if ( !( isPlayed( trg.folder ) || ( trg.tracks.filter( li => isPlayed( li ) ).length >= ( trg.tracks.length * 0.5 ) ) ) ) {
-						global__played.push( ...tau );
-					}
-				} else if ( !isPlayed( trg ) ) {
+				if ( iDunnoWhat2CallThis( tia, trg, isPlayed ) ) {
 					global__played.push( ...tau );
 				}
 				updatePlayedness();
-			}
-
-			// TODO combine the shit out of that shit
-
-			else {
+			} else {
 
 				// TODO enqueue a track multiple times?
+
+				// TODO use the iDunnoWhat2CallThis() method?
 
 				// TODO if ( tia && ctrlChckd( "shuffle" ) ) offer to shuffle before adding folders to the queue?
 
 				if ( tia && ctrlChckd( "ignoreenqueuefolder" ) ) {
-					tau = tau.filter( li => !isIgnorable( li ) );
+					tau = notIgnorable( tau );
 				}
 				clearQueueOf( tau, true );
 				if ( cv === "now" ) {
@@ -1522,18 +1508,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 				}
 				if ( isShuffleBy( "folder" ) ) {
 					switch ( k ) {
-						case "[": {
-							TRANSPORT.prevFolder();
-							break;
-						}
-						case ";": {
-							TRANSPORT.backFolder();
-							break;
-						}
-						case "]": {
-							TRANSPORT.nextFolder();
-							break;
-						}
+						case "[": TRANSPORT.prevFolder(); break;
+						case ";": TRANSPORT.backFolder(); break;
+						case "]": TRANSPORT.nextFolder(); break;
 					}
 				}
 			} else if ( document.activeElement.type !== "text" ) {
@@ -1547,46 +1524,19 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 						if ( contextMenuShowing() ) {
 							closeContextMenu();
 						} else if ( no && ( fcs = fromPlaylist.focussed() || global__current_playing_track ) ) {
-							playlistContextMenu( { nare: true, li: fcs, y: window.innerHeight * 0.5, x: window.innerWidth * 0.5 } );
+							playlistContextMenu( { nare: true, li: fcs, y: half( window.innerHeight ), x: half( window.innerWidth ) } );
 						}
 						break;
 					}
-					case "g": {
-						googleSearch();
-						break;
-					}
-					case "q": {
-						CONTROLS.listEditor( global__queue );
-						break;
-					}
-					case "p": {
-						CONTROLS.listEditor( global__played );
-						break;
-					}
-					case "s": {
-						CONTROLS.sequencify();
-						break;
-					}
-					case "[": {
-						TRANSPORT.prevTrack();
-						break;
-					}
-					case ";": {
-						TRANSPORT.backTrack();
-						break;
-					}
-					case ",": {
-						TRANSPORT.pawsTrack();
-						break;
-					}
-					case ".": {
-						TRANSPORT.stopTrack();
-						break;
-					}
-					case "]": {
-						TRANSPORT.nextTrack();
-						break;
-					}
+					case "g": googleSearch(); break;
+					case "s": CONTROLS.sequencify(); break;
+					case "[": TRANSPORT.prevTrack(); break;
+					case ";": TRANSPORT.backTrack(); break;
+					case ",": TRANSPORT.pawsTrack(); break;
+					case ".": TRANSPORT.stopTrack(); break;
+					case "]": TRANSPORT.nextTrack(); break;
+					case "q": CONTROLS.listEditor( global__queue ); break;
+					case "p": CONTROLS.listEditor( global__played ); break;
 				}
 			}
 		}
