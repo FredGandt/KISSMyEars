@@ -10,15 +10,16 @@ temporary ignorables during not shuffled play e.g. skip tracks this time
 
 tag prefered versions i.e. play the prefered track/folder instead
 
-remake "played after" functionality using percentage played
-
-if recycling; recycle folder with unplayed ignorables...?
+select specific album to play during shuffle by folder
 
 mark folders to be ignored during shuffle by folder
 
 skip sequence button (instead of next next next...)
+________________________________________________________________________________
 
 mark newly added tracks and make them easy to find
+
+remake "played after" functionality using percentage played
 
 sequence editing
 	add tracks to or remove tracks from established sequences
@@ -110,21 +111,21 @@ function FromPlaylist() {
 };
 
 let global__current_playing_folder,
-	global__current_playing_track,
-	global__track_sequence = [],
-	global__played_index = null,
-	global__playlist_fragment,
-	global__queue_end = false,
-	global__softstop = false,
-	global__ignorable = [],
-	global__sequences = [],
-	global__sequence = [],
-	global__track_id = 0,
-	global__played = [],
-	global__queue = [],
-	global__dragee,
+		global__current_playing_track,
+		global__track_sequence = [],
+		global__played_index = null,
+		global__playlist_fragment,
+		global__queue_end = false,
+		global__softstop = false,
+		global__ignorable = [],
+		global__sequences = [],
+		global__sequence = [],
+		global__track_id = 0,
+		global__played = [],
+		global__queue = [],
+		global__dragee,
 
-	debugging = false;
+		debugging = false;
 
 const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_context_menu" ),
 	DOM_PLAYLIST_CONTEXT_MENU = document.getElementById( "playlist_context_menu" ),
@@ -648,8 +649,8 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 	updatePlaylistLength = () => {
 		let atl = numberOfNotBrokenTracks(),
-			btl = fromPlaylist.tracks.broken().length,
-			pllds = DOM_CONTROLS.playlist_length.dataset;
+				btl = fromPlaylist.tracks.broken().length,
+				pllds = DOM_CONTROLS.playlist_length.dataset;
 		pllds.tracks = multiTrack( atl );
 		pllds.broken = btl ? ` + ${btl} BROKEN` : "";
 		DOM_CONTROLS.fixBreakages.classList.toggle( "show", btl ); // TODO CONTROLS.fixBreakages()
@@ -701,6 +702,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 			// global__played could have a length of 10 but contain only 1 track
 
 		markUnplayed( ...fromPlaylist.played() );
+
 		global__played.forEach( li => {
 			li.classList.add( "played" );
 			fldr = folderOfTrack( li );
@@ -712,6 +714,8 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 			// TODO see notes at dropzoneDrop()
 				// how does this affect playing played?
+
+			// if recycling; recycle folder with unplayed ignorables...?
 
 			fromPlaylist.folders.played().forEach( li => {
 				trcks = tracksOfFolder( li );
@@ -730,8 +734,8 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 	giveFile = ( name, cntnt ) => {
 		let blob = new Blob( [ cntnt ], { type: "text/plain" } ),
-			ourl = URL.createObjectURL( blob ),
-			a = document.createElement( "a" );
+				ourl = URL.createObjectURL( blob ),
+				a = document.createElement( "a" );
 		a.href = ourl;
 		a.download = name;
 		DOM_BODY.append( a );
@@ -757,9 +761,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		if ( f ) {
 			f = parseFloat( f );
 			let seconds = f % 60,
-				m = ( f - seconds ) / 60,
-				minutes = m % 60,
-				hours = ( m - minutes ) / 60;
+					m = ( f - seconds ) / 60,
+					minutes = m % 60,
+					hours = ( m - minutes ) / 60;
 			return [
 				hours ? `${hours}`.padStart( 2, "0" ) : "",
 				`${minutes}`.padStart( 2, "0" ),
@@ -772,9 +776,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	appendClones2ListEditor = list => {
 		list.forEach( li => {
 			let clone = li.cloneNode(),
-				lc = DOM_LIST_EDITOR_LIST.lastElementChild,
-				fldr = clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
-				clone.draggable = true;
+					lc = DOM_LIST_EDITOR_LIST.lastElementChild,
+					fldr = clone.dataset.folder = folderStruct( folderOfTrack( li ) ) || "";
+					clone.draggable = true;
 			if ( lc?.dataset.folder === fldr ) {
 				let ol = lc.firstElementChild;
 				if ( ol ) {
@@ -845,7 +849,8 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 				// TODO reduce paths object size
 
-				let folder = { "tracks": [], "path": "" }, mtch, pastpath;
+				let folder = { "tracks": [], "path": "" },
+						mtch, pastpath;
 				global__playlist_fragment = document.createDocumentFragment();
 				paths = paths.filter( path => {
 					if ( stored.some( sp => sp.a === path.a ) ) {
@@ -930,7 +935,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 									if ( global__current_playing_folder ) {
 										let tof = tracksOfFolder( global__current_playing_folder ),
-											lstndx = tof.indexOf( global__current_playing_track );
+												lstndx = tof.indexOf( global__current_playing_track );
 										if ( lstndx < minus1( tof.length ) ) {
 											listing = tof[ plus1( lstndx ) ];
 										} else {
@@ -962,7 +967,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 						// TODO when playing played?
 
-						global__track_sequence = tracksFromIDs( global__sequences[ minus1( si ) ] );
+						global__track_sequence = tracksFromIDs( ...global__sequences[ minus1( si ) ] );
 						clearQueueOf( global__track_sequence );
 						listing = global__track_sequence.shift();
 					}
@@ -1003,10 +1008,10 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	},
 
 	audioTimeUpdate = () => {
-		let curt = DOM_AUDIO.currentTime,
-			tds = DOM_CONTROLS.times.dataset;
-		tds.curt = seconds2Str( DOM_SEEK.control.value = curt );
+		let tds = DOM_CONTROLS.times.dataset,
+				curt = DOM_AUDIO.currentTime;
 		tds.rema = seconds2Str( ( DOM_AUDIO.duration - curt ) || 0 );
+		tds.curt = seconds2Str( DOM_SEEK.control.value = curt );
 	},
 
 	audioError = evt => {
@@ -1055,7 +1060,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	listEditorContextMenuClick = evt => {
 		debugMsg( "listEditorContextMenuClick:", evt );
 		let trg = evt.target,
-			nme = trg.name;
+				nme = trg.name;
 		if ( isBtn( trg ) ) {
 			if ( nme === "reveal" ) {
 				DOM_LIST_EDITOR_CONTEXT_MENU.li.classList.add( "focussed" );
@@ -1074,9 +1079,11 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		let trg = evt.target;
 		if ( tagIs( trg, "li" ) ) {
 			let tds = trg.dataset,
-				li = tds.id ? tracksFromIDs( tds.id )[ 0 ] : DOM_PLAYLIST.querySelector( `li[data-folder_struct="${tds.folder}"]` );
+					li = tds.id ? tracksFromIDs( tds.id )[ 0 ] : DOM_PLAYLIST.querySelector( `li[data-folder_struct="${tds.folder}"]` );
 			if ( li ) {
-				DOM_LIST_EDITOR_CONTEXT_MENU.setAttribute( "style", `top:${Math.min( evt.y, Math.ceil( window.innerHeight - DOM_LIST_EDITOR_CONTEXT_MENU.offsetHeight ) )}px;left:${evt.x}px` );
+				let pos_y = Math.min( evt.y, Math.floor( window.innerHeight - DOM_LIST_EDITOR_CONTEXT_MENU.offsetHeight ) ),
+						pos_x = Math.min( evt.x, Math.floor( window.innerWidth - DOM_LIST_EDITOR_CONTEXT_MENU.offsetWidth ) );
+				DOM_LIST_EDITOR_CONTEXT_MENU.setAttribute( "style", `top:${pos_y}px;left:${pos_x}px` );
 				DOM_LIST_EDITOR_CONTEXT_MENU.li = li;
 				DOM_LIST_EDITOR_CONTEXT_MENU.pffs.disabled = false;
 				DOM_LIST_EDITOR_CONTEXT_MENU.classList.add( "show" );
@@ -1087,7 +1094,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	playlistContextMenuClick = evt => {
 		debugMsg( "playlistContextMenuClick:", evt );
 		let trg = evt.target,
-			nme = trg.name;
+				nme = trg.name;
 		if ( isBtn( trg ) ) {
 			if ( nme === "google" ) {
 				googleSearch( DOM_PLAYLIST_CONTEXT_MENU.google.title || DOM_PLAYLIST_CONTEXT_MENU.li );
@@ -1100,10 +1107,18 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 	playlistContextMenu = evt => {
 		debugMsg( "playlistContextMenu:", evt );
-		if ( !evt.nare && !debugging ) {
-			evt.preventDefault();
+		let pos_x, pos_y;
+		if ( !evt.nare ) {
+			if ( !debugging ) {
+				evt.preventDefault();
+			}
+			pos_y = Math.min( evt.y, Math.floor( window.innerHeight - DOM_PLAYLIST_CONTEXT_MENU.offsetHeight ) );
+			pos_x = Math.min( evt.x, Math.floor( window.innerWidth - DOM_PLAYLIST_CONTEXT_MENU.offsetWidth ) );
+		} else {
+			pos_y = evt.y;
+			pos_x = evt.x;
 		}
-		DOM_PLAYLIST_CONTEXT_MENU.setAttribute( "style", `top:${Math.min( evt.y, Math.ceil( window.innerHeight - DOM_PLAYLIST_CONTEXT_MENU.offsetHeight ) )}px;left:${evt.x}px` );
+		DOM_PLAYLIST_CONTEXT_MENU.setAttribute( "style", `top:${pos_y}px;left:${pos_x}px` );
 		DOM_PLAYLIST_CONTEXT_MENU.google.title = googleSearch( DOM_PLAYLIST_CONTEXT_MENU.li = evt.li || liFromEvtPath( evt ), true );
 		DOM_PLAYLIST_CONTEXT_MENU.pffs.disabled = false;
 		DOM_PLAYLIST_CONTEXT_MENU.querySelector( `input[name="${ctrlVlu( "clicky" )}"]` ).focus();
@@ -1150,15 +1165,14 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		// TODO why shouldn't I be able to edit the order of global__played?
 			// because it might be complicated ;)
 			// playing played would go wild
-			// recycling is already editing global__played during playback...
+			// recycling via ctrlChckd( "recycle" ) at updatePlayedness() is already editing global__played during playback...
 
 		let q = listEditingQueue(),
-			drop_target = evt.target,
-			dragged_folder = global__dragee.firstElementChild,
-			dragee_arr = ( dragged_folder ? arrayFrom( dragged_folder.children ) : [ global__dragee ] ).map( tm => {
-				return ( q ? global__queue : global__played ).find( li => absPathsMatch( li, tm ) );
-			} );
-
+				drop_target = evt.target,
+				dragged_folder = global__dragee.firstElementChild,
+				dragee_arr = ( dragged_folder ? arrayFrom( dragged_folder.children ) : [ global__dragee ] ).map( tm => {
+					return ( q ? global__queue : global__played ).find( li => absPathsMatch( li, tm ) );
+				} );
 		if ( drop_target === DOM_LIST_EDITOR_TRASH ) {
 			( q ? clearQueueOf : clearPlayedOf )( dragee_arr );
 			refreshListEditor();
@@ -1179,7 +1193,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		// TODO it needs to be possible to set to stop at the end of {thing} while the last track of {thing} is playing
 
 		let cpt = global__current_playing_track,
-			cont = true;
+				cont = true;
 		if ( cpt ) {
 			global__played.push( cpt );
 			updatePlayedness();
@@ -1237,20 +1251,19 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	playlistFilterInput = evt => {
 		debugMsg( "playlistFilterInput:", evt );
 		let frsh = fltrChckd( "onlyunplayed" ) ? ":not(.played)" : "",
-			cs = fltrChckd( "casensitive" ) ? "" : " i",
-			vlu, tag, mth,
-			fltrs = arrayFrom( DOM_PLAYLIST_FILTER.querySelectorAll( 'input[type="text"]' ) ).map( npt => {
-				vlu = npt.value.trim();
-				if ( vlu ) {
-					tag = npt.parentElement.querySelector( "legend" ).dataset.data;
-					if ( npt.name === "contains" ) {
-						vlu = vlu.split( " " ).map( str => `[data-${tag}*="${str}"${cs}]` ).join( "" );
-						return `li${vlu}:not(.broken)${frsh}`;
+				cs = fltrChckd( "casensitive" ) ? "" : " i",
+				vlu, tag, mth,
+				fltrs = arrayFrom( DOM_PLAYLIST_FILTER.querySelectorAll( 'input[type="text"]' ) ).map( npt => {
+					vlu = npt.value.trim();
+					if ( vlu ) {
+						tag = npt.parentElement.querySelector( "legend" ).dataset.data;
+						if ( npt.name === "contains" ) {
+							vlu = vlu.split( " " ).map( str => `[data-${tag}*="${str}"${cs}]` ).join( "" );
+							return `li${vlu}:not(.broken)${frsh}`;
+						}
+						return `li[data-${tag}${npt.name === "starts" ? "^" : "$"}="${vlu}"${cs}]:not(.broken)${frsh}`;
 					}
-					return `li[data-${tag}${npt.name === "starts" ? "^" : "$"}="${vlu}"${cs}]:not(.broken)${frsh}`;
-				}
-			} ).filter( v => v ).join( fltrChckd( "combifilter" ) ? " " : "," ); // TODO combifilter won't work like this for more fields/tags;
-
+				} ).filter( v => v ).join( fltrChckd( "combifilter" ) ? " " : "," ); // TODO combifilter won't work like this for more fields/tags;
 		if ( fltrs.length ) {
 			debugMsg( "playlistFilterInput - fltrs:", fltrs );
 			clearFilters();
@@ -1271,10 +1284,10 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	controlsInput = evt => {
 		debugMsg( "controlsInput:", evt );
 		let trg = evt.target,
-			typ = trg.type;
+				typ = trg.type;
 		if ( typ ) {
 			let vlu = trg.value,
-				nme = trg.name;
+					nme = trg.name;
 			if ( typ === "range" ) {
 				if ( nme === "volume" ) {
 					DOM_AUDIO.volume = parseFloat( vlu );
@@ -1305,9 +1318,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	sourcesInput = evt => {
 		debugMsg( "sourcesInput:", evt );
 		let slv = String.raw`${DOM_SOURCES.libraries.value}`,
-			libnme = DOM_SOURCES.lib_name.value,
-			libpth = DOM_SOURCES.lib_path.value,
-			trg = evt.target;
+				libnme = DOM_SOURCES.lib_name.value,
+				libpth = DOM_SOURCES.lib_path.value,
+				trg = evt.target;
 		if ( slv ) {
 			DOM_SOURCES.lib_name.value = DOM_SOURCES.lib_path.value = "";
 			DOM_SOURCES.include.disabled = false;
@@ -1325,15 +1338,16 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 			}
 			CONTROLS.addTracks();
 			let sp = slv.split( /\\|\//g ).filter( f => f ),
-				paths = arrayFrom( trg.files ).filter( file => /^audio\//.test( file.type ) ).map( file => {
-					let cp = sp.concat( file.webkitRelativePath.split( "/" ).filter( f => f ) );
-					return {
-						"a": cp.map( pp => encodeURIComponent( pp ) ).join( "/" ), // TODO reduce paths object size
-						"f": cp.pop(),
-						"d": cp.slice( plus1( sp.length ) ).join( " | " ),
-						"i": ++global__track_id
-					};
-				} );
+					cp,
+					paths = arrayFrom( trg.files ).filter( file => /^audio\//.test( file.type ) ).map( file => {
+						cp = sp.concat( file.webkitRelativePath.split( "/" ).filter( f => f ) );
+						return {
+							"a": cp.map( pp => encodeURIComponent( pp ) ).join( "/" ), // TODO reduce paths object size
+							"f": cp.pop(),
+							"d": cp.slice( plus1( sp.length ) ).join( " | " ),
+							"i": ++global__track_id
+						};
+					} );
 			if ( paths.length ) {
 				STORAGE.get( async store => {
 					paths = await paths2Playlist( paths, store.paths );
@@ -1345,7 +1359,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 						TRANSPORT.playTrack();
 						let nl = { "lib_path": slv, "lib_name": libnme },
-							libraries = ( store.libraries || [] ).filter( l => l.lib_path !== nl.lib_path ).concat( [ nl ] ); // TODO uniqueness must include selected folder
+								libraries = ( store.libraries || [] ).filter( l => l.lib_path !== nl.lib_path ).concat( [ nl ] ); // TODO uniqueness must include selected folder
 						setLibraries( libraries );
 						STORAGE.set( { "libraries": libraries, "paths": paths } );
 
@@ -1369,8 +1383,8 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		let trg = folder( evt.trg || liFromEvtPath( evt ) || fromPlaylist.focussed() );
 		if ( trg ) {
 			let cv = evt.clicky || ctrlVlu( "clicky" ),
-				tia = trg.tracks,
-				tau = tia || [ trg ];
+					tia = trg.tracks,
+					tau = tia || [ trg ];
 			if ( cv === "delist" ) {
 
 				// TODO playing tracks continue playing after being delisted O_o
@@ -1457,17 +1471,15 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		// TODO keyboard access sucks less now but still...
 
 		let k = evt.key,
-			ctrl = evt.ctrlKey,
-			shft = evt.shiftKey,
-			pgud = k.match( /^Page(Up|Down)$/ ),
-			no = !listEditorShowing() && !playlistFilterShowing(), // TODO this needs work
-			fcs;
-
+				ctrl = evt.ctrlKey,
+				shft = evt.shiftKey,
+				pgud = k.match( /^Page(Up|Down)$/ ),
+				no = !listEditorShowing() && !playlistFilterShowing(), // TODO this needs work
+				fcs;
 		debugMsg( "keyDown:", { "evt": evt, "key": k, "ctrl": ctrl, "shft": shft } );
-
 		if ( !!pgud && no ) {
 			let hpp = halfPlaypen(),
-				all = fromPlaylist[ shft ? "folders" : "tracks" ].all();
+					all = fromPlaylist[ shft ? "folders" : "tracks" ].all();
 			fcs = removeFocussed() || cloneArray( all ).sort( ( a, b ) => ( a.offsetTop - hpp ) + ( b.offsetTop - hpp ) )[ 0 ];
 			if ( fcs ) {
 				let up = pgud[ 1 ] === "Up";
@@ -1516,6 +1528,11 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 			} else if ( document.activeElement.type !== "text" ) {
 				switch ( k ) {
 					case "Backspace": {
+
+						// TODO closeContextMenu()?
+							// probably; maybe try testing it?
+								// that seems like a lot of effort -_-
+
 						removeFocussed();
 						scroll2Track();
 						break;
@@ -1524,7 +1541,12 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 						if ( contextMenuShowing() ) {
 							closeContextMenu();
 						} else if ( no && ( fcs = fromPlaylist.focussed() || global__current_playing_track ) ) {
-							playlistContextMenu( { nare: true, li: fcs, y: half( window.innerHeight ), x: half( window.innerWidth ) } );
+							playlistContextMenu( {
+								y: half( window.innerHeight - DOM_PLAYLIST_CONTEXT_MENU.offsetHeight ),
+								x: half( window.innerWidth - DOM_PLAYLIST_CONTEXT_MENU.offsetWidth ),
+								nare: true,
+								li: fcs
+							} );
 						}
 						break;
 					}
@@ -1546,9 +1568,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		return new Promise( resolve => {
 			if ( store ) {
 				let i = store.ignorable,
-					s = store.sequences,
-					p = store.played,
-					q = store.queue;
+						s = store.sequences,
+						p = store.played,
+						q = store.queue;
 				if ( q?.length ) {
 					global__queue.push( ...tracksFromIDs( ...q ) );
 					updateQueuetness();
