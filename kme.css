@@ -94,18 +94,6 @@
 	z-index: 2;
 }
 
-/* TODO introduction with walkthrough */
-#welcome {
-	animation: welcome 2s ease-in 0s 1 forwards;
-	z-index: 2;
-	left: 40vw;
-	top: 40vh;
-}
-
-@keyframes welcome {
-	100% { opacity: 0 }
-}
-
 html {
 	background-color: black;
 }
@@ -115,11 +103,13 @@ body, div, form {
 }
 
 body {
+	transition: opacity 200ms ease-out;
 	font-family: monospace, monospace;
 	color: var( --lighter-grey );
 	overflow: hidden;
 	font-size: 16px;
 	height: 100vh;
+	opacity: 0;
 	margin: 0;
 }
 
@@ -212,7 +202,7 @@ body.display_controls_left #sources {
 	margin: 0 0 .5em 0;
 }
 
-::-webkit-file-upload-button {
+::file-selector-button {
 	visibility: hidden;
 }
 
@@ -241,6 +231,12 @@ input[type="file"]::before {
 form.contextmenu input:not(:last-child) {
 	margin: 0 0 .5em;
 	display: block;
+}
+
+ul, ol {
+	list-style: none;
+	padding: 0;
+	margin: 0;
 }
 
 #list_editor {
@@ -368,10 +364,6 @@ output[name="playlist_length"] {
 	display: block;
 }
 
-ol li span::after {
-	content: attr( data-display );
-}
-
 ol li {
 	padding: .1em .5em .2em;
 	color: var( --turq );
@@ -396,22 +388,6 @@ ol li {
 
 li.broken {
 	color: var( --red ) !important;
-}
-
-ol li span:nth-child(1) {
-	vertical-align: text-top;
-	width: 5ch;
-}
-
-ol li span:nth-child(2) {
-	width: calc( 100% - 5ch );
-	vertical-align: text-top;
-}
-
-ul, ol {
-	list-style: none;
-	padding: 0;
-	margin: 0;
 }
 
 select:focus,
@@ -558,6 +534,10 @@ select {
 	font-weight: bold;
 }
 
+ol li::after {
+	content: attr( data-title );
+}
+
 #playlist > li:not(:first-of-type) {
 	padding-top: .5em;
 }
@@ -620,48 +600,48 @@ input[type="button"].red {
 	background-color: var( --turq );
 }
 
-#playlist ol li span[data-ignorable]:not([data-ignorable=""])::before,
-#playlist ol li span[data-sequence]:not([data-sequence=""])::before,
-#playlist ol li span[data-queue]:not([data-queue=""])::before {
+#playlist ol li[data-ignorable="?"]::before,
+#playlist ol li[data-sequence*=":"]::before,
+#playlist ol li[data-queue*="/"]::before {
 	color: var( --darkest-grey );
 	border-radius: .2em;
 	margin-right: .5em;
 	padding: 0 .25em;
 }
 
-#playlist ol li span[data-ignorable]:not([data-ignorable=""])::before {
-	background-color: var( --purple );
-	content: attr( data-ignorable );
-}
-
-#playlist ol li span[data-sequence]:not([data-sequence=""])::before {
-	background-color: var( --pink );
-	content: attr( data-sequence );
-}
-
-#playlist ol li span[data-queue]:not([data-queue=""])::before {
-	background-color: var( --orange );
-	content: attr( data-queue );
-}
-
-#playlist ol li span[data-ignorable]:not([data-ignorable=""])[data-sequence]:not([data-sequence=""])::before {
-	background-image: linear-gradient( to right, var( --purple ), var( --pink ) );
-	content: attr( data-ignorable ) "\0000a0|\0000a0" attr( data-sequence );
-}
-
-#playlist ol li span[data-ignorable]:not([data-ignorable=""])[data-queue]:not([data-queue=""])::before {
-	background-image: linear-gradient( to right, var( --purple ), var( --orange ) );
-	content: attr( data-ignorable ) "\0000a0|\0000a0" attr( data-queue );
-}
-
-#playlist ol li span[data-ignorable]:not([data-ignorable=""])[data-sequence]:not([data-sequence=""])[data-queue]:not([data-queue=""])::before {
+#playlist ol li[data-ignorable="?"][data-sequence*=":"][data-queue*="/"]::before {
 	background-image: linear-gradient( to right, var( --purple ), var( --pink ), var( --orange ) );
 	content: attr( data-ignorable ) "\0000a0|\0000a0" attr( data-sequence ) "\0000a0|\0000a0" attr( data-queue );
 }
 
-#playlist ol li span[data-sequence]:not([data-sequence=""])[data-queue]:not([data-queue=""])::before {
+#playlist ol li[data-ignorable="?"][data-sequence*=":"]::before {
+	background-image: linear-gradient( to right, var( --purple ), var( --pink ) );
+	content: attr( data-ignorable ) "\0000a0|\0000a0" attr( data-sequence );
+}
+
+#playlist ol li[data-ignorable="?"][data-queue*="/"]::before {
+	background-image: linear-gradient( to right, var( --purple ), var( --orange ) );
+	content: attr( data-ignorable ) "\0000a0|\0000a0" attr( data-queue );
+}
+
+#playlist ol li[data-sequence*=":"][data-queue*="/"]::before {
 	background-image: linear-gradient( to right, var( --pink ), var( --orange ) );
 	content: attr( data-sequence ) "\0000a0|\0000a0" attr( data-queue );
+}
+
+#playlist ol li[data-ignorable="?"]::before {
+	background-color: var( --purple );
+	content: attr( data-ignorable );
+}
+
+#playlist ol li[data-sequence*=":"]::before {
+	background-color: var( --pink );
+	content: attr( data-sequence );
+}
+
+#playlist ol li[data-queue*="/"]::before {
+	background-color: var( --orange );
+	content: attr( data-queue );
 }
 
 label.child {
@@ -678,7 +658,6 @@ body:not(.scroll_to_playing) #controls label.smooth_scrolling,
 #controls.hide_cont_folder label.cont_folder,
 #controls.hide_shuffle_by label.skip_played,
 #controls.hide_shuffle_by span.skip_folders,
-#list_editor ol li span:not(:nth-child(2)),
 fieldset[name="sequence_fs"]:not(.show),
 #playlist.filtered li:not(.filtered),
 #list_editor div.dropzone li,
@@ -747,7 +726,6 @@ label kbd::after {
 
 input[name="fixBreakages"].show,
 div.dropzone,
-ol li span,
 .ib {
 	display: inline-block !important;
 }
