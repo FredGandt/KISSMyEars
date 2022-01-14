@@ -96,10 +96,15 @@
 					--><input name="fixBreakages" type="button" value="BREAKAGES"><!--
 				--></fieldset><!--
 
-				--><fieldset name="played_length_fs"><!--
-					--><output name="played_length" data-pl="0 TRACKS"></output><!--
+				--><fieldset name="played_tracks_length_fs"><!--
+				--><output name="played_tracks_length" data-pl="0 TRACKS"></output><!--
 					--><label><input class="left_marg" name="listEditor" data-list="played" type="button" value="EDIT"><kbd class="left_marg">P</kbd></label><!--
 					--><label id="spp"><input class="left_marg" name="stopPlayingPlayed" type="button" value="STOP PLAYING PLAYED"><kbd class="left_marg">CTRL + .</kbd></label><!--
+				--></fieldset><!--
+
+				--><fieldset name="played_folders_length_fs"><!--
+					--><output name="played_folders_length" data-pl="0 FOLDERS"></output><!--
+					--><label><input class="left_marg" name="recycleFolders" type="button" value="RECYCLE"></label><!--
 				--></fieldset><!--
 
 				--><fieldset name="queue_length_fs"><!--
@@ -133,6 +138,7 @@
 							--><label>PLAYING UNSHUFFLED<input class="purple" name="ignorenonshuffle" type="checkbox"></label><!--
 							--><label>SHUFFLING BY TRACK<input class="purple" name="ignoreshuffletrack" type="checkbox"></label><!--
 							--><label>SHUFFLING BY FOLDER<input class="purple" name="ignoreshufflefolder" type="checkbox"></label><!--
+							--><label class="child">AUTO-MARKING FOLDERS PLAYED<input class="purple" name="ignoreplayedfolder" type="checkbox"></label><!--
 						--></fieldset><!--
 						--><fieldset class="fright stacked"><!--
 							--><label>ENQUEUING A FILTER<input class="purple" name="ignoreenqueuefilter" type="checkbox"></label><!--

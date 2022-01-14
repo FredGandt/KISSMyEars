@@ -269,7 +269,7 @@ body.display_controls_left #list_editor {
 
 #playlist_filter {
 	right: 2.7em; /* TODO this is going to keep happening */
-	top: 11em;
+	top: 13em;
 }
 
 body.display_controls_left #playlist_filter {
@@ -334,7 +334,8 @@ fieldset:not(.legend) {
 	padding: 0;
 }
 
-output[name="played_length"]::after {
+output[name="played_folders_length"]::after,
+output[name="played_tracks_length"]::after {
 	content: attr( data-pl ) "\0000a0PLAYED";
 }
 
@@ -600,11 +601,17 @@ input[type="button"].red {
 	background-color: var( --turq );
 }
 
+#playlist ol li[data-ignorable="?"],
+#playlist ol li[data-sequence*=":"],
+#playlist ol li[data-queue*="/"] {
+	padding-left: 0;
+}
+
 #playlist ol li[data-ignorable="?"]::before,
 #playlist ol li[data-sequence*=":"]::before,
 #playlist ol li[data-queue*="/"]::before {
 	color: var( --darkest-grey );
-	border-radius: .2em;
+	border-radius: .1em;
 	margin-right: .5em;
 	padding: 0 .25em;
 }
@@ -648,7 +655,8 @@ label.child {
 	text-indent: 1ch;
 }
 
-#controls:not(.show_cont_played) fieldset[name="played_length_fs"],
+#controls:not(.show_cont_played_folders) fieldset[name="played_folders_length_fs"],
+#controls:not(.show_cont_played_tracks) fieldset[name="played_tracks_length_fs"],
 #controls:not(.show_cont_queue) fieldset[name="queue_length_fs"],
 body:not(.scroll_to_playing) #controls label.smooth_scrolling,
 #controls:not(.show_cont_sequence) label.cont_sequence,
@@ -732,4 +740,9 @@ div.dropzone,
 
 .smaller {
 	font-size: 80%;
+}
+
+fieldset.fright label:last-child input,
+fieldset.stacked.fright input {
+	margin-right: 0;
 }
