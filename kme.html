@@ -50,6 +50,7 @@
 				--><input class="orange" name="next" type="button" value="ENQUEUE NEXT"><!--
 				--><input class="purple" name="unignorable" type="button" value="MARK AS (UN)IGNORABLE"><!--
 				--><input name="unplayed" type="button" value="MARK AS (UN)PLAYED"><!--
+				--><input name="preference" type="button" value="PREFERENCIFY"><!--
 				--><input class="pink" name="sequence" type="button" value="SEQUENCIFY"><!--
 				--><input name="delist" type="button" value="DELIST"><!--
 				--><input name="google" type="button" value="GOOGLE SEARCH"><!--
@@ -70,10 +71,8 @@
 				--><h2 class="fleft">DRAGON DROPPINGS</h2><!--
 				--><div class="dropzone">DROP HERE TO REMOVE</div><!--
 				--><input name="clear" type="button" value="CLEAR"><!--
+				--><input name="shuffle" type="button" value="SHUFFLE"><!--
 				--><input class="red" name="done" type="button" value="DONE"><!--
-
-				TODO shuffle existing queue button
-
 			--></fieldset><!--
 			--><ol class="dropzone"></ol><!--
 		--></form><!--
@@ -97,10 +96,12 @@
 				--></fieldset><!--
 
 				--><fieldset name="played_tracks_length_fs"><!--
-				--><output name="played_tracks_length" data-pl="0 TRACKS"></output><!--
+					--><output name="played_tracks_length" data-pl="0 TRACKS"></output><!--
 					--><label><input class="left_marg" name="listEditor" data-list="played" type="button" value="EDIT"><kbd class="left_marg">P</kbd></label><!--
 					--><label id="spp"><input class="left_marg" name="stopPlayingPlayed" type="button" value="STOP PLAYING PLAYED"><kbd class="left_marg">CTRL + .</kbd></label><!--
 				--></fieldset><!--
+
+				TODO sequence editor
 
 				--><fieldset name="played_folders_length_fs"><!--
 					--><output name="played_folders_length" data-pl="0 FOLDERS"></output><!--
@@ -111,8 +112,6 @@
 					--><output name="queue_length" data-ql="0 TRACKS"></output><!--
 					--><label><input class="orange left_marg" name="listEditor" data-list="queue" type="button" value="EDIT"><kbd class="left_marg">Q</kbd></label><!--
 				--></fieldset><!--
-
-				TODO sequence editor
 
 				--><fieldset name="sequence_fs"><!--
 					--><output name="sequence_length" data-sl="0 TRACKS"></output><!--
@@ -128,6 +127,7 @@
 						--><label>FOLDER<input name="shuffleby" type="radio" value="folder"></label><!--
 					--></fieldset><!--
 					--><label class="child smaller skip_played">SKIP PLAYED <span class="skip_tracks">TRACKS</span><span class="skip_folders">FOLDERS</span><input name="skiplayed" type="checkbox" checked></label><!--
+					--><label>RESPECT PREFERENCES<input name="respectpreferences" type="checkbox" checked></label><!--
 					--><label>RESPECT SEQUENCES<input class="pink" name="respectsequences" type="checkbox" checked></label><!--
 					--><label title="selecting tracks to play while paused will restart playback">WAKE FROM PAUSED<input name="wakeful" type="checkbox" checked></label><!--
 					--><label title="auto-scroll to the currently playing track; press backspace or turn off and on again to jump">SCROLL TO PLAYING<input name="scrolltoplaying" type="checkbox" checked><kbd>BACKSPACE</kbd></label><!--
@@ -169,6 +169,7 @@
 						--><label>PLAY IMMEDIATELY<input name="clicky" type="radio" value="now"></label><!--
 						--><label>ENQUEUE AT END<input class="orange" name="clicky" type="radio" value="end" checked></label><!--
 						--><label>ENQUEUE NEXT<input class="orange" name="clicky" type="radio" value="next"></label><!--
+						--><label>DELIST<input name="clicky" type="radio" value="delist"></label><!--
 
 						TODO ENQUEUE splice the track(s) into the queue randomly
 
@@ -176,8 +177,8 @@
 					--><fieldset class="stacked fright"><!--
 						--><label title="tracks may be ignored under various conditions">MARK AS (UN)IGNORABLE<input class="purple" name="clicky" type="radio" value="unignorable"></label><!--
 						--><label>MARK AS (UN)PLAYED<input name="clicky" type="radio" value="unplayed"></label><!--
-						--><label>SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
-						--><label>DELIST<input name="clicky" type="radio" value="delist"></label><!--
+						--><label>PREFERENCIFY<input name="clicky" type="radio" value="preference"></label><!--
+						--><label class="bum">SEQUENCIFY<input class="pink" name="clicky" type="radio" value="sequence"></label><!--
 					--></fieldset><!--
 					--><fieldset class="legend smaller nobum"><!--
 						--><legend>KEYBOARD NAVIGATION</legend><!--

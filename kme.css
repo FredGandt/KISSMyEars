@@ -257,6 +257,10 @@ body.display_controls_left #list_editor {
 	top: 0;
 }
 
+#list_editor[data-list="played"] input[name="shuffle"] {
+	display: none;
+}
+
 #list_editor > ol.dropzone {
   height: calc( 100vh - 9em );
   padding: 2em 0;
@@ -314,10 +318,17 @@ fieldset.legend {
 }
 
 fieldset.legend.nobum {
-	border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
-	border-bottom-width: 0;
+  border-bottom: none;
+  border-right: none;
+  border-left: none;
+	border-radius: 0;
 	padding-bottom: 0;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.bum {
+	margin-bottom: .5em;
 }
 
 fieldset.stacked > label {

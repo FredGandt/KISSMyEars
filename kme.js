@@ -1,28 +1,44 @@
 
-/* TODO
+/* TODO review todo notes
 
 if shuffleBy( "folder" ) && queue created; option to finish the folder first, play the queue then come back to the folder, or simply move on
+
+include image files (which might be cover art, but could also be dick-pics) in uploads and display
 
 sequencify folders for isShuffleBy( "folder" ) i.e. dic 1 & 2 of double album
 
 temporary ignorables during not shuffled play e.g. skip tracks this time
 	break at marker?
 
-tag prefered versions i.e. play the prefered track/folder instead
+disable marking queued tracks as played during otherwise shuffled play
+
+show played folders only; button with "recycle" and on editor header
+
+repeat track, folder, sequence, queue (or playlist when implemented)
+
+queue stuff to follow the folder playing during shuffle by folder
+
+remake "played after" functionality using percentage played
+
+start shuffle play again after e.g. finishing a folder etc.
 
 select specific album to play during shuffle by folder
-and
-queue stuff to follow the folder playing during shuffle by folder
+
+skip sequence button (instead of next next next...)
 
 mark folders to be ignored during shuffle by folder
 	without being marked as  played
 
-skip sequence button (instead of next next next...)
-________________________________________________________________________________
-
 mark newly added tracks and make them easy to find
 
-remake "played after" functionality using percentage played
+mark track to stop at; when queued and ????
+
+gapless playback (surprisingly shitty)
+
+prioritise UX for visually impaired
+
+playing played sequenced tracks...
+________________________________________________________________________________
 
 sequence editing
 	add tracks to or remove tracks from established sequences
@@ -30,22 +46,17 @@ sequence editing
 	combine or split sequences
 	delete sequences
 
-playing played sequenced tracks...
-
-prioritise UX for visually impaired
-
 fix responsiveness of UI
-	// window.devicePixelRatio
-	// window.matchMedia()
-	// css max() & min()
-
-gapless playback (surprisingly shitty)
+	window.devicePixelRatio
+	window.matchMedia()
+	css max() & min()
 
 merge new imports into related folders
 	CONTROLS.fixBreakages()
 
 save queue as playlist
 	giveFile()
+________________________________________________________________________________
 
 tags
 	https://taglib.org/api/
@@ -55,19 +66,14 @@ tags
 	https://emscripten.org/docs/getting_started/Tutorial.html
 		organise playback by tag
 		sorting and searching
+		tag-embedded images
 		merging uploads
-		tag embedded images
 		replaygain
 			https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
 			https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode
 		scrobbling
 			https://www.last.fm/api/scrobbling
-
-possible settings/options
-	include cover art image files in uploads and display
-	start shuffle play again after e.g. finishing a folder etc.
-	disable marking queued tracks as played during otherwise shuffled play
-	repeat track, folder, sequence, queue (or playlist when implemented)
+________________________________________________________________________________
 
 maybe
 	use virtual DOM for DOM_PLAYLIST
@@ -102,7 +108,7 @@ function FromPlaylist() {
 		all: ni => this.get( "li[data-folder_struct]", ni )
 	};
 
-	this.focussed = () => this.get( "li.focussed:not(.broken)" )[ 0 ];
+	this.focussed = () => notPop( this.get( "li.focussed:not(.broken)" ) );
 	this.filtered = () => this.get( "li.filtered:not(.broken)" );
 	this.played = () => this.get( "li.played:not(.broken)" );
 };
@@ -178,15 +184,15 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	isBtn = trg => trg?.type === "button",
 
-	arrayOf = ( ...lmnts ) => Array.of( ...lmnts ),
-
-	trackPath = li => getElementData( li, "path" ),
-
 	ctrlVlu = ctrl => DOM_CONTROLS[ ctrl ].value,
 
 	underspace = str => str.replace( /_+/g, " " ),
 
 	randNum = n => Math.floor( Math.random() * n ),
+
+	arrayOf = ( ...lmnts ) => Array.of( ...lmnts ),
+
+	trackPath = li => getElementData( li, "path" ),
 
 	untilEndOf = cont => isCtrlVlu( "endof", cont ),
 
@@ -223,8 +229,6 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 	markSequenced = ( li, sq ) => setElementData( li, "sequence", sq ),
 
 	isNewSequenced = li => /^NEW/.test( getElementData( li, "sequence" ) ),
-
-	setElementData = ( lmnt, data, vlu ) => ( lmnt.dataset[ data ] = vlu ), // TODO check lmnt will always exist
 
 	folderStruct = li => getElementData( li, "folder_struct" ) ?? undefined,
 
@@ -519,16 +523,12 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		} );
 	},
 
-	/* TODO yikes
-
-	forEach = ( arr, fnc ) => {
-		if ( arr.length ) {
-    	fnc( arr.shift() );
-      requestIdleCallback( () => forEach( arr, fnc ) );
-    }
+	setElementData = ( lmnt, data, vlu ) => {
+		if ( lmnt ) {
+			lmnt.dataset[ data ] = vlu;
+		}
+		return vlu;
 	},
-
-	*/
 
 	removeFocussed = () => {
 		let fcs = fromPlaylist.focussed();
@@ -671,13 +671,16 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		global__ignorable.forEach( li => setElementData( li, "ignorable", "?" ) );
 	},
 
-	updateQueuetness = () => {
+	updateQueuetness = rfrsh => {
 		let ql = global__queue.length;
 		STORAGE.set( { "queue": idsFromTracks( global__queue ) } );
 		scrubTrackMarkers( "queue" );
 		if ( DOM_CONTROLS.classList.toggle( "show_cont_queue", ql ) ) {
 			setElementData( DOM_CONTROLS.queue_length, "ql", multiTrack( ql ) );
 			global__queue.forEach( ( li, i ) => setElementData( li, "queue", `${plus1( i )}/${ql}` ) );
+		}
+		if ( rfrsh ) {
+			refreshListEditor();
 		}
 	},
 
@@ -756,8 +759,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		}
 	},
 
-	seconds2Str = ( f ) => {
-		if ( f = parseFloat( f ) ) {
+	seconds2Str = f => {
+		if ( f ) {
+			f = parseFloat( f );
 			let seconds = f % 60,
 					m = ( f - seconds ) / 60,
 					minutes = m % 60,
@@ -772,18 +776,18 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	},
 
 	appendClones2ListEditor = lst => {
-		let clone, fldr, lc, ol;
+		let fldr_strct, clone, lc, ol;
 		lst.forEach( li => {
-			fldr = setElementData( clone = li.cloneNode(), "folder", folderStructOfTrack( li ) || "" );
+			setElementData( clone = li.cloneNode(), "folder", fldr_strct = folderStructOfTrack( li ) || "" );
 			lc = DOM_LIST_EDITOR_LIST.lastElementChild;
 			clone.draggable = true;
-			if ( getElementData( lc, "folder" ) === fldr ) {
+			if ( getElementData( lc, "folder" ) === fldr_strct ) {
 				if ( ol = lc.firstElementChild ) {
 					ol.append( clone );
 				} else {
 					li = TEMPLATES.folder.cloneNode( true );
 					li.draggable = true;
-					setElementData( li, "folder", fldr );
+					setElementData( li, "folder", fldr_strct );
 					li.firstElementChild.append( lc, clone );
 					DOM_LIST_EDITOR_LIST.append( li );
 				}
@@ -888,7 +892,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		return new Promise( resolve => {
 			if ( !DOM_AUDIO.src ) {
 				let listing;
-				if ( ctrlChckd( "respectsequences" ) && global__track_sequence.length ) {
+				if ( global__track_sequence.length && ctrlChckd( "respectsequences" ) ) {
 					listing = global__track_sequence.shift();
 
 					// TODO if ( untilEndOf( "queue" ) && the last track of the queue is sequenced and not the last track of that sequence ) { stop at the end of the sequence }
@@ -1002,7 +1006,8 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 	audioTimeUpdate = () => {
 		let tds = DOM_CONTROLS.times.dataset,
-				curt = DOM_AUDIO.currentTime;
+				curt = DOM_AUDIO.currentTime,
+				shake_the_hat = randNum( curt ); // TODO testing if this will unobtrusively improve the "randomness" of randNum()
 		tds.rema = seconds2Str( ( DOM_AUDIO.duration - curt ) || 0 );
 		tds.curt = seconds2Str( DOM_SEEK.control.value = curt );
 	},
@@ -1120,28 +1125,28 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	// TODO combine the shit out of that shit
 
 	listEditorClick = evt => {
+		debugMsg( "listEditorClick:", evt );
 
 		// TODO all DOM_PLAYLIST click actions in DOM_LIST_EDITOR too?
 
-		debugMsg( "listEditorClick:", evt );
-		if ( evt?.target.name === "clear" ) {
-			if ( listEditingQueue() ) {
-				if ( global__queue.length && confirm( "Clear the queue?" ) ) {
-					clear( "global__queue" );
-				}
-			} else if ( global__played.length && confirm( "Clear played tracks?" ) ) {
-				clear( "global__played" );
+		let trg = evt?.target;
+		if ( trg ) {
+			let leq = listEditingQueue(),
+				nme = trg.name;
+			if ( nme === "clear" ) {
+				clear( `global__${leq ? "queue" : "played"}` );
+			} else if ( leq && nme === "shuffle" ) {
+				shuffleArray( global__queue );
+				updateQueuetness( true );
+				return;
+			}
+			if ( !trg.type ) {
+				return;
 			}
 		}
-
-		// TODO shuffle the queue button
-
-		if ( evt?.target && !evt.target.type ) {
-			return;
-		}
 		DOM_LIST_EDITOR.classList.remove( "show" );
-		DOM_LIST_EDITOR_LIST.innerHTML = "";
 		DOM_LIST_EDITOR.pffs.disabled = true;
+		DOM_LIST_EDITOR_LIST.innerHTML = "";
 	},
 
 	dropzoneDrop = evt => {
@@ -1172,8 +1177,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 			} else {
 				global__queue.splice( global__queue.findIndex( li => pathsMatch( li, drop_target.firstElementChild?.lastElementChild || drop_target ) ), 0, ...dragee_arr );
 			}
-			updateQueuetness();
- 			refreshListEditor();
+			updateQueuetness( true );
 		}
 	},
 
@@ -1227,7 +1231,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 				let fltrd = fromPlaylist.tracks.filtered( ctrlChckd( "ignoreenqueuefilter" ) ); // NOTE: getting unqueued filtered tracks
 				if ( fltrd.length ) {
-					if ( confirm( "Shuffle tracks before adding to the queue?" ) ) {
+					if ( confirm( "Shuffle tracks before adding to the queue?" ) ) { // TODO more options with less confirmation required O_o
 						shuffleArray( fltrd );
 					}
 					global__queue[ isCtrlVlu( "clicky", "end" ) ? "push" : "unshift" ]( ...fltrd );
@@ -1375,12 +1379,13 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		if ( trg ) {
 			let cv = evt.clicky || ctrlVlu( "clicky" ),
 					tia = trg.tracks,
-					tau = tia || arrayOf( trg );
+					tau = tia || arrayOf( trg ),
+					fot = tia ? "folder" : "track";
 			if ( cv === "delist" ) {
 
 				// TODO playing tracks continue playing after being delisted O_o
 
-				if ( confirm( `Remove this ${tia ? "folder" : "track"} from the playlist?` ) ) {
+				if ( confirm( `Remove this ${fot} from the playlist?` ) ) { // TODO don't require confirm if fake evt
 
 					// TODO reduce paths object size
 
@@ -1392,16 +1397,25 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 					clearSequenceOf( tau );
 					clearIgnorablesOf( tau );
 					STORAGE.get( store => STORAGE.set( { "paths": store.paths.filter( sp => tia ? !tia.some( li => sp.a === trackPath( li ) ) : sp.a !== trackPath( trg ) ) } ) );
-					if ( tia ) {
-						trg.folder.remove();
-					} else {
-						trg.remove();
-					}
+					( tia ? trg.folder : trg ).remove();
 					if ( ( tia && ~tia.indexOf( global__current_playing_track ) ) || trg === global__current_playing_track ) {
 						TRANSPORT.nextTrack();
 					}
 					updatePlaylistLength();
 				}
+			} else if ( cv === "preference" ) {
+
+				// TODO tag prefered versions i.e. play the prefered track/folder instead
+					// track: les fleur
+					// folder: caravan | caravan
+
+				if ( confirm( `Mark this as the prefered ${fot}?`) ) {
+
+				} else {
+
+				}
+				alert( "This isn't implementedyet" );
+
 			} else if ( cv === "sequence" ) {
 
 				// TODO can a track be part of more than one sequence?
@@ -1594,8 +1608,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		ignoreenqueuefolder: ctrlChckd( "ignoreenqueuefolder" ),
 		ignoreplayedfolder: ctrlChckd( "ignoreplayedfolder" ),
 		ignoreshuffletrack: ctrlChckd( "ignoreshuffletrack" ),
-		ignorenonshuffle: ctrlChckd( "ignorenonshuffle" ),
+		respectpreferences: ctrlChckd( "respectpreferences" ),
 		respectsequences: ctrlChckd( "respectsequences" ),
+		ignorenonshuffle: ctrlChckd( "ignorenonshuffle" ),
 		scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
 		smoothscrolling: ctrlChckd( "smoothscrolling" ),
 		skiplayed: ctrlChckd( "skiplayed" ),
@@ -1621,6 +1636,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 					ignoreplayedfolder: false,
 					ignoreshuffletrack: false,
 					ignorenonshuffle: false,
+					respectpreferences: true,
 					respectsequences: true,
 					scrolltoplaying: true,
 					smoothscrolling: true,
@@ -1657,8 +1673,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 			DOM_CONTROLS.ignoreenqueuefolder.checked = sttngs.ignoreenqueuefolder;
 			DOM_CONTROLS.ignoreplayedfolder.checked = sttngs.ignoreplayedfolder;
 			DOM_CONTROLS.ignoreshuffletrack.checked = sttngs.ignoreshuffletrack;
-			DOM_CONTROLS.ignorenonshuffle.checked = sttngs.ignorenonshuffle;
+			DOM_CONTROLS.respectpreferences.checked = sttngs.respectpreferences;
 			DOM_CONTROLS.respectsequences.checked = sttngs.respectsequences;
+			DOM_CONTROLS.ignorenonshuffle.checked = sttngs.ignorenonshuffle;
 			DOM_CONTROLS.skiplayed.checked = sttngs.skiplayed;
 			DOM_CONTROLS.wakeful.checked = sttngs.wakeful;
 			DOM_CONTROLS.shuffle.checked = sttngs.shuffle;
