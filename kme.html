@@ -17,7 +17,7 @@
 			--></fieldset>
 		--></template><!--
 
-		--><template id="folder_template"><li><ol></ol></li></template><!--
+		--><template id="folder_template"><li draggable="true"><ol></ol></li></template><!--
 
 		--><audio></audio><!--
 
@@ -95,7 +95,7 @@
 					--><input name="fixBreakages" type="button" value="BREAKAGES"><!--
 				--></fieldset><!--
 
-				--><fieldset name="played_tracks_length_fs"><!--
+				--><fieldset class="condensed" name="played_tracks_length_fs"><!--
 					--><output name="played_tracks_length" data-pl="0 TRACKS"></output><!--
 					--><label><input class="left_marg" name="listEditor" data-list="played" type="button" value="EDIT"><kbd class="left_marg">P</kbd></label><!--
 					--><label id="spp"><input class="left_marg" name="stopPlayingPlayed" type="button" value="STOP PLAYING PLAYED"><kbd class="left_marg">CTRL + .</kbd></label><!--
@@ -103,17 +103,17 @@
 
 				TODO sequence editor
 
-				--><fieldset name="played_folders_length_fs"><!--
+			--><fieldset class="condensed" name="played_folders_length_fs"><!--
 					--><output name="played_folders_length" data-pl="0 FOLDERS"></output><!--
-					--><label><input class="left_marg" name="recycleFolders" type="button" value="RECYCLE"></label><!--
+					--><label><input class="left_marg" name="listEditor" data-list="folders" type="button" value="EDIT"><kbd class="left_marg">F</kbd></label><!--
 				--></fieldset><!--
 
-				--><fieldset name="queue_length_fs"><!--
+				--><fieldset class="condensed" name="queue_length_fs"><!--
 					--><output name="queue_length" data-ql="0 TRACKS"></output><!--
 					--><label><input class="orange left_marg" name="listEditor" data-list="queue" type="button" value="EDIT"><kbd class="left_marg">Q</kbd></label><!--
 				--></fieldset><!--
 
-				--><fieldset name="sequence_fs"><!--
+				--><fieldset class="condensed" name="sequence_fs"><!--
 					--><output name="sequence_length" data-sl="0 TRACKS"></output><!--
 					--><label><input class="pink left_marg" name="sequencify" type="button" value="SEQUENCIFY"><kbd class="left_marg">S</kbd></label><!--
 				--></fieldset><!--

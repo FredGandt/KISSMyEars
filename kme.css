@@ -59,7 +59,7 @@
 	width: .8em;
 }
 
-*:not(input[type="text"]) {
+*:not( input[type="text"] ) {
 	user-select: none;
 }
 
@@ -198,7 +198,7 @@ body.display_controls_left #sources {
 	display: block;
 }
 
-#sources input:not([type="file"]) {
+#sources input:not( [type="file"] ) {
 	margin: 0 0 .5em 0;
 }
 
@@ -211,7 +211,7 @@ input[type="file"] {
 	color: transparent;
 }
 
-input + input:not([type="file"]) {
+input + input:not( [type="file"] ) {
 	margin-left: .5em;
 }
 
@@ -228,7 +228,7 @@ input[type="file"]::before {
 	margin-top: 0;
 }
 
-form.contextmenu input:not(:last-child) {
+form.contextmenu input:not( :last-child ) {
 	margin: 0 0 .5em;
 	display: block;
 }
@@ -257,7 +257,7 @@ body.display_controls_left #list_editor {
 	top: 0;
 }
 
-#list_editor[data-list="played"] input[name="shuffle"] {
+#list_editor:not( [data-list="queue"] ) input[name="shuffle"] {
 	display: none;
 }
 
@@ -341,7 +341,7 @@ fieldset.child {
 	margin: 0;
 }
 
-fieldset:not(.legend) {
+fieldset:not( .legend ) {
 	padding: 0;
 }
 
@@ -390,11 +390,11 @@ ol li {
 	font-size: 1.5em;
 }
 
-#playlist ol li.played:not(.focussed) {
+#playlist ol li.played:not( .focussed ) {
 	color: var( --dark-turq ) !important;
 }
 
-#playlist li.played:not(.focussed) {
+#playlist li.played:not( .focussed ) {
 	color: var( --meme-grey ) !important;
 }
 
@@ -516,7 +516,7 @@ input:checked {
 	background-color: var( --turq );
 }
 
-output:not([name="playlist_length"]) + input {
+output:not( [name="playlist_length"] ) + input {
 	margin-left: .5em;
 }
 
@@ -550,7 +550,7 @@ ol li::after {
 	content: attr( data-title );
 }
 
-#playlist > li:not(:first-of-type) {
+#playlist > li:not( :first-of-type ) {
 	padding-top: .5em;
 }
 
@@ -559,7 +559,7 @@ ol li::after {
 	margin-top: .5em;
 }
 
-#playlist:not(.filtered) ol li:nth-child( odd ) {
+#playlist:not( .filtered ) ol li:nth-child( odd ) {
 	background-color: var( --darkerer-grey );
 }
 
@@ -568,11 +568,11 @@ ol li::after {
 	border-bottom: var( --pixel-border ) var( --meme-grey );
 }
 
-#playlist ol li.playing:not(.broken) {
+#playlist ol li.playing:not( .broken ) {
 	background-color: var( --dark-turq ) !important;
 }
 
-#playlist ol li.playing:not(.broken, .focussed) {
+#playlist ol li.playing:not( .broken, .focussed ) {
 	color: var( --darkest-grey ) !important;
 }
 
@@ -666,25 +666,29 @@ label.child {
 	text-indent: 1ch;
 }
 
-#controls:not(.show_cont_played_folders) fieldset[name="played_folders_length_fs"],
-#controls:not(.show_cont_played_tracks) fieldset[name="played_tracks_length_fs"],
-#controls:not(.show_cont_queue) fieldset[name="queue_length_fs"],
-body:not(.scroll_to_playing) #controls label.smooth_scrolling,
-#controls:not(.show_cont_sequence) label.cont_sequence,
-#controls:not(.show_cont_queue) label.cont_queue,
+#controls:not( .show_cont_played_folders ) fieldset[name="played_folders_length_fs"],
+#controls:not( .show_cont_played_tracks ) fieldset[name="played_tracks_length_fs"],
+#controls:not( .show_cont_queue ) fieldset[name="queue_length_fs"],
+body:not( .scroll_to_playing ) #controls label.smooth_scrolling,
+#controls:not( .show_cont_sequence ) label.cont_sequence,
+#controls:not( .show_cont_queue ) label.cont_queue,
 #controls.hide_shuffle_by fieldset.shuffle_by,
 #controls.hide_cont_folder span.skip_folders,
 #controls.hide_cont_folder label.cont_folder,
 #controls.hide_shuffle_by label.skip_played,
 #controls.hide_shuffle_by span.skip_folders,
-fieldset[name="sequence_fs"]:not(.show),
-#playlist.filtered li:not(.filtered),
+fieldset[name="sequence_fs"]:not( .show ),
+#playlist.filtered li:not( .filtered ),
 #list_editor div.dropzone li,
 #controls span.skip_tracks,
 input[name="fixBreakages"],
 fieldset[name="folder"],
-#spp:not(.show) {
+#spp:not( .show ) {
 	display: none !important;
+}
+
+input[name="fixBreakages"] {
+	margin-left: .5em;
 }
 
 #list_editor li {
@@ -697,7 +701,7 @@ fieldset[name="folder"],
 	color: var( --lighter-grey );
 }
 
-#list_editor ol.dropzone > li:not([data-title])::before {
+#list_editor ol.dropzone > li:not( [data-title] )::before {
 	font-weight: bold;
 	font-size: 120%;
 }
@@ -722,7 +726,7 @@ fieldset[name="folder"] input {
 	display: inline !important;
 }
 
-#controls:not(.hide_cont_folder, .hide_shuffle_by) fieldset[name="folder"] {
+#controls:not( .hide_cont_folder, .hide_shuffle_by ) fieldset[name="folder"] {
 	display: inline-block !important;
 }
 
@@ -756,4 +760,8 @@ div.dropzone,
 fieldset.fright label:last-child input,
 fieldset.stacked.fright input {
 	margin-right: 0;
+}
+
+fieldset.condensed {
+	margin-top: 0.3em;
 }

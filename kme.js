@@ -5,14 +5,12 @@ if shuffleBy( "folder" ) && queue created; option to finish the folder first, pl
 
 include image files (which might be cover art, but could also be dick-pics) in uploads and display
 
-sequencify folders for isShuffleBy( "folder" ) i.e. dic 1 & 2 of double album
+sequencify folders for isShuffleBy( "folder" ) i.e. disc 1 & 2 of double album
 
 temporary ignorables during not shuffled play e.g. skip tracks this time
 	break at marker?
 
 disable marking queued tracks as played during otherwise shuffled play
-
-show played folders only; button with "recycle" and on editor header
 
 repeat track, folder, sequence, queue (or playlist when implemented)
 
@@ -30,6 +28,8 @@ mark folders to be ignored during shuffle by folder
 	without being marked as  played
 
 mark newly added tracks and make them easy to find
+
+mark tracks/folders to "never mark as played"
 
 mark track to stop at; when queued and ????
 
@@ -99,7 +99,9 @@ function FromPlaylist() {
 		notPlayed: ni => this.get( "ol li:not(.broken, .played)", ni ),
 		played: () => this.get( "ol li.played:not(.broken)" ),
 		all: ni => this.get( "ol li:not(.broken)", ni ),
-		broken: () => this.get( "ol li.broken" )
+		broken: () => this.get( "ol li.broken" ),
+
+		ofPlayedFolders: ( pld, ni ) => this.get( `li[data-folder_struct].played li${pld ? ".played" : ""}:not(.broken)`, ni )
 	};
 
 	this.folders = {
@@ -218,6 +220,8 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	pathsMatch = ( a, b ) => trackPath( a ) === trackPath( b ),
 
+	clearlistEditor = () => DOM_LIST_EDITOR_LIST.innerHTML = "",
+
 	tagIs = ( lmnt, tag ) => lmnt?.tagName?.toLowerCase() === tag,
 
 	folderStructOfTrack = li => folderStruct( folderOfTrack( li ) ),
@@ -248,8 +252,6 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	setOp = ( ctrl, op ) => setElementData( DOM_CONTROLS[ ctrl ].parentElement, "op", op ),
 
-	listEditingQueue = trg => getElementData( trg || DOM_LIST_EDITOR, "list" ) === "queue",
-
 	folder = li => folderStruct( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li,
 
 	tracksFromIds = ( ...ids ) => ids.map( id => DOM_PLAYLIST.querySelector( `li[data-id="${id}"]` ) ),
@@ -262,7 +264,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 	setLibraries = libs => DOM_SOURCES.libraries.innerHTML = '<option value="" selected>ADD NEW LIBRARY</option>' +
 		libs?.map( l => `<option value="${l.lib_path}" title="${l.lib_path}">${l.lib_name}</option>` ).join( "" ) ?? "",
 
-	listEditorShowing = lst => DOM_LIST_EDITOR.classList.contains( "show" ) && ( lst ? getElementData( DOM_LIST_EDITOR, "list" ) === lst : true ),
+	lst2Arr = lst => lst === "folders" ? fromPlaylist.tracks.ofPlayedFolders() : ( lst === "queue" ? global__queue : global__played ),
 
 	sortPlaylist = () => DOM_PLAYLIST.append( ...fromPlaylist.folders.all().sort( ( a, b ) => collator.compare( folderStruct( a ), folderStruct( b ) ) ) ),
 
@@ -367,8 +369,6 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 		fixBreakages: () => debugMsg( "fixBreakages:", fromPlaylist.tracks.broken(), "warn" ), // TODO all the things
 
-		recycleFolders: () => fromPlaylist.folders.played().forEach( li => clearPlayedOf( tracksOfFolder( li ) ) ), // TODO auto-recycling?
-
 		addTracks: () => {
 			DOM_SOURCES.pffs.disabled = !DOM_SOURCES.classList.toggle( "show" );
 			DOM_SOURCES.libraries.focus();
@@ -409,23 +409,28 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 			closePlaylistFilter();
 		},
 
-		listEditor: list => {
-
-			// TODO switch from "global__queue" to "global__played" and back
+		listEditor: lst => {
 
 			// TODO sequence editing
 
-			if ( listEditorShowing() ) {
+			let les = listEditorShowing();
+			if ( les === lst ) {
 				listEditorClick();
-			} else if ( list.length ) {
-				appendClones2ListEditor( list );
-				if ( playlistFilterShowing() ) {
-					closePlaylistFilter();
+			} else {
+				if ( les ) {
+					clearlistEditor();
 				}
-				setElementData( DOM_LIST_EDITOR, "list", list === global__queue ? "queue" : "played" );
-				DOM_LIST_EDITOR.classList.add( "show" );
-				DOM_LIST_EDITOR.pffs.disabled = false;
-				DOM_LIST_EDITOR.done.focus();
+				let arr = lst2Arr( lst );
+				if ( arr.length ) {
+					if ( playlistFilterShowing() ) {
+						closePlaylistFilter();
+					}
+					appendClones2ListEditor( arr );
+					setElementData( DOM_LIST_EDITOR, "list", lst );
+					DOM_LIST_EDITOR.classList.add( "show" );
+					DOM_LIST_EDITOR.pffs.disabled = false;
+					DOM_LIST_EDITOR.done.focus();
+				}
 			}
 		},
 
@@ -471,9 +476,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		}
 	},
 
-	refreshListEditor = () => {
-		DOM_LIST_EDITOR_LIST.innerHTML = "";
-		appendClones2ListEditor( listEditingQueue() ? global__queue : global__played );
+	refreshListEditor = lst => {
+		clearlistEditor();
+		appendClones2ListEditor( lst2Arr( lst || listEditorShowing() ) );
 	},
 
 	setDefaultEndOf = () => {
@@ -486,7 +491,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 	// TODO combine the shit out of this shit
 
-	clearQueueOf = ( arr, shave ) => {
+	clearQueueOf = ( arr, shave ) => { // NOTE: "defer" -> "de-fur" -> "shave"
 		global__queue = global__queue.filter( li => !~arr.indexOf( li ) );
 		if ( !shave ) {
 			updateQueuetness();
@@ -537,6 +542,16 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 			return fcs;
 		}
 		return null;
+	},
+
+	listEditorShowing = lst => {
+		if ( DOM_LIST_EDITOR.classList.contains( "show" ) ) {
+			let ledl = getElementData( DOM_LIST_EDITOR, "list" );
+			if ( !lst || ( lst && ledl === lst ) ) {
+				return ledl;
+			}
+		}
+		return false;
 	},
 
 	clearFilters = done => {
@@ -680,7 +695,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 			global__queue.forEach( ( li, i ) => setElementData( li, "queue", `${plus1( i )}/${ql}` ) );
 		}
 		if ( rfrsh ) {
-			refreshListEditor();
+			refreshListEditor( "queue" );
 		}
 	},
 
@@ -711,8 +726,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 		STORAGE.set( { "played": idsFromTracks( global__played ) } );
 
-		if ( listEditorShowing( "played" ) ) {
-			refreshListEditor();
+		let les = listEditorShowing();
+		if ( les === "played" || les === "folders" ) {
+			refreshListEditor( les );
 		}
 
 		markUnplayed( ...fromPlaylist.played() );
@@ -775,9 +791,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		return "00:00";
 	},
 
-	appendClones2ListEditor = lst => {
+	appendClones2ListEditor = arr => {
 		let fldr_strct, clone, lc, ol;
-		lst.forEach( li => {
+		arr.forEach( li => {
 			setElementData( clone = li.cloneNode(), "folder", fldr_strct = folderStructOfTrack( li ) || "" );
 			lc = DOM_LIST_EDITOR_LIST.lastElementChild;
 			clone.draggable = true;
@@ -786,7 +802,6 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 					ol.append( clone );
 				} else {
 					li = TEMPLATES.folder.cloneNode( true );
-					li.draggable = true;
 					setElementData( li, "folder", fldr_strct );
 					li.firstElementChild.append( lc, clone );
 					DOM_LIST_EDITOR_LIST.append( li );
@@ -914,11 +929,11 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 									// address the crappy issue of not being able to stop at the end of the queue when the last track of the queue is playing
 
 							global__queue_end = !global__queue.length;
-							if ( listEditingQueue() ) {
+							if ( listEditorShowing( "queue" ) ) {
 								if ( global__queue_end ) {
 									listEditorClick();
 								} else {
-									refreshListEditor();
+									refreshListEditor( "queue" );
 								}
 							}
 							updateQueuetness();
@@ -1035,7 +1050,14 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		if ( isBtn( trg ) ) {
 			let fnc = trg.name;
 			if ( CONTROLS.hasOwnProperty( fnc ) ) {
-				CONTROLS[ fnc ]( fnc === "listEditor" ? ( listEditingQueue( trg ) ? global__queue : global__played ) : null ); // TODO sequence editor
+				if ( fnc === "listEditor" ) {
+
+					// TODO sequence editor
+
+					CONTROLS.listEditor( getElementData( trg, "list" ) );
+				} else {
+					CONTROLS[ fnc ]();
+				}
 			} else if ( TRANSPORT.hasOwnProperty( fnc ) ) {
 				TRANSPORT[ fnc ]();
 			}
@@ -1131,11 +1153,15 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 		let trg = evt?.target;
 		if ( trg ) {
-			let leq = listEditingQueue(),
+			let les = listEditorShowing(),
 				nme = trg.name;
 			if ( nme === "clear" ) {
-				clear( `global__${leq ? "queue" : "played"}` );
-			} else if ( leq && nme === "shuffle" ) {
+				if ( les === "folders" ) {
+					clearPlayedOf( fromPlaylist.tracks.ofPlayedFolders() );
+				} else {
+					clear( `global__${les}` );
+				}
+			} else if ( les === "queue" && nme === "shuffle" && global__queue.length > 1 ) {
 				shuffleArray( global__queue );
 				updateQueuetness( true );
 				return;
@@ -1146,7 +1172,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		}
 		DOM_LIST_EDITOR.classList.remove( "show" );
 		DOM_LIST_EDITOR.pffs.disabled = true;
-		DOM_LIST_EDITOR_LIST.innerHTML = "";
+		clearlistEditor();
 	},
 
 	dropzoneDrop = evt => {
@@ -1163,14 +1189,14 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 			// because it might be complicated ;)
 			// playing played would go wild
 
-		let q = listEditingQueue(),
+		let lesq = listEditorShowing( "queue" ),
 				drop_target = evt.target,
 				dragged_folder = global__dragee.firstElementChild,
-				dragee_arr = ( dragged_folder ? arrayFrom( dragged_folder.children ) : arrayOf( global__dragee ) ).map( tm => ( q ? global__queue : global__played ).find( li => pathsMatch( li, tm ) ) );
+				dragee_arr = ( dragged_folder ? arrayFrom( dragged_folder.children ) : arrayOf( global__dragee ) ).map( tm => ( lesq ? global__queue : global__played ).find( li => pathsMatch( li, tm ) ) );
 		if ( drop_target === DOM_LIST_EDITOR_TRASH ) {
-			( q ? clearQueueOf : clearPlayedOf )( dragee_arr );
+			( lesq ? clearQueueOf : clearPlayedOf )( dragee_arr );
 			refreshListEditor();
-		} else if ( q ) { // TODO for now
+		} else if ( lesq ) { // TODO for now
 			clearQueueOf( dragee_arr, true );
 			if ( drop_target === DOM_LIST_EDITOR_LIST ) {
 				global__queue.push( ...dragee_arr );
@@ -1358,17 +1384,22 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 						setLibraries( libraries );
 						STORAGE.set( { "libraries": libraries, "paths": paths } );
 
-						/* TODO STORAGE.getBytesInUse( bytes => {
-							let quota = STORAGE.QUOTA_BYTES;
-							console.log( `Quota: ${quota}, Bytes in use: ${bytes}, Difference: ${quota - bytes}` );
-							giveFile() etc.
-						} ); */
+						// TODO storageStats()
 
 					}
 				} );
 			}
 		}
 	},
+
+	storageStats = () => STORAGE.getBytesInUse( bytes => {
+		let quota = STORAGE.QUOTA_BYTES,
+				rmnng = quota - bytes,
+				qdboh = quota / 100;
+		console.log( `Quota: ${quota}
+Used: ${bytes} (${Math.round( bytes / qdboh )}%)
+Remaining: ${rmnng} (${Math.round( rmnng / qdboh )}%)` );
+	} ),
 
 	playlistClick = evt => {
 		debugMsg( "playlistClick:", evt );
@@ -1414,7 +1445,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 				} else {
 
 				}
-				alert( "This isn't implementedyet" );
+				alert( "This isn't implemented yet" );
 
 			} else if ( cv === "sequence" ) {
 
@@ -1566,8 +1597,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 					case ",": TRANSPORT.pawsTrack(); break;
 					case ".": TRANSPORT.stopTrack(); break;
 					case "]": TRANSPORT.nextTrack(); break;
-					case "q": CONTROLS.listEditor( global__queue ); break;
-					case "p": CONTROLS.listEditor( global__played ); break;
+					case "q": CONTROLS.listEditor( "queue" ); break;
+					case "p": CONTROLS.listEditor( "played" ); break;
+					case "f": CONTROLS.listEditor( "folders" ); break;
 				}
 			}
 		}
