@@ -236,6 +236,8 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	folderStruct = li => getElementData( li, "folder_struct" ) ?? undefined,
 
+	resetVolume = () => DOM_AUDIO.volume = DOM_CONTROLS.volume.valueAsNumber,
+
 	halfPlaypen = () => DOM_PLAYPEN.scrollTop + half( DOM_PLAYPEN.offsetHeight ),
 
 	multiTrack = ( n, tof ) => `${n} ${tof ? tof : "TRACK"}${n !== 1 ? "S" : ""}`,
@@ -270,9 +272,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	TRANSPORT = {
 		backTrack: () => {
-
-			// TODO cancel softStop if backTrack is used
-
+			endSoftStop();
 			resetTrackTime();
 			if ( DOM_AUDIO.paused && ctrlChckd( "wakeful" ) ) {
 				DOM_AUDIO.play();
@@ -282,6 +282,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 		nextTrack: prev => {
 			let paused = DOM_AUDIO.paused;
+			endSoftStop();
 			TRANSPORT.stopTrack( true );
 			if ( !prev && playingPlayed() ) {
 				++global__played_index;
@@ -294,6 +295,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		},
 
 		playTrack: prev => {
+			endSoftStop();
 			selectNext( prev ).then( t => {
 				if ( DOM_AUDIO.src && DOM_AUDIO.paused ) {
 					DOM_AUDIO.play();
@@ -303,6 +305,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		},
 
 		pawsTrack: () => {
+			endSoftStop();
 			if ( DOM_AUDIO.src ) {
 				if ( DOM_AUDIO.paused ) {
 					DOM_AUDIO.play();
@@ -320,6 +323,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 		prevTrack: () => {
 			let pl = global__played.length;
+			endSoftStop();
 			if ( pl ) {
 				if ( playingPlayed() && Math.abs( global__played_index ) < pl ) {
 					--global__played_index;
@@ -333,11 +337,15 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		stopTrack: async rs => {
 			if ( DOM_AUDIO.src ) {
 				let fade = DOM_CONTROLS.softstop.valueAsNumber;
-				if ( !rs && fade && !global__softstop && DOM_AUDIO.volume ) { // TODO still not right
-					await softStop( fade );
+				if ( !rs && fade && DOM_AUDIO.volume ) {
+					if ( !global__softstop ) {
+						await softStop( fade );
+					} else {
+						softStopEnd();
+					}
 				}
 				DOM_AUDIO.pause();
-				DOM_AUDIO.volume = DOM_CONTROLS.volume.valueAsNumber;
+				resetVolume();
 				resetTrackTime();
 				if ( rs ) {
 					DOM_AUDIO.removeAttribute( "src" );
@@ -348,11 +356,13 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		},
 
 		prevFolder: () => {
+			endSoftStop();
 			global__current_playing_folder = folderOfTrack( cloneArray( global__played ).reverse().find( trck => folderOfTrack( trck ) !== global__current_playing_folder ) );
 			TRANSPORT.nextTrack();
 		},
 
 		backFolder: () => {
+			endSoftStop();
 			global__current_playing_track = null;
 			TRANSPORT.nextTrack();
 		},
@@ -360,6 +370,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		// TODO allow next and back folder when not shuffle playing?
 
 		nextFolder: () => {
+			endSoftStop();
 			global__current_playing_folder = null;
 			TRANSPORT.nextTrack();
 		}
@@ -476,6 +487,50 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		}
 	},
 
+	setDefaultEndOf = () => {
+		DOM_CONTROLS.endof.value = getElementData( DOM_CONTROLS, "defaultendof" );
+
+		// TODO move the focus too?
+
+		saveSettings();
+	},
+
+	endSoftStop = () => {
+		if ( global__softstop ) {
+			softStopEnd();
+			resetVolume();
+		}
+	},
+
+	softStopEnd = () => {
+		clearInterval( global__softstop );
+		global__softstop = false;
+		DOM_AUDIO.volume = 0;
+	},
+
+	setElementData = ( lmnt, data, vlu ) => {
+		if ( lmnt ) {
+			lmnt.dataset[ data ] = vlu;
+		}
+		return vlu;
+	},
+
+	shuffleArray = arr => {
+		 arr.forEach( ( r, i ) => {
+			r = randNum( plus1( i ) );
+			[ arr[ i ], arr[ r ] ] = [ arr[ r ], arr[ i ] ];
+		} );
+	},
+
+	removeFocussed = () => {
+		let fcs = fromPlaylist.focussed();
+		if ( fcs ) {
+			fcs.classList.remove( "focussed" );
+			return fcs;
+		}
+		return null;
+	},
+
 	refreshListEditor = lst => {
 		lst = lst2Arr( lst || listEditorShowing() );
 		if ( lst.length ) {
@@ -486,12 +541,21 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		}
 	},
 
-	setDefaultEndOf = () => {
-		DOM_CONTROLS.endof.value = getElementData( DOM_CONTROLS, "defaultendof" );
+	listEditorShowing = lst => {
+		if ( DOM_LIST_EDITOR.classList.contains( "show" ) ) {
+			let ledl = getElementData( DOM_LIST_EDITOR, "list" );
+			if ( !lst || ( lst && ledl === lst ) ) {
+				return ledl;
+			}
+		}
+		return false;
+	},
 
-		// TODO move the focus too?
-
-		saveSettings();
+	clearFilters = done => {
+		if ( done ) {
+			DOM_PLAYLIST.classList.remove( "filtered" );
+		}
+		fromPlaylist.filtered().forEach( li => li.classList.remove( "filtered" ) );
 	},
 
 	// TODO combine the shit out of this shit
@@ -526,46 +590,6 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 	// TODO combine the shit out of those shits
 
-	shuffleArray = arr => {
-		 arr.forEach( ( r, i ) => {
-			r = randNum( plus1( i ) );
-			[ arr[ i ], arr[ r ] ] = [ arr[ r ], arr[ i ] ];
-		} );
-	},
-
-	setElementData = ( lmnt, data, vlu ) => {
-		if ( lmnt ) {
-			lmnt.dataset[ data ] = vlu;
-		}
-		return vlu;
-	},
-
-	removeFocussed = () => {
-		let fcs = fromPlaylist.focussed();
-		if ( fcs ) {
-			fcs.classList.remove( "focussed" );
-			return fcs;
-		}
-		return null;
-	},
-
-	listEditorShowing = lst => {
-		if ( DOM_LIST_EDITOR.classList.contains( "show" ) ) {
-			let ledl = getElementData( DOM_LIST_EDITOR, "list" );
-			if ( !lst || ( lst && ledl === lst ) ) {
-				return ledl;
-			}
-		}
-		return false;
-	},
-
-	clearFilters = done => {
-		if ( done ) {
-			DOM_PLAYLIST.classList.remove( "filtered" );
-		}
-		fromPlaylist.filtered().forEach( li => li.classList.remove( "filtered" ) );
-	},
-
 	scroll2Track = ( frc = !global__sequence.length && !playlistFilterShowing() && !contextMenuShowing() ) => {
 
 		// TODO isShuffleBy( "folder" )?
@@ -582,15 +606,11 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 		// TODO subtle as having your brains smashed out with a slice of lemon wrapped round a large gold brick
 
-		// TODO cancel softStop if backTrack is used
-
 		return new Promise( resolve => {
 			let sov = DOM_AUDIO.volume / ( fs * 100 );
 			global__softstop = setInterval( () => {
 				if ( ( DOM_AUDIO.volume -= sov ) <= sov ) {
-					clearInterval( global__softstop );
-					global__softstop = false;
-					DOM_AUDIO.volume = 0;
+					softStopEnd();
 					resolve( true );
 				}
 			}, 10 );
