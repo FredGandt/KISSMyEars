@@ -477,8 +477,13 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	},
 
 	refreshListEditor = lst => {
-		clearlistEditor();
-		appendClones2ListEditor( lst2Arr( lst || listEditorShowing() ) );
+		lst = lst2Arr( lst || listEditorShowing() );
+		if ( lst.length ) {
+			clearlistEditor();
+			appendClones2ListEditor( lst );
+		} else {
+			listEditorClick();
+		}
 	},
 
 	setDefaultEndOf = () => {

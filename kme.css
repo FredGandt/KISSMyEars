@@ -487,7 +487,8 @@ fieldset[name="transport"] input:hover {
 
 input[name="prevFolder"],
 input[name="prevTrack"] {
-	background-image: url( "prev.png" );
+	background-image: url( "next.png" );
+	transform: scaleX( -1 );
 }
 
 input[name="backFolder"],
