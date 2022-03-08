@@ -333,7 +333,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		stopTrack: async rs => {
 			if ( DOM_AUDIO.src ) {
 				let fade = DOM_CONTROLS.softstop.valueAsNumber;
-				if ( !rs && fade && !global__softstop && DOM_AUDIO.volume ) {
+				if ( !rs && fade && !global__softstop && DOM_AUDIO.volume ) { // TODO still not right
 					await softStop( fade );
 				}
 				DOM_AUDIO.pause();

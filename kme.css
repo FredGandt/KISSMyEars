@@ -121,7 +121,7 @@ div.section {
 
 div.playlistsection {
 	height: calc( 100vh - 4.2em );
-	width: calc( 100vw - 38em ); /* TODO this is going to keep happening */
+	width: calc( 100vw - 36em ); /* TODO this is going to keep happening */
 	margin: 1em 0 0;
 	padding: 0 1em;
 }
@@ -136,11 +136,11 @@ body.display_controls_left div.playlistsection {
 
 div.controlssection {
 	max-height: calc( 100vh - 9.7em );
-	width: 34em; /* TODO this is going to keep happening */
+	width: 32em; /* TODO this is going to keep happening */
 }
 
 #seek {
-	width: calc( 100vw - 39em ); /* TODO this is going to keep happening */
+	width: calc( 100vw - 37em ); /* TODO this is going to keep happening */
 	position: absolute;
 	padding: 1em 1em;
 	font-size: 1em;
@@ -167,7 +167,7 @@ body.display_controls_left #seek {
 fieldset[name="transport"],
 output[name="times"] {
 	text-align: center;
-	width: 34em; /* TODO this is going to keep happening */
+	width: 32em; /* TODO this is going to keep happening */
 }
 
 div.dropzone {
@@ -182,7 +182,7 @@ h2 {
 }
 
 #sources {
-	right: 14em;
+	right: 12em; /* TODO this is going to keep happening */
 	top: 4.4em;
 }
 
@@ -241,7 +241,7 @@ ul, ol {
 
 #list_editor {
 	height: calc( 100vh - 4.2em );
-	width: calc( 100vw - 37em ); /* TODO this is going to keep happening */
+	width: calc( 100vw - 35em ); /* TODO this is going to keep happening */
 	padding-bottom: 0;
 }
 
@@ -272,13 +272,13 @@ body.display_controls_left #list_editor {
 }
 
 #playlist_filter {
-	right: 2.7em; /* TODO this is going to keep happening */
+	right: 1.5em; /* TODO this is going to keep happening */
 	top: 13em;
 }
 
 body.display_controls_left #playlist_filter {
 	right: unset;
-	left: 2.7em;
+	left: 1.5em; /* TODO this is going to keep happening */
 }
 
 #playlist_filter input[type="text"] {
@@ -502,10 +502,6 @@ input[name="nextTrack"] {
 
 input[name="pawsTrack"] {
 	background-image: url( "paws.png" );
-}
-
-input[name="playTrack"] {
-	background-image: url( "play.png" );
 }
 
 input[name="stopTrack"] {
