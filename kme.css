@@ -386,6 +386,7 @@ ol li {
 }
 
 #playlist {
+	overflow-wrap: break-word;
 	padding-bottom: 1em;
 }
 
@@ -581,6 +582,17 @@ ol li::after {
 	color: var( --bright-turq ) !important;
 }
 
+#playlist li.unpref,
+#playlist li.pref {
+	border-left: .3em solid limegreen;
+	border-radius: .2em 0 0 .2em;
+	padding-left: .3em;
+}
+
+#playlist li.unpref {
+	border-left-color: orangered;
+}
+
 fieldset.orange input[type="button"],
 fieldset[name="sequence_fs"] input,
 input[type="button"].orange,
@@ -715,6 +727,7 @@ input[name="fixBreakages"] {
 
 fieldset[name="folder"] {
 	border-radius: 1.5em;
+	vertical-align: 1em;
 	margin-right: 1em;
 }
 

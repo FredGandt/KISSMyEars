@@ -1,6 +1,8 @@
 
 /* TODO review todo notes
 
+navigation (back, next etc) of tracks while a sequence is playing is flat out broken
+
 if shuffleBy( "folder" ) && queue created; option to finish the folder first, play the queue then come back to the folder, or simply move on
 
 include image files (which might be cover art, but could also be dick-pics) in uploads and display
@@ -33,7 +35,11 @@ mark tracks/folders to "never mark as played"
 
 mark track to stop at; when queued and ????
 
+display GLOBAL.played most recent at top?
+
 gapless playback (surprisingly shitty)
+
+show recently added button; filter?
 
 prioritise UX for visually impaired
 
@@ -86,6 +92,8 @@ maybe
 
 "use strict";
 
+let debugging = false;
+
 function FromPlaylist() {
 	this.get = ( qs, not_ignorable ) => arrayFrom( DOM_PLAYLIST.querySelectorAll( `${qs}${not_ignorable ? ':not([data-ignorable="?"])' : ""}` ) );
 
@@ -115,24 +123,10 @@ function FromPlaylist() {
 	this.played = () => this.get( "li.played:not(.broken)" );
 };
 
-let global__current_playing_folder,
-		global__current_playing_track,
-		global__track_sequence = [],
-		global__played_index = null,
-		global__playlist_fragment,
-		global__queue_end = false,
-		global__softstop = false,
-		global__ignorable = [],
-		global__sequences = [],
-		global__sequence = [],
-		global__track_id = 0,
-		global__played = [],
-		global__queue = [],
-		global__dragee,
+const BROWSER = window.hasOwnProperty( "browser" ) ? browser : chrome,
+	STORAGE = BROWSER.storage.local,
 
-		debugging = false;
-
-const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_context_menu" ),
+	DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_context_menu" ),
 	DOM_PLAYLIST_CONTEXT_MENU = document.getElementById( "playlist_context_menu" ),
 	DOM_PLAYLIST_FILTER = document.getElementById( "playlist_filter" ),
 	DOM_LIST_EDITOR = document.getElementById( "list_editor" ),
@@ -149,12 +143,33 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 	DOM_PLAYPEN = DOM_PLAYLIST.parentElement,
 	DOM_BODY = document.body,
 
-	BROWSER = window.hasOwnProperty( "browser" ) ? browser : chrome,
-	STORAGE = BROWSER.storage.local,
-
-	TEMPLATES = {
+	DOM_TEMPLATES = {
 		playlist_filter: document.getElementById( "playlist_filter_template" ).content.firstElementChild,
 		folder: document.getElementById( "folder_template" ).content.firstElementChild
+	},
+
+	GLOBAL = {
+		current_playing_folder: undefined,
+		current_playing_track: undefined,
+		playlist_fragment: undefined,
+		dragee: undefined,
+
+		played_index: null,
+		preference: null,
+
+		queue_end: false,
+		softstop: false,
+
+		track_id: 0,
+
+		preferences: {},
+
+		track_sequence: [],
+		ignorable: [],
+		sequences: [],
+		sequence: [],
+		played: [],
+		queue: []
 	},
 
 	fromPlaylist = new FromPlaylist(),
@@ -188,6 +203,8 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	ctrlVlu = ctrl => DOM_CONTROLS[ ctrl ].value,
 
+	trackFromId = id => tracksFromIds( id )[ 0 ],
+
 	underspace = str => str.replace( /_+/g, " " ),
 
 	randNum = n => Math.floor( Math.random() * n ),
@@ -212,6 +229,8 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	displayBrightness = bn => DOM_BODY.style.opacity = bn,
 
+	folderFromStruct = fs => foldersFromStructs( fs )[ 0 ],
+
 	fltrChckd = ctrl => DOM_PLAYLIST_FILTER[ ctrl ].checked,
 
 	getElementData = ( lmnt, data ) => lmnt?.dataset[ data ],
@@ -219,6 +238,8 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 	trackIgnorable = li => getElementData( li, "ignorable" ),
 
 	pathsMatch = ( a, b ) => trackPath( a ) === trackPath( b ),
+
+	folderStruct = li => getElementData( li, "folder_struct" ),
 
 	clearlistEditor = () => DOM_LIST_EDITOR_LIST.innerHTML = "",
 
@@ -228,13 +249,9 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	numberOfNotBrokenTracks = () => fromPlaylist.tracks.all().length,
 
-	idsFromTracks = lst => lst.map( li => getElementData( li, "id" ) ), // TODO reduce paths object size
-
 	markSequenced = ( li, sq ) => setElementData( li, "sequence", sq ),
 
 	isNewSequenced = li => /^NEW/.test( getElementData( li, "sequence" ) ),
-
-	folderStruct = li => getElementData( li, "folder_struct" ) ?? undefined,
 
 	resetVolume = () => DOM_AUDIO.volume = DOM_CONTROLS.volume.valueAsNumber,
 
@@ -244,7 +261,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	cleanTitle = () => document.title.replace( /^(?:\[(?:PAUS|STOPP)ED\] )+/, "" ),
 
-	playingPlayed = () => DOM_SPP.classList.toggle( "show", global__played_index ),
+	playingPlayed = () => DOM_SPP.classList.toggle( "show", GLOBAL.played_index ),
 
 	playlistFilterShowing = () => DOM_PLAYLIST_FILTER.classList.contains( "show" ),
 
@@ -256,6 +273,8 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 	folder = li => folderStruct( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li,
 
+	idsFromTracks = ( ...lis ) => lis.map( li => getElementData( li, "id" ) || folderStruct( li ) ), // TODO reduce paths object size
+
 	tracksFromIds = ( ...ids ) => ids.map( id => DOM_PLAYLIST.querySelector( `li[data-id="${id}"]` ) ),
 
 	// TODO maintain "[STOPPED/PAUSED]" prefix if nexting from stopped
@@ -266,7 +285,9 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 	setLibraries = libs => DOM_SOURCES.libraries.innerHTML = '<option value="" selected>ADD NEW LIBRARY</option>' +
 		libs?.map( l => `<option value="${l.lib_path}" title="${l.lib_path}">${l.lib_name}</option>` ).join( "" ) ?? "",
 
-	lst2Arr = lst => lst === "folders" ? fromPlaylist.tracks.ofPlayedFolders() : ( lst === "queue" ? global__queue : global__played ),
+	foldersFromStructs = ( ...fss ) => fss.map( fs => DOM_PLAYLIST.querySelector( `li[data-folder_struct="${fs}"]` ) ),
+
+	lst2Arr = lst => lst === "folders" ? fromPlaylist.tracks.ofPlayedFolders() : ( lst === "queue" ? GLOBAL.queue : GLOBAL.played ),
 
 	sortPlaylist = () => DOM_PLAYLIST.append( ...fromPlaylist.folders.all().sort( ( a, b ) => collator.compare( folderStruct( a ), folderStruct( b ) ) ) ),
 
@@ -285,7 +306,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 			endSoftStop();
 			TRANSPORT.stopTrack( true );
 			if ( !prev && playingPlayed() ) {
-				++global__played_index;
+				++GLOBAL.played_index;
 			}
 			if ( paused && !ctrlChckd( "wakeful" ) ) {
 				selectNext( prev );
@@ -322,13 +343,13 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 			// going to a previous track during a queue should requeue the track you've just ignored i.e. maintain the queue
 
 		prevTrack: () => {
-			let pl = global__played.length;
+			let pl = GLOBAL.played.length;
 			endSoftStop();
 			if ( pl ) {
-				if ( playingPlayed() && Math.abs( global__played_index ) < pl ) {
-					--global__played_index;
+				if ( playingPlayed() && Math.abs( GLOBAL.played_index ) < pl ) {
+					--GLOBAL.played_index;
 				} else {
-					global__played_index = -1;
+					GLOBAL.played_index = -1;
 				}
 			}
 			TRANSPORT.nextTrack( true );
@@ -338,7 +359,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 			if ( DOM_AUDIO.src ) {
 				let fade = DOM_CONTROLS.softstop.valueAsNumber;
 				if ( !rs && fade && DOM_AUDIO.volume ) {
-					if ( !global__softstop ) {
+					if ( !GLOBAL.softstop ) {
 						await softStop( fade );
 					} else {
 						softStopEnd();
@@ -357,13 +378,13 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 		prevFolder: () => {
 			endSoftStop();
-			global__current_playing_folder = folderOfTrack( cloneArray( global__played ).reverse().find( trck => folderOfTrack( trck ) !== global__current_playing_folder ) );
+			GLOBAL.current_playing_folder = folderOfTrack( cloneArray( GLOBAL.played ).reverse().find( trck => folderOfTrack( trck ) !== GLOBAL.current_playing_folder ) );
 			TRANSPORT.nextTrack();
 		},
 
 		backFolder: () => {
 			endSoftStop();
-			global__current_playing_track = null;
+			GLOBAL.current_playing_track = null;
 			TRANSPORT.nextTrack();
 		},
 
@@ -371,7 +392,7 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 
 		nextFolder: () => {
 			endSoftStop();
-			global__current_playing_folder = null;
+			GLOBAL.current_playing_folder = null;
 			TRANSPORT.nextTrack();
 		}
 	},
@@ -391,16 +412,16 @@ const DOM_LIST_EDITOR_CONTEXT_MENU = document.getElementById( "list_editor_conte
 		},
 
 		sequencify: () => {
-			if ( global__sequence.length ) {
-				global__sequences.push( idsFromTracks( global__sequence ) );
-				clear( "global__sequence" );
+			if ( GLOBAL.sequence.length ) {
+				GLOBAL.sequences.push( idsFromTracks( ...GLOBAL.sequence ) );
+				clear( "sequence" );
 			}
 		},
 
 		stopPlayingPlayed: () => {
-			global__played_index = null;
+			GLOBAL.played_index = null;
 			if ( confirm( "After this track?" ) ) {
-				global__current_playing_track = null;
+				GLOBAL.current_playing_track = null;
 			} else {
 				TRANSPORT.nextTrack();
 			}
@@ -459,18 +480,18 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 					DOM_PLAYLIST.innerHTML = "";
 					updatePlaylistLength();
 
-					clear( "global__track_sequence" );
-					clear( "global__sequences" );
-					clear( "global__sequence" );
+					clear( "track_sequence" );
+					clear( "sequences" );
+					clear( "sequence" );
 					updateSequences();
 
-					clear( "global__ignorable" );
+					clear( "ignorable" );
 					updateIgnorables();
 
-					clear( "global__played" );
+					clear( "played" );
 					updatePlayedness();
 
-					clear( "global__queue" );
+					clear( "queue" );
 					updateQueuetness();
 
 					STORAGE.remove( arrayOf( "paths", "queue", "played", "sequences", "ignorable" ) );
@@ -496,15 +517,15 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	},
 
 	endSoftStop = () => {
-		if ( global__softstop ) {
+		if ( GLOBAL.softstop ) {
 			softStopEnd();
 			resetVolume();
 		}
 	},
 
 	softStopEnd = () => {
-		clearInterval( global__softstop );
-		global__softstop = false;
+		clearInterval( GLOBAL.softstop );
+		GLOBAL.softstop = false;
 		DOM_AUDIO.volume = 0;
 	},
 
@@ -516,7 +537,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	},
 
 	shuffleArray = arr => {
-		 arr.forEach( ( r, i ) => {
+		arr.forEach( ( r, i ) => {
 			r = randNum( plus1( i ) );
 			[ arr[ i ], arr[ r ] ] = [ arr[ r ], arr[ i ] ];
 		} );
@@ -531,7 +552,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		return null;
 	},
 
-	refreshListEditor = lst => {
+	refreshListEditor = lst => { // TODO update folders editor
 		lst = lst2Arr( lst || listEditorShowing() );
 		if ( lst.length ) {
 			clearlistEditor();
@@ -561,28 +582,28 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	// TODO combine the shit out of this shit
 
 	clearQueueOf = ( arr, shave ) => { // NOTE: "defer" -> "de-fur" -> "shave"
-		global__queue = global__queue.filter( li => !~arr.indexOf( li ) );
+		GLOBAL.queue = GLOBAL.queue.filter( li => !~arr.indexOf( li ) );
 		if ( !shave ) {
 			updateQueuetness();
 		}
 	},
 
 	clearPlayedOf = ( arr, shave ) => {
-		global__played = global__played.filter( li => !~arr.indexOf( li ) );
+		GLOBAL.played = GLOBAL.played.filter( li => !~arr.indexOf( li ) );
 		if ( !shave ) {
 			updatePlayedness();
 		}
 	},
 
 	clearSequenceOf = ( arr, shave ) => {
-		global__sequence = global__sequence.filter( li => !~arr.indexOf( li ) );
+		GLOBAL.sequence = GLOBAL.sequence.filter( li => !~arr.indexOf( li ) );
 		if ( !shave ) {
 			updateSequences();
 		}
 	},
 
 	clearIgnorablesOf = ( arr, shave ) => {
-		global__ignorable = global__ignorable.filter( li => !~arr.indexOf( li ) );
+		GLOBAL.ignorable = GLOBAL.ignorable.filter( li => !~arr.indexOf( li ) );
 		if ( !shave ) {
 			updateIgnorables();
 		}
@@ -590,14 +611,14 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 	// TODO combine the shit out of those shits
 
-	scroll2Track = ( frc = !global__sequence.length && !playlistFilterShowing() && !contextMenuShowing() ) => {
+	scroll2Track = ( frc = !GLOBAL.sequence.length && !playlistFilterShowing() && !contextMenuShowing() ) => {
 
 		// TODO isShuffleBy( "folder" )?
 
 		if ( frc ) {
 			let fcs = fromPlaylist.focussed();
-			if ( fcs || ( global__current_playing_track && ctrlChckd( "scrolltoplaying" ) ) ) {
-				requestIdleCallback( () => DOM_PLAYPEN.scrollBy( 0, ( fcs || global__current_playing_track ).offsetTop - DOM_PLAYPEN.offsetTop - halfPlaypen() ) );
+			if ( fcs || ( GLOBAL.current_playing_track && ctrlChckd( "scrolltoplaying" ) ) ) {
+				requestIdleCallback( () => DOM_PLAYPEN.scrollBy( 0, ( fcs || GLOBAL.current_playing_track ).offsetTop - DOM_PLAYPEN.offsetTop - halfPlaypen() ) );
 			}
 		}
 	},
@@ -608,7 +629,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 		return new Promise( resolve => {
 			let sov = DOM_AUDIO.volume / ( fs * 100 );
-			global__softstop = setInterval( () => {
+			GLOBAL.softstop = setInterval( () => {
 				if ( ( DOM_AUDIO.volume -= sov ) <= sov ) {
 					softStopEnd();
 					resolve( true );
@@ -662,36 +683,50 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 	clear = arr => {
 		switch ( arr ) {
-			case "global__queue": {
-				global__queue = [];
+			case "queue": {
+				GLOBAL.queue = [];
 				updateQueuetness();
 				break;
 			}
-			case "global__played": {
-				global__played = [];
+			case "played": {
+				GLOBAL.played = [];
 				updatePlayedness();
 				break;
 			}
-			case "global__sequence": {
-				global__sequence = [];
+			case "sequence": {
+				GLOBAL.sequence = [];
 				updateSequences();
 				break;
 			}
-			case "global__sequences": {
-				global__sequences = [];
+			case "sequences": {
+				GLOBAL.sequences = [];
 				updateSequences();
 				break;
 			}
-			case "global__ignorable": {
-				global__ignorable = [];
+			case "ignorable": {
+				GLOBAL.ignorable = [];
 				updateIgnorables();
 				break;
 			}
-			case "global__track_sequence": {
-				global__track_sequence = [];
+			case "track_sequence": {
+				GLOBAL.track_sequence = [];
 				break;
 			}
 		}
+	},
+
+	updatePreferences = () => {
+		for ( const [ k, v ] of Object.entries( GLOBAL.preferences ) ) {
+			( parseInt( k ) ? trackFromId : folderFromStruct )( k ).classList.add( "unpref" );
+			( parseInt( v ) ? trackFromId : folderFromStruct )( v ).classList.add( "pref" );
+		}
+	},
+
+	updateIgnorables = () => {
+		let il = GLOBAL.ignorable.length;
+		STORAGE.set( { "ignorable": idsFromTracks( ...GLOBAL.ignorable ) } );
+		scrubTrackMarkers( "ignorable" );
+		GLOBAL.ignorable.forEach( li => setElementData( li, "ignorable", "?" ) );
 	},
 
 	updatePlaylistLength = () => {
@@ -704,20 +739,13 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		pllds.folders = multiTrack( fromPlaylist.folders.all().length, "FOLDER" );
 	},
 
-	updateIgnorables = () => {
-		let il = global__ignorable.length;
-		STORAGE.set( { "ignorable": idsFromTracks( global__ignorable ) } );
-		scrubTrackMarkers( "ignorable" );
-		global__ignorable.forEach( li => setElementData( li, "ignorable", "?" ) );
-	},
-
 	updateQueuetness = rfrsh => {
-		let ql = global__queue.length;
-		STORAGE.set( { "queue": idsFromTracks( global__queue ) } );
+		let ql = GLOBAL.queue.length;
+		STORAGE.set( { "queue": idsFromTracks( ...GLOBAL.queue ) } );
 		scrubTrackMarkers( "queue" );
 		if ( DOM_CONTROLS.classList.toggle( "show_cont_queue", ql ) ) {
 			setElementData( DOM_CONTROLS.queue_length, "ql", multiTrack( ql ) );
-			global__queue.forEach( ( li, i ) => setElementData( li, "queue", `${plus1( i )}/${ql}` ) );
+			GLOBAL.queue.forEach( ( li, i ) => setElementData( li, "queue", `${plus1( i )}/${ql}` ) );
 		}
 		if ( rfrsh ) {
 			refreshListEditor( "queue" );
@@ -725,17 +753,17 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	},
 
 	updateSequences = () => {
-		let sl = global__sequence.length;
-		STORAGE.set( { "sequences": global__sequences } );
+		let sl = GLOBAL.sequence.length;
+		STORAGE.set( { "sequences": GLOBAL.sequences } );
 		scrubTrackMarkers( "sequence" );
 		if ( sl ) {
-			global__sequence.forEach( ( li, i ) => markSequenced( li, `NEW:${plus1( i )}` ) );
+			GLOBAL.sequence.forEach( ( li, i ) => markSequenced( li, `NEW:${plus1( i )}` ) );
 			if ( DOM_CONTROLS.sequence_fs.classList.toggle( "show", sl > 1 ) ) {
 				setElementData( DOM_CONTROLS.sequence_length, "sl", multiTrack( sl ) );
 			}
 		} else {
 			DOM_CONTROLS.sequence_fs.classList.remove( "show" );
-			global__sequences.forEach( ( squnc, ndx ) => tracksFromIds( ...squnc ).forEach( ( li, i ) => markSequenced( li, `${plus1( ndx )}:${plus1( i )}` ) ) );
+			GLOBAL.sequences.forEach( ( squnc, ndx ) => tracksFromIds( ...squnc ).forEach( ( li, i ) => markSequenced( li, `${plus1( ndx )}:${plus1( i )}` ) ) );
 
 			// TODO sequence editor
 		}
@@ -747,9 +775,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		// TODO stop at the end of played?
 
 		// TODO duplications?
-			// global__played could have a length of 10 but contain only 1 track
+			// GLOBAL.played could have a length of 10 but contain only 1 track
 
-		STORAGE.set( { "played": idsFromTracks( global__played ) } );
+		STORAGE.set( { "played": idsFromTracks( ...GLOBAL.played ) } );
 
 		let les = listEditorShowing();
 		if ( les === "played" || les === "folders" ) {
@@ -758,7 +786,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 		markUnplayed( ...fromPlaylist.played() );
 
-		global__played.forEach( li => {
+		GLOBAL.played.forEach( li => {
 			li.classList.add( "played" );
 			fldr = folderOfTrack( li );
 			if ( !fldr.querySelector( `li:not(.played${ctrlChckd( "ignoreplayedfolder" ) ? ',[data-ignorable="?"]' : ""})` ) ) {
@@ -766,8 +794,8 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 			}
 		} );
 
-		if ( DOM_CONTROLS.classList.toggle( "show_cont_played_tracks", global__played.length ) ) {
-			setElementData( DOM_CONTROLS.played_tracks_length, "pl", multiTrack( global__played.length ) );
+		if ( DOM_CONTROLS.classList.toggle( "show_cont_played_tracks", GLOBAL.played.length ) ) {
+			setElementData( DOM_CONTROLS.played_tracks_length, "pl", multiTrack( GLOBAL.played.length ) );
 			let pfl = fromPlaylist.folders.played().length;
 			if ( DOM_CONTROLS.classList.toggle( "show_cont_played_folders", pfl ) ) {
 				setElementData( DOM_CONTROLS.played_folders_length, "pl", multiTrack( pfl, "FOLDER" ) );
@@ -826,7 +854,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 				if ( ol = lc.firstElementChild ) {
 					ol.append( clone );
 				} else {
-					li = TEMPLATES.folder.cloneNode( true );
+					li = DOM_TEMPLATES.folder.cloneNode( true );
 					setElementData( li, "folder", fldr_strct );
 					li.firstElementChild.append( lc, clone );
 					DOM_LIST_EDITOR_LIST.append( li );
@@ -838,18 +866,18 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	},
 
 	displayTrackData = listing => {
-		if ( global__current_playing_track ) {
-			global__current_playing_track.classList.remove( "playing" );
+		if ( GLOBAL.current_playing_track ) {
+			GLOBAL.current_playing_track.classList.remove( "playing" );
 		}
 		if ( listing ) {
-			global__current_playing_folder = folderOfTrack( global__current_playing_track = listing );
+			GLOBAL.current_playing_folder = folderOfTrack( GLOBAL.current_playing_track = listing );
 			listing.classList.add( "playing" );
 			setTitle( getElementData( listing, "title" ) );
 			scroll2Track();
 		} else {
-			global__current_playing_folder = global__current_playing_track = null;
-			if ( global__played.length && confirm( "Clear the play history?" ) ) {
-				clear( "global__played" );
+			GLOBAL.current_playing_folder = GLOBAL.current_playing_track = null;
+			if ( GLOBAL.played.length && confirm( "Clear the play history?" ) ) {
+				clear( "played" );
 				TRANSPORT.playTrack();
 			} else {
 				setTitle( "KISS My Ears" );
@@ -862,7 +890,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		// TODO use tags to determine fields to create
 
 		if ( folder.tracks.length ) {
-			let fldr = TEMPLATES.folder.cloneNode( true ), li;
+			let fldr = DOM_TEMPLATES.folder.cloneNode( true ), li;
 			folder.tracks.sort( ( a, b ) => a.num - b.num ).forEach( track => {
 				li = document.createElement( "li" );
 				setElementData( li, "title", track.title );
@@ -870,11 +898,11 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 				setElementData( li, "id", track.id );
 				fldr.firstElementChild.append( li );
 			} );
-			setElementData( fldr, "folder_struct", folder.path );
+			setElementData( fldr, "folder_struct", folder.path ); // GLOBAL.preference
 			setElementData( li, "last_track", true );
-			global__playlist_fragment.append( fldr );
+			GLOBAL.playlist_fragment.append( fldr );
 			if ( end ) {
-				DOM_PLAYLIST.append( global__playlist_fragment );
+				DOM_PLAYLIST.append( GLOBAL.playlist_fragment );
 				updatePlaylistLength();
 				sortPlaylist();
 			}
@@ -889,7 +917,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 				let folder = { "tracks": [], "path": "" },
 						mtch, pastpath;
-				global__playlist_fragment = document.createDocumentFragment();
+				GLOBAL.playlist_fragment = document.createDocumentFragment();
 				paths = paths.filter( path => {
 					if ( stored.some( sp => sp.a === path.a ) ) {
 						return false;
@@ -900,7 +928,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 						folder = { "tracks": [], "path": "" };
 					}
 					folder.path = path.d;
-					global__track_id = Math.max( global__track_id, path.i );
+					GLOBAL.track_id = Math.max( GLOBAL.track_id, path.i );
 					if ( mtch = path.f.match( /^([0-9]+)?[ \-_]*(.+)\.[a-z0-9]+$/ ) ) {
 						folder.tracks.push( {
 							"title": underspace( mtch[ 2 ] ),
@@ -918,7 +946,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 				if ( !DOM_PLAYLIST_FILTER.querySelector( 'input[type="text"]' ) ) { // TODO derive from tags
 					let fltr_prp, lgnd;
 					arrayOf( "folder_struct", "title" ).forEach( col => {
-						fltr_prp = TEMPLATES.playlist_filter.cloneNode( true );
+						fltr_prp = DOM_TEMPLATES.playlist_filter.cloneNode( true );
 						lgnd = fltr_prp.firstElementChild;
 						lgnd.textContent = underspace( setElementData( lgnd, "data", col ) );
 						DOM_PLAYLIST_FILTER.pffs.append( fltr_prp );
@@ -932,20 +960,20 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		return new Promise( resolve => {
 			if ( !DOM_AUDIO.src ) {
 				let listing;
-				if ( global__track_sequence.length && ctrlChckd( "respectsequences" ) ) {
-					listing = global__track_sequence.shift();
+				if ( GLOBAL.track_sequence.length && ctrlChckd( "respectsequences" ) ) {
+					listing = GLOBAL.track_sequence.shift();
 
 					// TODO if ( untilEndOf( "queue" ) && the last track of the queue is sequenced and not the last track of that sequence ) { stop at the end of the sequence }
 
 				} else {
-					clear( "global__track_sequence" );
-					let pl = global__played.length;
+					clear( "track_sequence" );
+					let pl = GLOBAL.played.length;
 					if ( pl && playingPlayed() ) {
-						listing = global__played[ pl + global__played_index ];
+						listing = GLOBAL.played[ pl + GLOBAL.played_index ];
 					} else {
-						global__played_index = null;
-						if ( global__queue.length ) {
-							listing = global__queue.shift();
+						GLOBAL.played_index = null;
+						if ( GLOBAL.queue.length ) {
+							listing = GLOBAL.queue.shift();
 
 							// TODO if stop at the end of track lands here and the player is refreshed, the queue starts again at its next entry
 								// a) was_queued = listing? a kind of honorary queue track to be cleared only when the track is ended or skipped
@@ -953,9 +981,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 								// while solving that;
 									// address the crappy issue of not being able to stop at the end of the queue when the last track of the queue is playing
 
-							global__queue_end = !global__queue.length;
+							GLOBAL.queue_end = !GLOBAL.queue.length;
 							if ( listEditorShowing( "queue" ) ) {
-								if ( global__queue_end ) {
+								if ( GLOBAL.queue_end ) {
 									listEditorClick();
 								} else {
 									refreshListEditor( "queue" );
@@ -970,18 +998,21 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 								// TODO on startup (assuming we end up here) pick up where we left off
 									// currently finds a new folder to start instead of carrying on with the last one, even if there are tracks remaining to play
 
-									if ( global__current_playing_folder ) {
-										let tof = tracksOfFolder( global__current_playing_folder ),
-												lstndx = tof.indexOf( global__current_playing_track );
+									if ( GLOBAL.current_playing_folder ) {
+										let tof = tracksOfFolder( GLOBAL.current_playing_folder ),
+												lstndx = tof.indexOf( GLOBAL.current_playing_track );
 										if ( lstndx < minus1( tof.length ) ) {
 											listing = tof[ plus1( lstndx ) ];
 										} else {
-											global__current_playing_folder.classList.add( "played" );
+											GLOBAL.current_playing_folder.classList.add( "played" );
 										}
 									}
 									if ( !listing ) {
+
+										// TODO fromPlaylist.tracks.firsts
+
 										list = fromPlaylist.folders[ ctrlChckd( "skiplayed" ) ? "notPlayed" : "all" ]( ctrlChckd( "ignoreshufflefolder" ) );
-										listing = tracksOfFolder( global__current_playing_folder = list[ randNum( list.length ) ], 0 );
+										listing = tracksOfFolder( GLOBAL.current_playing_folder = list[ randNum( list.length ) ], 0 );
 									} // TODO this shit is practically mirrored
 								} else {
 									list = fromPlaylist.tracks[ ctrlChckd( "skiplayed" ) ? "notPlayed" : "all" ]( ctrlChckd( "ignoreshuffletrack" ) );
@@ -994,7 +1025,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 								// TODO allow skipping played tracks when not shuffle playing?
 
 								list = fromPlaylist.tracks.all( ctrlChckd( "ignorenonshuffle" ) );
-								let lstndx = list.indexOf( global__current_playing_track || notPop( global__played ) );
+								let lstndx = list.indexOf( GLOBAL.current_playing_track || notPop( GLOBAL.played ) );
 								listing = list[ ~lstndx ? lstndx + ( prev ? -1 : 1 ) : 0 ];
 							}
 						}
@@ -1004,12 +1035,15 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 						// TODO when playing played?
 
-						global__track_sequence = tracksFromIds( ...global__sequences[ minus1( si ) ] );
-						clearQueueOf( global__track_sequence );
-						listing = global__track_sequence.shift();
+						GLOBAL.track_sequence = tracksFromIds( ...GLOBAL.sequences[ minus1( si ) ] );
+						clearQueueOf( GLOBAL.track_sequence );
+						listing = GLOBAL.track_sequence.shift();
 					}
-					DOM_CONTROLS.classList.toggle( "show_cont_sequence", global__track_sequence.length );
+					DOM_CONTROLS.classList.toggle( "show_cont_sequence", GLOBAL.track_sequence.length );
 				}
+
+				// TODO GLOBAL.preferences // folderStructOfTrack()
+
 				if ( listing ) {
 					DOM_AUDIO.src = `file:///${trackPath( listing )}`;
 					displayTrackData( listing );
@@ -1026,11 +1060,9 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 	seekInput = evt => DOM_AUDIO.currentTime = evt.target.value,
 
-	listEditorDragEnd = () => global__dragee.classList.remove( "dragee" ),
+	listEditorDragEnd = () => GLOBAL.dragee.classList.remove( "dragee" ),
 
 	liFromEvtPath = evt => evt?.composedPath().find( e => tagIs( e, "li" ) ),
-
-	audioLoadedMediaData = () => setElementData( DOM_CONTROLS.times, "dura", seconds2Str( DOM_SEEK.control.max = Math.ceil( DOM_AUDIO.duration ) ) ),
 
 	dropzoneDragOver = evt => {
 		debugMsg( "dropzoneDragOver:", evt );
@@ -1041,20 +1073,27 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 	listEditorDragStart = evt => {
 		debugMsg( "listEditorDragStart:", evt );
 		evt.dataTransfer.effectAllowed = "move";
-		( global__dragee = evt.target ).classList.add( "dragee" );
+		( GLOBAL.dragee = evt.target ).classList.add( "dragee" );
 	},
 
 	audioTimeUpdate = () => {
-		let tds = DOM_CONTROLS.times.dataset,
-				curt = DOM_AUDIO.currentTime,
+		let curt = DOM_AUDIO.currentTime,
 				shake_the_hat = randNum( curt ); // TODO testing if this will unobtrusively improve the "randomness" of randNum()
-		tds.rema = seconds2Str( ( DOM_AUDIO.duration - curt ) || 0 );
-		tds.curt = seconds2Str( DOM_SEEK.control.value = curt );
+		setElementData( DOM_CONTROLS.times, "rema", seconds2Str( ( DOM_AUDIO.duration - curt ) || 0 ) );
+		setElementData( DOM_CONTROLS.times, "curt", seconds2Str( DOM_SEEK.control.value = curt ) );
+	},
+
+	audioLoadedMediaData = () => {
+		let drtn = Math.ceil( DOM_AUDIO.duration ), // TODO does this need to be ceiled?
+				tmstr = seconds2Str( drtn );
+		DOM_SEEK.control.max = drtn;
+		setElementData( DOM_CONTROLS.times, "dura", tmstr );
+		setElementData( DOM_CONTROLS.times, "rema", tmstr );
 	},
 
 	audioError = evt => {
-		debugMsg( "audioError:", { "evt": evt, "global__current_playing_track": global__current_playing_track }, "error" );
-		global__current_playing_track.classList.add( "broken" );
+		debugMsg( "audioError:", { "evt": evt, "GLOBAL.current_playing_track": GLOBAL.current_playing_track }, "error" );
+		GLOBAL.current_playing_track.classList.add( "broken" );
 		updatePlaylistLength();
 		TRANSPORT.nextTrack();
 
@@ -1123,7 +1162,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		let trg = evt.target;
 		if ( tagIs( trg, "li" ) ) {
 			let tds = trg.dataset,
-					li = tds.id ? tracksFromIds( tds.id )[ 0 ] : DOM_PLAYLIST.querySelector( `li[data-folder_struct="${tds.folder}"]` );
+					li = tds.id ? trackFromId( tds.id ) : folderFromStruct( tds.folder );
 			if ( li ) {
 				let pos_y = Math.min( evt.y, Math.floor( innerHeight - DOM_LIST_EDITOR_CONTEXT_MENU.offsetHeight ) ),
 						pos_x = Math.min( evt.x, Math.floor( innerWidth - DOM_LIST_EDITOR_CONTEXT_MENU.offsetWidth ) );
@@ -1184,10 +1223,10 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 				if ( les === "folders" ) {
 					clearPlayedOf( fromPlaylist.tracks.ofPlayedFolders() );
 				} else {
-					clear( `global__${les}` );
+					clear( les );
 				}
-			} else if ( les === "queue" && nme === "shuffle" && global__queue.length > 1 ) {
-				shuffleArray( global__queue );
+			} else if ( les === "queue" && nme === "shuffle" && GLOBAL.queue.length > 1 ) {
+				shuffleArray( GLOBAL.queue );
 				updateQueuetness( true );
 				return;
 			}
@@ -1210,23 +1249,23 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		// TODO keyboard list editing
 			// pgUp pgDn etc?
 
-		// TODO why shouldn't I be able to edit the order of global__played?
+		// TODO why shouldn't I be able to edit the order of GLOBAL.played?
 			// because it might be complicated ;)
 			// playing played would go wild
 
 		let lesq = listEditorShowing( "queue" ),
 				drop_target = evt.target,
-				dragged_folder = global__dragee.firstElementChild,
-				dragee_arr = ( dragged_folder ? arrayFrom( dragged_folder.children ) : arrayOf( global__dragee ) ).map( tm => ( lesq ? global__queue : global__played ).find( li => pathsMatch( li, tm ) ) );
+				dragged_folder = GLOBAL.dragee.firstElementChild,
+				dragee_arr = ( dragged_folder ? arrayFrom( dragged_folder.children ) : arrayOf( GLOBAL.dragee ) ).map( tm => ( lesq ? GLOBAL.queue : GLOBAL.played ).find( li => pathsMatch( li, tm ) ) );
 		if ( drop_target === DOM_LIST_EDITOR_TRASH ) {
 			( lesq ? clearQueueOf : clearPlayedOf )( dragee_arr );
 			refreshListEditor();
 		} else if ( lesq ) { // TODO for now
 			clearQueueOf( dragee_arr, true );
 			if ( drop_target === DOM_LIST_EDITOR_LIST ) {
-				global__queue.push( ...dragee_arr );
+				GLOBAL.queue.push( ...dragee_arr );
 			} else {
-				global__queue.splice( global__queue.findIndex( li => pathsMatch( li, drop_target.firstElementChild?.lastElementChild || drop_target ) ), 0, ...dragee_arr );
+				GLOBAL.queue.splice( GLOBAL.queue.findIndex( li => pathsMatch( li, drop_target.firstElementChild?.lastElementChild || drop_target ) ), 0, ...dragee_arr );
 			}
 			updateQueuetness( true );
 		}
@@ -1236,13 +1275,13 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 		// TODO it needs to be possible to set to stop at the end of {thing} while the last track of {thing} is playing
 
-		let cpt = global__current_playing_track,
+		let cpt = GLOBAL.current_playing_track,
 				cont = true;
 		if ( cpt ) {
-			global__played.push( cpt );
+			GLOBAL.played.push( cpt );
 			updatePlayedness();
 			if ( playingPlayed() ) {
-				++global__played_index;
+				++GLOBAL.played_index;
 			}
 		}
 		DOM_AUDIO.removeAttribute( "src" );
@@ -1250,8 +1289,8 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		// TODO untilEndOf( "sequence" )
 			// if a queue ends on a sequence and untilEndOf( "queue" ) is selected, the queue will be cleared, so convert to end after the sequence
 
-		if ( global__queue_end && !global__queue.length && untilEndOf( "queue" ) ) {
-			cont = global__queue_end = false;
+		if ( GLOBAL.queue_end && !GLOBAL.queue.length && untilEndOf( "queue" ) ) {
+			cont = GLOBAL.queue_end = false;
 		} else if ( untilEndOf( "track" ) || ( untilEndOf( "folder" ) && getElementData( cpt, "last_track" ) ) ) {
 			cont = false;
 		}
@@ -1285,7 +1324,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 					if ( confirm( "Shuffle tracks before adding to the queue?" ) ) { // TODO more options with less confirmation required O_o
 						shuffleArray( fltrd );
 					}
-					global__queue[ isCtrlVlu( "clicky", "end" ) ? "push" : "unshift" ]( ...fltrd );
+					GLOBAL.queue[ isCtrlVlu( "clicky", "end" ) ? "push" : "unshift" ]( ...fltrd );
 					updateQueuetness();
 				}
 			}
@@ -1391,7 +1430,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 							"a": cp.map( pp => encodeURIComponent( pp ) ).join( "/" ), // TODO reduce paths object size
 							"f": cp.pop(),
 							"d": cp.slice( plus1( sp.length ) ).join( " | " ),
-							"i": ++global__track_id
+							"i": ++GLOBAL.track_id
 						};
 					} );
 			if ( paths.length ) {
@@ -1436,6 +1475,7 @@ Remaining: ${rmnng} (${Math.round( rmnng / qdboh )}%)` );
 			let cv = evt.clicky || ctrlVlu( "clicky" ),
 					tia = trg.tracks,
 					tau = tia || arrayOf( trg ),
+					tof = tia ? trg.folder : trg,
 					fot = tia ? "folder" : "track";
 			if ( cv === "delist" ) {
 
@@ -1453,44 +1493,46 @@ Remaining: ${rmnng} (${Math.round( rmnng / qdboh )}%)` );
 					clearSequenceOf( tau );
 					clearIgnorablesOf( tau );
 					STORAGE.get( store => STORAGE.set( { "paths": store.paths.filter( sp => tia ? !tia.some( li => sp.a === trackPath( li ) ) : sp.a !== trackPath( trg ) ) } ) );
-					( tia ? trg.folder : trg ).remove();
-					if ( ( tia && ~tia.indexOf( global__current_playing_track ) ) || trg === global__current_playing_track ) {
+					tof.remove();
+
+					// TODO if removing tracks leaves a folder empty, remove that too
+
+					if ( ( tia && ~tia.indexOf( GLOBAL.current_playing_track ) ) || trg === GLOBAL.current_playing_track ) {
 						TRANSPORT.nextTrack();
 					}
 					updatePlaylistLength();
 				}
 			} else if ( cv === "preference" ) {
-
-				// TODO tag prefered versions i.e. play the prefered track/folder instead
-					// track: les fleur
-					// folder: caravan | caravan
-
-				if ( confirm( `Mark this as the prefered ${fot}?`) ) {
-
+				if ( !GLOBAL.preference ) {
+					if ( confirm( `Confirm marking this ${fot} as preferred to another ${fot}, then mark the other ${fot} as what this is preferred to.` ) ) {
+						GLOBAL.preference = idsFromTracks( tof )[ 0 ];
+						tof.classList.add( "pref" );
+					}
 				} else {
-
+					GLOBAL.preferences[ idsFromTracks( tof )[ 0 ] ] = GLOBAL.preference;
+					STORAGE.set( { "preferences": GLOBAL.preferences } );
+					tof.classList.add( "unpref" );
+					GLOBAL.preference = null;
 				}
-				alert( "This isn't implemented yet" );
-
 			} else if ( cv === "sequence" ) {
 
 				// TODO can a track be part of more than one sequence?
 
 				tau = iDunnoWhat2CallThisEither( tia, "sequence", tau, clearSequenceOf );
 				if ( iDunnoWhat2CallThis( tia, trg, isNewSequenced ) ) {
-					global__sequence.push( ...tau );
+					GLOBAL.sequence.push( ...tau );
 				}
 				updateSequences();
 			} else if ( cv === "unignorable" ) {
 				clearIgnorablesOf( tau, true );
 				if ( iDunnoWhat2CallThis( tia, trg, trackIgnorable ) ) {
-					global__ignorable.push( ...tau );
+					GLOBAL.ignorable.push( ...tau );
 				}
 				updateIgnorables();
 			} else if ( cv === "unplayed" ) {
 				clearPlayedOf( tau, true );
 				if ( iDunnoWhat2CallThis( tia, trg, isPlayed ) ) {
-					global__played.push( ...tau );
+					GLOBAL.played.push( ...tau );
 				}
 				updatePlayedness();
 			} else {
@@ -1503,16 +1545,16 @@ Remaining: ${rmnng} (${Math.round( rmnng / qdboh )}%)` );
 
 				tau = iDunnoWhat2CallThisEither( tia, "enqueue", tau, clearQueueOf );
 				if ( cv === "now" ) {
-					if ( !tia && trg === global__current_playing_track ) {
+					if ( !tia && trg === GLOBAL.current_playing_track ) {
 						TRANSPORT.backTrack();
 						return;
 					}
-					global__queue.unshift( ...tau );
+					GLOBAL.queue.unshift( ...tau );
 					TRANSPORT.nextTrack();
 				} else if ( cv === "next" ) {
-					global__queue.unshift( ...tau );
+					GLOBAL.queue.unshift( ...tau );
 				} else if ( cv === "end" ) {
-					global__queue.push( ...tau );
+					GLOBAL.queue.push( ...tau );
 				}
 				updateQueuetness();
 			}
@@ -1605,7 +1647,7 @@ Remaining: ${rmnng} (${Math.round( rmnng / qdboh )}%)` );
 					case "m": {
 						if ( contextMenuShowing() ) {
 							closeContextMenu();
-						} else if ( no && ( fcs = fromPlaylist.focussed() || global__current_playing_track ) ) {
+						} else if ( no && ( fcs = fromPlaylist.focussed() || GLOBAL.current_playing_track ) ) {
 							playlistContextMenu( {
 								y: half( innerHeight - DOM_PLAYLIST_CONTEXT_MENU.offsetHeight ),
 								x: half( innerWidth - DOM_PLAYLIST_CONTEXT_MENU.offsetWidth ),
@@ -1633,26 +1675,28 @@ Remaining: ${rmnng} (${Math.round( rmnng / qdboh )}%)` );
 	mindTheStore = store => {
 		return new Promise( resolve => {
 			if ( store ) {
-				let i = store.ignorable,
-						s = store.sequences,
+				let s = store.sequences,
+						i = store.ignorable,
 						p = store.played,
 						q = store.queue;
-				if ( q?.length ) {
-					global__queue.push( ...tracksFromIds( ...q ) );
-					updateQueuetness();
-				}
-				if ( p?.length ) {
-					global__played.push( ...tracksFromIds( ...p ) );
-					updatePlayedness();
-				}
-				if ( i?.length ) {
-					global__ignorable.push( ...tracksFromIds( ...i ) );
-					updateIgnorables();
-				}
 				if ( s?.length ) {
-					global__sequences.push( ...s ); // TODO tracksFromIds?
+					GLOBAL.sequences = s; // TODO tracksFromIds?
 					updateSequences();
 				}
+				if ( i?.length ) {
+					GLOBAL.ignorable.push( ...tracksFromIds( ...i ) );
+					updateIgnorables();
+				}
+				if ( p?.length ) {
+					GLOBAL.played.push( ...tracksFromIds( ...p ) );
+					updatePlayedness();
+				}
+				if ( q?.length ) {
+					GLOBAL.queue.push( ...tracksFromIds( ...q ) );
+					updateQueuetness();
+				}
+				GLOBAL.preferences = store.preferences;
+				updatePreferences();
 			}
 			resolve( true );
 		} );

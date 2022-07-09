@@ -1,22 +1,12 @@
 {
-	"manifest_version": 2,
+	"manifest_version": 3,
+
 	"name": "KISS My Ears",
-	"homepage_url": "https://github.com/FredGandt/KISSMyEars",
 	"description": "Keep It Stupid Simple local audio file player",
-	"version": "0.6.9",
+	"homepage_url": "https://github.com/FredGandt/KISSMyEars",
 	"offline_enabled": true,
-	"permissions": [
-		"file:///*",
-		"storage"
-	],
-	"browser_action": {
-		"default_title": "KISS My Ears",
-		"default_icon": {
-			"16": "icon16.png",
-			"24": "icon24.png",
-			"32": "icon32.png"
-		}
-	},
+	"version": "0.6.9",
+
 	"icons": {
 		"16": "icon16.png",
 		"24": "icon24.png",
@@ -24,8 +14,21 @@
 		"48": "icon48.png",
 		"128": "icon128.png"
 	},
+
+	"permissions": [ "storage" ],
+
+	"host_permissions": [ "file:///*" ],
+
+	"action": {
+		"default_title": "KISS My Ears",
+		"default_icon": {
+			"16": "icon16.png",
+			"24": "icon24.png",
+			"32": "icon32.png"
+		}
+	},
+
 	"background": {
-		"scripts": [ "background.js" ],
-		"persistent": false
+		"service_worker": "background.js"
 	}
 }

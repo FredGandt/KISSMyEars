@@ -4,7 +4,7 @@ let tab_id;
 
 const giveKISS = () => chrome.tabs.create( { "url": "kme.html", "active": true }, tab => tab_id = tab.id );
 
-chrome.browserAction.onClicked.addListener( tab => {
+chrome.action.onClicked.addListener( tab => {
 	if ( !tab_id ) {
   	giveKISS();
   } else {
