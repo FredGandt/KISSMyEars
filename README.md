@@ -1,6 +1,6 @@
 # KISSMyEars
 
-"[Keep It Stupid Simple](https://en.wikipedia.org/wiki/KISS_principle)" local audio file player Chrome extension, **CURRENTLY IN ALPHA DEVELOPMENT** and likely to contain much incomplete or flat out broken code and functionality.
+"[Keep It Stupid Simple](https://en.wikipedia.org/wiki/KISS_principle)" local audio file player browser extension, **CURRENTLY IN ALPHA DEVELOPMENT** and likely to contain much incomplete or flat out broken code and functionality.
 
 ## Why?
 Having tried many local music players, on Windoze and Linux, I have frequently been confused, frustrated and disappointed. Entire forums have been dedicated to assisting users of these players in operating them. I just want to play my music archive in *all the most reasonably expected ways*; press "go" and music happens :)
@@ -14,7 +14,7 @@ Having tried many local music players, on Windoze and Linux, I have frequently b
    * have so many optional extra features that it requires an online wiki or forum to comprehend
    * utilise deep learning AI, and via a wet wired BCI, examine my mood and make selections it deems suitable
 
-With this premise in mind, I am working to build a Chrome web browser extension that provides **only** the features I **need** and presents them in a one stop control panel. It currently looks like this:
+With this premise in mind, I am working to build a browser extension that provides **only** the features I **need** and presents them in a one stop control panel. It currently looks like this:
 
 ![Screenshot 2022-01-06 075501](https://user-images.githubusercontent.com/3055947/148348802-b7b1eeef-7125-4509-8801-8aabde654602.png)
 
