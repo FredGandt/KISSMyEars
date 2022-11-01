@@ -973,7 +973,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 
 					// TODO if ( untilEndOf( "queue" ) && the last track of the queue is sequenced and not the last track of that sequence ) { stop at the end of the sequence }
 
-					DOM_CONTROLS.classList.toggle( "show_cont_sequence", GLOBAL.sequence_end = !GLOBAL.track_sequence.length );
+					GLOBAL.sequence_end = !GLOBAL.track_sequence.length;
 
 				} else {
 					clear( "track_sequence" );
@@ -1297,6 +1297,7 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		DOM_AUDIO.removeAttribute( "src" );
 
 		if ( GLOBAL.sequence_end && !GLOBAL.track_sequence.length && untilEndOf( "sequence" ) ) {
+			DOM_CONTROLS.classList.remove( "show_cont_sequence" );
 			cont = GLOBAL.sequence_end = false;
 		}
 
