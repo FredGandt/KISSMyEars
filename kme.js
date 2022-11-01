@@ -157,6 +157,7 @@ const BROWSER = window.hasOwnProperty( "browser" ) ? browser : chrome,
 		played_index: null,
 		preference: null,
 
+		sequence_end: false,
 		queue_end: false,
 		softstop: false,
 
@@ -271,6 +272,8 @@ const BROWSER = window.hasOwnProperty( "browser" ) ? browser : chrome,
 
 	setOp = ( ctrl, op ) => setElementData( DOM_CONTROLS[ ctrl ].parentElement, "op", op ),
 
+	playingSequence = () => GLOBAL.track_sequence.length && ctrlChckd( "respectsequences" ),
+
 	folder = li => folderStruct( li ) ? { "folder": li, "tracks": tracksOfFolder( li ) } : li,
 
 	idsFromTracks = ( ...lis ) => lis.map( li => getElementData( li, "id" ) || folderStruct( li ) ), // TODO reduce paths object size
@@ -307,6 +310,9 @@ const BROWSER = window.hasOwnProperty( "browser" ) ? browser : chrome,
 			TRANSPORT.stopTrack( true );
 			if ( !prev && playingPlayed() ) {
 				++GLOBAL.played_index;
+			}
+			if ( playingSequence() && ctrlChckd( "sequenceprevnext" ) ) {
+				clear( "track_sequence" );
 			}
 			if ( paused && !ctrlChckd( "wakeful" ) ) {
 				selectNext( prev );
@@ -815,6 +821,8 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		URL.revokeObjectURL( ourl );
 	},
 
+	// TODO handle more?
+
 	toggleOptionsVisibility = () => {
 		let dccl = DOM_CONTROLS.classList;
 		if ( !dccl.toggle( "hide_shuffle_by", !ctrlChckd( "shuffle" ) ) ) {
@@ -960,10 +968,12 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		return new Promise( resolve => {
 			if ( !DOM_AUDIO.src ) {
 				let listing;
-				if ( GLOBAL.track_sequence.length && ctrlChckd( "respectsequences" ) ) {
+				if ( playingSequence() ) {
 					listing = GLOBAL.track_sequence.shift();
 
 					// TODO if ( untilEndOf( "queue" ) && the last track of the queue is sequenced and not the last track of that sequence ) { stop at the end of the sequence }
+
+					DOM_CONTROLS.classList.toggle( "show_cont_sequence", GLOBAL.sequence_end = !GLOBAL.track_sequence.length );
 
 				} else {
 					clear( "track_sequence" );
@@ -1286,12 +1296,18 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 		}
 		DOM_AUDIO.removeAttribute( "src" );
 
+		if ( GLOBAL.sequence_end && !GLOBAL.track_sequence.length && untilEndOf( "sequence" ) ) {
+			cont = GLOBAL.sequence_end = false;
+		}
+
 		// TODO untilEndOf( "sequence" )
 			// if a queue ends on a sequence and untilEndOf( "queue" ) is selected, the queue will be cleared, so convert to end after the sequence
 
-		if ( GLOBAL.queue_end && !GLOBAL.queue.length && untilEndOf( "queue" ) ) {
+		else if ( GLOBAL.queue_end && !GLOBAL.queue.length && untilEndOf( "queue" ) ) {
 			cont = GLOBAL.queue_end = false;
-		} else if ( untilEndOf( "track" ) || ( untilEndOf( "folder" ) && getElementData( cpt, "last_track" ) ) ) {
+		}
+
+		else if ( untilEndOf( "track" ) || ( untilEndOf( "folder" ) && getElementData( cpt, "last_track" ) ) ) {
 			cont = false;
 		}
 		if ( cont ) {
@@ -1389,6 +1405,8 @@ THESE ACTIONS CANNOT BE UNDONE!` ) ) {
 						scroll2Track();
 					} else if ( nme === "smoothscrolling" ) {
 						DOM_PLAYPEN.classList.toggle( "smooth_scrolling", trg.checked );
+					} else if ( nme === "respectsequences" ) {
+						DOM_CONTROLS.classList.toggle( "sequence_prev_next", trg.checked );
 					}
 				} else if ( typ === "radio" ) {
 					if ( nme === "endof" && ( vlu === "world" || vlu === "list" ) ) {
@@ -1712,6 +1730,7 @@ Remaining: ${rmnng} (${Math.round( rmnng / qdboh )}%)` );
 		respectpreferences: ctrlChckd( "respectpreferences" ),
 		respectsequences: ctrlChckd( "respectsequences" ),
 		ignorenonshuffle: ctrlChckd( "ignorenonshuffle" ),
+		sequenceprevnext: ctrlChckd( "sequenceprevnext" ),
 		scrolltoplaying: ctrlChckd( "scrolltoplaying" ),
 		smoothscrolling: ctrlChckd( "smoothscrolling" ),
 		skiplayed: ctrlChckd( "skiplayed" ),
@@ -1736,8 +1755,9 @@ Remaining: ${rmnng} (${Math.round( rmnng / qdboh )}%)` );
 					ignoreenqueuefolder: false,
 					ignoreplayedfolder: false,
 					ignoreshuffletrack: false,
-					ignorenonshuffle: false,
 					respectpreferences: true,
+					ignorenonshuffle: false,
+					sequenceprevnext: true,
 					respectsequences: true,
 					scrolltoplaying: true,
 					smoothscrolling: true,
@@ -1765,6 +1785,8 @@ Remaining: ${rmnng} (${Math.round( rmnng / qdboh )}%)` );
 
 			setElementData( DOM_CONTROLS, "defaultendof", sttngs.defaultendof );
 
+			DOM_CONTROLS.classList.toggle( "sequence_prev_next", DOM_CONTROLS.respectsequences.checked = sttngs.respectsequences );
+
 			DOM_CONTROLS.smoothscrolling.checked = DOM_PLAYPEN.classList.toggle( "smooth_scrolling", sttngs.smoothscrolling );
 			DOM_CONTROLS.scrolltoplaying.checked = DOM_BODY.classList.toggle( "scroll_to_playing", sttngs.scrolltoplaying );
 
@@ -1775,7 +1797,7 @@ Remaining: ${rmnng} (${Math.round( rmnng / qdboh )}%)` );
 			DOM_CONTROLS.ignoreplayedfolder.checked = sttngs.ignoreplayedfolder;
 			DOM_CONTROLS.ignoreshuffletrack.checked = sttngs.ignoreshuffletrack;
 			DOM_CONTROLS.respectpreferences.checked = sttngs.respectpreferences;
-			DOM_CONTROLS.respectsequences.checked = sttngs.respectsequences;
+			DOM_CONTROLS.sequenceprevnext.checked = sttngs.sequenceprevnext;
 			DOM_CONTROLS.ignorenonshuffle.checked = sttngs.ignorenonshuffle;
 			DOM_CONTROLS.skiplayed.checked = sttngs.skiplayed;
 			DOM_CONTROLS.wakeful.checked = sttngs.wakeful;

@@ -125,7 +125,7 @@ div.section {
 
 div.playlistsection {
 	height: calc( 100vh - 4.2em );
-	width: calc( 100vw - 34em ); /* TODO this is going to keep happening */
+	width: calc( 100vw - 35em ); /* TODO this is going to keep happening */
 	margin: 1em 0 0;
 	padding: 0 1em;
 }
@@ -140,11 +140,11 @@ body.display_controls_left div.playlistsection {
 
 div.controlssection {
 	max-height: calc( 100vh - 9.7em );
-	width: 30em; /* TODO this is going to keep happening */
+	width: 31em; /* TODO this is going to keep happening */
 }
 
 #seek {
-	width: calc( 100vw - 35em ); /* TODO this is going to keep happening */
+	width: calc( 100vw - 36em ); /* TODO this is going to keep happening */
 	position: absolute;
 	padding: 1em 1em;
 	font-size: 1em;
@@ -171,7 +171,7 @@ body.display_controls_left #seek {
 fieldset[name="transport"],
 output[name="times"] {
 	text-align: center;
-	width: 30em; /* TODO this is going to keep happening */
+	width: 31em; /* TODO this is going to keep happening */
 }
 
 div.dropzone {
@@ -186,7 +186,7 @@ h2 {
 }
 
 #sources {
-	right: 10em; /* TODO this is going to keep happening */
+	right: 11em; /* TODO this is going to keep happening */
 	top: 4.4em;
 }
 
@@ -245,7 +245,7 @@ ul, ol {
 
 #list_editor {
 	height: calc( 100vh - 4.2em );
-	width: calc( 100vw - 33em ); /* TODO this is going to keep happening */
+	width: calc( 100vw - 34em ); /* TODO this is going to keep happening */
 	padding-bottom: 0;
 }
 
@@ -276,13 +276,13 @@ body.display_controls_left #list_editor {
 }
 
 #playlist_filter {
-	right: 1em; /* TODO this is going to keep happening */
+	right: 1em;
 	top: 13em;
 }
 
 body.display_controls_left #playlist_filter {
 	right: unset;
-	left: 1em; /* TODO this is going to keep happening */
+	left: 1em;
 }
 
 #playlist_filter input[type="text"] {
@@ -683,6 +683,7 @@ label.child {
 #controls:not( .show_cont_played_tracks ) fieldset[name="played_tracks_length_fs"],
 #controls:not( .show_cont_queue ) fieldset[name="queue_length_fs"],
 body:not( .scroll_to_playing ) #controls label.smooth_scrolling,
+#controls:not( .sequence_prev_next ) label.sequence_prev_next,
 #controls:not( .show_cont_sequence ) label.cont_sequence,
 #controls:not( .show_cont_queue ) label.cont_queue,
 #controls.hide_shuffle_by fieldset.shuffle_by,
