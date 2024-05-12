@@ -1,5 +1,9 @@
-# KISSMyEars
+>[!IMPORTANT]
+>This project is abandoned and will reveive no further updates.
+>
+>It is being replaced with a standalone (hopefully cross platform) desktop application built in Python with Gtk, the repository for which will be created when it's in a reasonable public alpha state.
 
+# KISSMyEars
 "[Keep It Stupid Simple](https://en.wikipedia.org/wiki/KISS_principle)" local audio file player browser extension, **CURRENTLY IN ALPHA DEVELOPMENT** and likely to contain much incomplete or flat out broken code and functionality.
 
 ## Why?
