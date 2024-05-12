@@ -1,5 +1,5 @@
 >[!IMPORTANT]
->This project is abandoned and will reveive no further updates.
+>This project is abandoned and will receive no further updates.
 >
 >It is being replaced with a standalone (hopefully cross platform) desktop application built in Python with Gtk, the repository for which will be created when it's in a reasonable public alpha state.
 
